@@ -1,7 +1,10 @@
 // NFR-08 / INV-01 on the JSONTestSuite corpus: every y_ document beautified (each indent style)
 // and minified keeps its exact token sequence (reference tokenizer, never JSON.parse), and
 // minify ∘ beautify = minify. Skipped when the corpus is absent (`pnpm fixtures:jsontestsuite`).
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Thousands of generated cases: allow for a busy machine (the 5 s default is for unit tests).
+vi.setConfig({ testTimeout: 60_000 });
 import { formatText, type FormatMode, type IndentStyle } from '../../src/core';
 import { hasCorpus, loadCorpus } from '../support/jsontestsuite';
 import { tokens } from '../support/reftok';

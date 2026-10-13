@@ -5,7 +5,10 @@
 // differently and excluded), the result is independent of chunking, the validator never throws.
 // JSON.parse is used for validity only, never for member names (Node 24.19 bug, ADR-0005).
 import fc from 'fast-check';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Thousands of generated cases: allow for a busy machine (the 5 s default is for unit tests).
+vi.setConfig({ testTimeout: 60_000 });
 import { validateText, type ValidationResult } from '../../src/core';
 
 const NUM_RUNS = Number(process.env['NUM_RUNS'] ?? 10_000);

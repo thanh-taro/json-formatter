@@ -11,6 +11,19 @@ export const DEFAULT_INDENT: IndentStyle = { kind: 'spaces', width: 2 };
 export const MIN_CUSTOM_WIDTH = 1;
 export const MAX_CUSTOM_WIDTH = 8;
 
+/**
+ * Implements: RULE-01 — a valid ENT-IndentStyle from any input (F-004 review MJ-1): a spaces
+ * width that is not a finite number falls back to the default 2; otherwise it is truncated to an
+ * integer and clamped to 1–8. Re-indent and the indent selector go through this (a width of NaN
+ * would strip all indentation).
+ */
+export function indentStyle(style: IndentStyle): IndentStyle {
+  if (style.kind === 'tab') return { kind: 'tab' };
+  const w = Number(style.width);
+  if (!Number.isFinite(w)) return { ...DEFAULT_INDENT };
+  return { kind: 'spaces', width: Math.min(MAX_CUSTOM_WIDTH, Math.max(MIN_CUSTOM_WIDTH, Math.trunc(w))) };
+}
+
 /** The text of one indentation level. */
 export function indentText(style: IndentStyle): string {
   return style.kind === 'tab' ? '\t' : ' '.repeat(Math.min(MAX_CUSTOM_WIDTH, Math.max(MIN_CUSTOM_WIDTH, style.width)));

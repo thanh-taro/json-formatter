@@ -4,6 +4,12 @@
 // (`post` is injected) so it runs under Vitest in Node as well as in the module worker.
 import { ChangeSet } from '@codemirror/state';
 import {
+  detectUnit,
+  IndentScanner,
+  Reindenter,
+  indentStyle,
+  reindentDelta,
+  reindentIsNoop,
   isLargeTier,
   LineBreakScanner,
   tierOf,
@@ -12,8 +18,10 @@ import {
   resultOf,
   Validator,
   type FormatMode,
+  type IndentStyle,
   type LineEnding,
   type SkipTable,
+  type SourceUnit,
   type ValidationOutcome,
 } from '../core';
 import { Mirror, MirrorBuilder } from './mirror';
@@ -318,6 +326,12 @@ export class WorkerEngine {
       case 'validate':
         run = () => this.validate(jobId, job.version, job.lineEnding, job.skipTable ?? false);
         break;
+      case 'reindentPlan':
+        run = () => this.reindentPlan(jobId, job.version, job.target);
+        break;
+      case 'reindent':
+        run = () => this.reindent(jobId, job.version, job.target, job.unit);
+        break;
       case 'format':
         run = () => this.format(jobId, job.version, job.mode, job.lineEnding, job.nonBreakBytes);
         break;
@@ -463,6 +477,92 @@ export class WorkerEngine {
         }
       }
       this.post({ type: 'validation', jobId, version, result: resultOf(outcome, resolver.end()) });
+    } catch (e) {
+      this.fail(jobId, e);
+    }
+  }
+
+  /**
+   * Implements: F-004.R1, F-004.R3, F-004.R5, F-004.R6, RULE-09 — re-indent pass 1 on the mirror
+   * at `version` (valid or not) in ≤ 16 ms / 1 MB slices: the source unit and the exact change
+   * in length of the result for `target` (so the RULE-02 check can run before converting,
+   * F-004.R7), or `notIndented` when no line is indented.
+   */
+  private async reindentPlan(jobId: number, version: number, style: IndentStyle): Promise<void> {
+    try {
+      const target = indentStyle(style); // RULE-01: never an invalid width (review MJ-1)
+      if (version !== this.version) throw new Superseded('document changed');
+      const doc = this.mirror;
+      const total = Math.max(1, doc.length);
+      const slicer = new Slicer(
+        this,
+        jobId,
+        () => undefined,
+        () => this.version !== version,
+      );
+      const scan = new IndentScanner();
+      let done = 0;
+      for (const piece of pieces(doc.chunks)) {
+        scan.feed(piece);
+        done += piece.length;
+        await slicer.step(piece.length, () => done / total);
+      }
+      const stats = scan.end();
+      const unit = detectUnit(stats);
+      if (!unit) this.post({ type: 'notIndented', jobId });
+      else
+        this.post({
+          type: 'reindentPlan',
+          jobId,
+          version,
+          unit,
+          delta: reindentDelta(stats, unit, target),
+          unchanged: reindentIsNoop(stats, unit, target),
+        });
+    } catch (e) {
+      this.fail(jobId, e);
+    }
+  }
+
+  /**
+   * Implements: F-004.R1, F-004.R2, F-004.R6, RULE-09 — re-indent pass 2: converts the mirror at
+   * `version` into a pending mirror (adopted on commit, INV-03) and streams the text to the main
+   * thread at the end of each slice; only leading indentation changes.
+   */
+  private async reindent(jobId: number, version: number, style: IndentStyle, unit: SourceUnit): Promise<void> {
+    try {
+      const target = indentStyle(style);
+      this.pending = null;
+      if (version !== this.version) throw new Superseded('document changed');
+      const doc = this.mirror;
+      const total = Math.max(1, doc.length);
+      const fwd = new Forwarder(this, jobId);
+      const scan = new LineBreakScanner();
+      const builder = new MirrorBuilder();
+      const slicer = new Slicer(
+        this,
+        jobId,
+        () => fwd.flush(),
+        () => this.version !== version,
+      );
+      const conv = new Reindenter(unit, target);
+      const take = (text: string) => {
+        if (!text) return;
+        scan.feed(text);
+        builder.push(text);
+        fwd.add(text);
+      };
+      let done = 0;
+      for (const piece of pieces(doc.chunks)) {
+        take(conv.feed(piece));
+        done += piece.length;
+        await slicer.step(piece.length, () => done / total);
+      }
+      take(conv.end());
+      fwd.flush();
+      const mirror = builder.finish();
+      this.pending = { jobId, mirror };
+      this.post({ type: 'loaded', jobId, facts: factsOf(scan, mirror.length) });
     } catch (e) {
       this.fail(jobId, e);
     }

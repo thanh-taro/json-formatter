@@ -154,7 +154,10 @@ function tool(req, res) {
   serve(res, DIST, p, headersFor(p), rewriteAllowList, published ? publishHtml : undefined);
 }
 
-const host = (req, res) => serve(res, HOST_DIR, new URL(req.url, 'http://x').pathname, { 'Cache-Control': 'no-store' });
+// Stub host pages get the port base injected, whichever port (host or unlisted) serves them.
+const injectBase = (body) => body.toString('utf8').replaceAll('__E2E_PORT_BASE__', String(BASE));
+const host = (req, res) =>
+  serve(res, HOST_DIR, new URL(req.url, 'http://x').pathname, { 'Cache-Control': 'no-store' }, null, injectBase);
 
 function admin(req, res) {
   const u = new URL(req.url, 'http://x');
