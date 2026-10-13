@@ -33,8 +33,8 @@
       // sibling=1 (adds a frame from the unlisted origin that can post into the tool frame),
       // clip=0 (no clipboard-write permission for the frame: copying is refused, F-007.AC4).
       const q = new URLSearchParams(location.search);
-      const PORT = Number(location.port);
-      const TOOL = q.get('tool') || `http://localhost:${PORT - 1}`;
+      const BASE = Number('__E2E_PORT_BASE__'); // injected by tests/e2e/server.mjs
+      const TOOL = q.get('tool') || `http://localhost:${BASE}`;
       let theme = q.get('theme') || 'dark';
       window.__host = { received: [], loads: 0 };
       const f = document.createElement('iframe');
@@ -71,7 +71,7 @@
         s.name = 'sibling';
         s.className = 'sibling';
         s.title = 'Unlisted sibling';
-        s.src = `http://localhost:${PORT + 1}/sibling.html`;
+        s.src = `http://localhost:${BASE + 2}/sibling.html`;
         document.body.append(s);
         window.fireSibling = (msg) => s.contentWindow.postMessage({ cmd: 'fire', msg }, '*');
       }

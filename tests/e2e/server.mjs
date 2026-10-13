@@ -107,7 +107,7 @@ const TYPES = {
 let log = [];
 const t0 = Date.now();
 
-function serve(res, dir, urlPath, extraHeaders, transformJs) {
+function serve(res, dir, urlPath, extraHeaders, transformJs, transformHtml) {
   const p = urlPath === '/' ? '/index.html' : urlPath;
   const file = path.join(dir, path.normalize(decodeURIComponent(p)).replace(/^(\.\.[/\\])+/, ''));
   if (!file.startsWith(dir + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
@@ -116,7 +116,10 @@ function serve(res, dir, urlPath, extraHeaders, transformJs) {
   }
   res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] ?? 'application/octet-stream', ...extraHeaders });
   const body = fs.readFileSync(file);
-  res.end(transformJs && path.extname(file) === '.js' ? transformJs(body) : body);
+  const ext = path.extname(file);
+  res.end(
+    transformJs && ext === '.js' ? transformJs(body) : transformHtml && ext === '.html' ? transformHtml(body) : body,
+  );
 }
 
 function tool(req, res) {
@@ -130,7 +133,10 @@ function tool(req, res) {
   serve(res, DIST, u.pathname, headersFor(u.pathname), rewriteAllowList);
 }
 
-const host = (req, res) => serve(res, HOST_DIR, new URL(req.url, 'http://x').pathname, { 'Cache-Control': 'no-store' });
+// Stub host pages get the port base injected, whichever port (host or unlisted) serves them.
+const injectBase = (body) => body.toString('utf8').replaceAll('__E2E_PORT_BASE__', String(BASE));
+const host = (req, res) =>
+  serve(res, HOST_DIR, new URL(req.url, 'http://x').pathname, { 'Cache-Control': 'no-store' }, null, injectBase);
 
 function admin(req, res) {
   const u = new URL(req.url, 'http://x');
