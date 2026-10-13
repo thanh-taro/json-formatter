@@ -3,21 +3,27 @@
 // custom choice shows a number field for 1–8 spaces. One selector serves beautify and re-indent
 // (CMP-Toolbar "Behavior"); the choice lives in app state (`state.indent`).
 import { useState } from 'preact/hooks';
-import { MAX_CUSTOM_WIDTH, MIN_CUSTOM_WIDTH } from '../../core';
+import { MAX_CUSTOM_WIDTH, MIN_CUSTOM_WIDTH, type IndentStyle } from '../../core';
 import { t } from '../../copy';
 import type { AppController } from '../controller';
 
 /** Custom width offered first (CMP-Toolbar design: "Custom… (3 spaces)"). */
 const FIRST_CUSTOM = 3;
 
+/** True when a style is only reachable through the custom choice (not 2 or 4 spaces, not tab). */
+const isCustom = (s: IndentStyle) => s.kind === 'spaces' && s.width !== 2 && s.width !== 4;
+
 export function IndentSelector({ app, disabled }: { app: AppController; disabled: boolean }) {
   const indent = app.state.indent.value;
-  const [custom, setCustom] = useState(false);
-  const [width, setWidth] = useState(FIRST_CUSTOM);
+  // The choice is derived from app state, so it survives remounts (narrow overflow menu).
+  const [customPicked, setCustomPicked] = useState(false);
+  const custom = isCustom(indent) || (customPicked && indent.kind === 'spaces');
+  const [lastWidth, setWidth] = useState(FIRST_CUSTOM);
+  const width = isCustom(indent) && indent.kind === 'spaces' ? indent.width : lastWidth;
   const value = custom ? 'custom' : indent.kind === 'tab' ? 'tab' : String(indent.width);
 
   const choose = (v: string) => {
-    setCustom(v === 'custom');
+    setCustomPicked(v === 'custom');
     if (v === 'tab') app.setIndent({ kind: 'tab' });
     else app.setIndent({ kind: 'spaces', width: v === 'custom' ? width : Number(v) });
   };
@@ -48,6 +54,8 @@ export function IndentSelector({ app, disabled }: { app: AppController; disabled
       {custom && (
         <input
           class="tk-indent-width"
+          // CMP-Toolbar roving tabindex: reached with the arrow keys, not an extra Tab stop
+          tabIndex={-1}
           type="number"
           inputMode="numeric"
           min={MIN_CUSTOM_WIDTH}

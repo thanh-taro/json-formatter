@@ -8,8 +8,11 @@ import type { AppController } from '../controller';
 import { Icon } from './Icon';
 import { IndentSelector } from './IndentSelector';
 
+const CONTROLS = 'button, select, input';
 const controlsOf = (bar: HTMLElement) =>
-  [...bar.querySelectorAll<HTMLButtonElement | HTMLSelectElement>('button, select')].filter((c) => !c.disabled);
+  [...bar.querySelectorAll<HTMLButtonElement | HTMLSelectElement | HTMLInputElement>(CONTROLS)].filter(
+    (c) => !c.disabled,
+  );
 
 export function Toolbar({ app }: { app: AppController }) {
   const empty = app.state.doc.value.empty;
@@ -26,13 +29,13 @@ export function Toolbar({ app }: { app: AppController }) {
     const controls = controlsOf(el);
     const active =
       current.current && controls.includes(current.current as HTMLButtonElement) ? current.current : controls[0];
-    for (const c of el.querySelectorAll<HTMLElement>('button, select')) c.tabIndex = c === active ? 0 : -1;
+    for (const c of el.querySelectorAll<HTMLElement>(CONTROLS)) c.tabIndex = c === active ? 0 : -1;
   });
 
   const move = (target: HTMLElement | undefined) => {
     const el = bar.current;
     if (!el || !target) return;
-    for (const c of el.querySelectorAll<HTMLElement>('button, select')) c.tabIndex = c === target ? 0 : -1;
+    for (const c of el.querySelectorAll<HTMLElement>(CONTROLS)) c.tabIndex = c === target ? 0 : -1;
     current.current = target;
     target.focus();
   };
@@ -44,6 +47,8 @@ export function Toolbar({ app }: { app: AppController }) {
     const i = controls.indexOf(e.target as HTMLButtonElement);
     if (i < 0) return;
     let next: HTMLElement | undefined;
+    // the indent width field keeps Left/Right for its caret (Up/Down change its value)
+    if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target instanceof HTMLInputElement) return;
     if (e.key === 'ArrowRight') next = controls[(i + 1) % controls.length];
     else if (e.key === 'ArrowLeft') next = controls[(i - 1 + controls.length) % controls.length];
     else if (e.key === 'Home') next = controls[0];

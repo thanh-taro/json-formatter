@@ -68,14 +68,16 @@
     background: var(--tk-color-bg);
     color: var(--tk-color-fg);
     font-family: var(--tk-font-family-mono);
-    font-size: var(--tk-font-size-input);
+    font-size: var(--tk-font-size-sm);
   }
   .tk-indent-width:disabled {
     color: var(--tk-color-muted);
   }
   /* Coarse pointers: form fields at 16 px (no zoom on focus, CMP-Toolbar design). */
   @media (pointer: coarse) {
-    .tk-select select {
+    .tk-select select,
+    .tk-indent-width {
+      min-block-size: var(--tk-size-touch-target);
       font-size: var(--tk-font-size-input);
     }
   }

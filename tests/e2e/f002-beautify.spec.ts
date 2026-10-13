@@ -80,12 +80,22 @@ test.describe('F-002 beautify', () => {
     await indentSelect(page).selectOption('custom');
     const width = toolbar(page).getByRole('spinbutton', { name: copy('indent.custom', { n: 3 }) });
     await expect(width).toHaveValue('3');
+    // CMP-Toolbar: one Tab stop; the field is reached with the arrow keys like the other controls
+    await expect(width).toHaveAttribute('tabindex', '-1');
+    await indentSelect(page).focus();
+    await indentSelect(page).press('ArrowRight');
+    await expect(width).toBeFocused();
+    // the field's name follows its value, so address it by role alone from here on
+    const field = toolbar(page).getByRole('spinbutton');
+    await field.press('ArrowUp'); // Up/Down change the width
+    await expect(field).toHaveValue('4');
+    await expect(indentSelect(page)).toHaveValue('custom');
+    await field.press('ArrowDown');
+    await expect(field).toHaveValue('3');
     await reportShot(page, 'F-002/indent-custom.png');
     await beautify(page);
     await expect.poll(() => docText(page)).toBe('[\n   [\n      1,\n      [\n         2\n      ]\n   ],\n   3\n]');
     // RULE-01: custom widths are limited to 1–8
-    // the field's name follows its value, so address it by role alone from here on
-    const field = toolbar(page).getByRole('spinbutton');
     await field.fill('12');
     await field.press('Tab');
     await expect(field).toHaveValue('8');
@@ -191,6 +201,44 @@ test.describe('F-002 beautify', () => {
     await waitIdle(page);
     await expect(app(page)).toHaveAttribute('data-bytes', '20000');
     await expect(app(page)).toHaveAttribute('data-lines', '1');
+  });
+});
+
+test.describe('F-002 very large results (RULE-02)', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'a 200 MB document: Chromium only (memory)');
+
+  test('F-002.AC10 choosing COPY-action.continue beautifies into a document over 100 MB', async ({ page }) => {
+    test.setTimeout(240_000);
+    await start(page);
+    await pasted(page, '['.repeat(10_000) + ']'.repeat(10_000));
+    await beautifyButton(page).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: COPY['action.continue'] }).click();
+    await expect(dialog).toBeHidden();
+    const bytes = 2 * (2 * ((9_998 * 9_999) / 2) + 9_999) + 19_998 + 20_000;
+    await expect(app(page)).toHaveAttribute('data-bytes', String(bytes), { timeout: 180_000 });
+    await waitIdle(page);
+    await expect(app(page)).toHaveAttribute('data-lines', '19999');
+    await expect(app(page)).toHaveAttribute('data-tier', 'very-large');
+    await expect(page.locator('.cm-line').nth(1)).toHaveText('  [');
+  });
+
+  test('RULE-02 F-002.R7 a document already over 100 MB beautifies without asking again', async ({ page }) => {
+    test.setTimeout(240_000);
+    const file = largeFixture('verylarge', 150 * MB);
+    await start(page);
+    await openFile(page, file);
+    await page.getByRole('dialog').getByRole('button', { name: COPY['action.continue'] }).click();
+    await expect(app(page)).toHaveAttribute('data-bytes', String(150 * MB), { timeout: 120_000 });
+    await waitIdle(page);
+    await expect(validity(page)).toHaveAttribute('data-validity', 'valid', { timeout: 60_000 });
+    await beautifyButton(page).click();
+    const bar = page.getByRole('status').filter({ hasText: /Formatting… \d+%/ });
+    await expect(bar).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await bar.getByRole('button', { name: COPY['action.cancel'] }).click();
+    await waitIdle(page);
+    await expect(app(page)).toHaveAttribute('data-bytes', String(150 * MB));
   });
 });
 

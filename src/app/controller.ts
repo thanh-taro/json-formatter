@@ -24,6 +24,7 @@ import {
 import { installDropTarget, pickFile, type DropKind } from '../io';
 import { JobFailure, WorkerClient, type Job, type JobResult } from '../worker/client';
 import type { FailReason } from '../worker/protocol';
+import { needsVeryLargeConfirm } from './confirm';
 import type { AppState, Bar, Busy, Validation } from './state';
 
 /** Progress is shown once an operation has run this long (NFR-02). */
@@ -474,7 +475,7 @@ export class AppController {
     const ed = this.editor;
     if (this.blocked() || !ed || ed.isEmpty) return;
     const version = ed.version;
-    const result = await this.validationOf(version);
+    let result = await this.validationOf(version);
     if (!result || this.editor !== ed || ed.version !== version) return;
     if (result.validity !== 'valid') {
       // F-002.R4 / F-003.R3 / INV-03: unchanged; the first error is shown (issue panel) and focused.
@@ -484,10 +485,17 @@ export class AppController {
     const mode: FormatMode = kind === 'beautify' ? { kind, indent: this.state.indent.value } : { kind };
     const lineEnding = ed.lineEnding;
     const nonBreakBytes = ed.bytes - (ed.lineCount - 1) * (lineEnding === 'crlf' ? 2 : 1);
-    if (mode.kind === 'beautify' && result.layout) {
-      // Implements: RULE-02 / F-002.R7 / F-002.AC10 — confirm a result over 100 MB; declining keeps the document.
-      const bytes = beautifiedBytes(result.layout, nonBreakBytes, mode.indent, lineEnding);
-      if (tierOf(bytes) === 'very-large' && !(await this.confirmVeryLarge(bytes))) return;
+    if (mode.kind === 'beautify') {
+      // A result without layout facts cannot be sized: validate again (the worker's pass has them).
+      if (!result.layout) result = await this.validationOf(version, true);
+      if (!result || this.editor !== ed || ed.version !== version) return;
+      // Implements: RULE-02 / F-002.R7 / F-002.AC10 — confirm a result over 100 MB (unless the
+      // document already is); declining keeps the document. Unknown size: ask (current size).
+      const bytes = result.layout
+        ? beautifiedBytes(result.layout, nonBreakBytes, mode.indent, lineEnding)
+        : Math.max(ed.bytes, 100_000_001);
+      if (needsVeryLargeConfirm(ed.bytes, bytes) && !(await this.confirmVeryLarge(result.layout ? bytes : ed.bytes)))
+        return;
       if (this.editor !== ed || ed.version !== version) return;
     }
     await this.run('progress.formatting', async (busy) => {
@@ -504,12 +512,12 @@ export class AppController {
 
   /**
    * The validation result of the document at `version`: the shown one when it is current,
-   * otherwise computed now under the busy policy (the worker reuses a finished pass); null when
-   * cancelled or failed.
+   * otherwise (or when `fresh`) computed now under the busy policy (the worker reuses a finished
+   * pass); null when cancelled or failed.
    */
-  private async validationOf(version: number): Promise<ValidationResult | null> {
+  private async validationOf(version: number, fresh = false): Promise<ValidationResult | null> {
     const shown = this.state.validation.value;
-    if (shown.version === version && shown.result && (shown.state === 'valid' || shown.state === 'invalid'))
+    if (!fresh && shown.version === version && shown.result && (shown.state === 'valid' || shown.state === 'invalid'))
       return shown.result;
     const ed = this.editor;
     if (!ed) return null;
