@@ -1,0 +1,42 @@
+/* CMP-Notice toast (F-007, COPY-toast.copied): bottom right, above the status bar, up to 2
+   stacked (newest at the bottom). Not interactive, so pointer events pass through. */
+@layer components {
+  .tk-toasts {
+    position: fixed;
+    inset-inline-end: var(--tk-space-3);
+    inset-block-end: calc(var(--tk-statusbar-height, var(--tk-size-statusbar)) + var(--tk-space-3));
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--tk-space-2);
+    pointer-events: none;
+  }
+  .tk-toast {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    min-block-size: var(--tk-space-8);
+    padding-inline: var(--tk-space-3);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-medium);
+  }
+  .tk-toast__icon {
+    color: var(--tk-color-success);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tk-toast {
+      animation: tk-toast-in var(--tk-motion-duration-base) var(--tk-motion-easing-standard);
+    }
+  }
+  @keyframes tk-toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--tk-space-2));
+    }
+  }
+}

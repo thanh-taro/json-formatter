@@ -124,3 +124,103 @@ export function installDropTarget(target: Window, h: DropTargetHandlers): () => 
     target.removeEventListener('dragend', end, opts);
   };
 }
+
+// ---- copy and download (F-007) ---------------------------------------------------------------
+
+/** Outcome of a clipboard write: "blocked" means the environment refused it (F-007.R3). */
+export type CopyOutcome = 'copied' | 'blocked';
+
+/** The browser's async clipboard (injectable for tests). */
+export interface ClipboardEnv {
+  clipboard: Pick<Clipboard, 'write'> | undefined;
+  ClipboardItem: typeof ClipboardItem | undefined;
+}
+
+const browserClipboard = (): ClipboardEnv => ({
+  clipboard: typeof navigator !== 'undefined' ? navigator.clipboard : undefined,
+  ClipboardItem: typeof ClipboardItem !== 'undefined' ? ClipboardItem : undefined,
+});
+
+/**
+ * Implements: F-007.R1, F-007.R3 (blocked outcome), F-007.R6 — writes a whole document to the
+ * clipboard. Must be called synchronously inside the click handler: the clipboard item is created
+ * at once with a *promise* of the worker-built Blob, so WebKit keeps the user activation across
+ * the worker round trip (ADR-0007 §5, platform-mapping). Resolves "blocked" when the environment
+ * refuses (no API, permissions policy, WebKit above ~120 MB — D-025); a failure of the export
+ * itself (including cancel) rejects with that failure instead.
+ */
+export function copyBlob(blob: Promise<Blob>, env: ClipboardEnv = browserClipboard()): Promise<CopyOutcome> {
+  let exportFailed = false;
+  let exportError: unknown;
+  const text = blob.then(
+    (b) => new Blob([b], { type: 'text/plain' }),
+    (e: unknown) => {
+      exportFailed = true;
+      exportError = e;
+      throw e;
+    },
+  );
+  text.catch(() => undefined); // observed below; never an unhandled rejection
+  const { clipboard, ClipboardItem: Item } = env;
+  if (!clipboard?.write || !Item) return Promise.resolve('blocked');
+  let written: Promise<void>;
+  try {
+    written = clipboard.write([new Item({ 'text/plain': text })]);
+  } catch {
+    return Promise.resolve('blocked');
+  }
+  return written.then(
+    () => 'copied',
+    () => (exportFailed ? Promise.reject(exportError) : 'blocked'),
+  );
+}
+
+/** The browser pieces a download needs (injectable for tests). */
+export interface DownloadEnv {
+  createElement: () => HTMLAnchorElement;
+  append: (a: HTMLAnchorElement) => void;
+  createObjectURL: (blob: Blob) => string;
+  revokeObjectURL: (url: string) => void;
+  /** The object URL is revoked this long after the click (the browser has started the save). */
+  revokeAfterMs: number;
+}
+
+const browserDownload = (): DownloadEnv => ({
+  createElement: () => document.createElement('a'),
+  append: (a) => document.body.append(a),
+  createObjectURL: (b) => URL.createObjectURL(b),
+  revokeObjectURL: (u) => URL.revokeObjectURL(u),
+  revokeAfterMs: 60_000,
+});
+
+/**
+ * Implements: F-007.R2, F-007.R4, INV-02 — saves `blob` as `name` through a local object URL and
+ * a temporary `download` link (no request leaves the device); the URL is revoked afterwards.
+ * There is no "blocked" outcome: no engine reports a download refused by the frame sandbox
+ * (SP-iframe; F-007.R5 deprecated, D-023).
+ */
+export function download(blob: Blob, name: string, env: DownloadEnv = browserDownload()): void {
+  const url = env.createObjectURL(blob);
+  const a = env.createElement();
+  a.href = url;
+  a.download = name;
+  a.style.display = 'none';
+  env.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => env.revokeObjectURL(url), env.revokeAfterMs);
+}
+
+/** The most recent tool operation, as far as RULE-10 cares. */
+export type LastOperation = 'load' | 'clear' | 'beautify' | 'minify' | 'reindent' | null;
+
+/**
+ * Implements: RULE-10 — the original file name when the document came from a file; otherwise
+ * `formatted.json` after beautify, `minified.json` after minify, else `document.json`.
+ */
+export function downloadName(sourceName: string | null, lastOperation: LastOperation): string {
+  if (sourceName) return sourceName;
+  if (lastOperation === 'beautify') return 'formatted.json';
+  if (lastOperation === 'minify') return 'minified.json';
+  return 'document.json';
+}

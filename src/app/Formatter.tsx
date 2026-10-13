@@ -10,6 +10,7 @@ import { EditorArea } from './components/EditorArea';
 import { IssuePanel } from './components/IssuePanel';
 import { NoticeBar } from './components/NoticeBar';
 import { StatusBar } from './components/StatusBar';
+import { Toasts } from './components/Toasts';
 import { Toolbar } from './components/Toolbar';
 import { AppController } from './controller';
 import { createAppState } from './state';
@@ -39,6 +40,7 @@ export function Formatter() {
       </main>
       <IssuePanel app={app} />
       <StatusBar app={app} />
+      <Toasts app={app} />
       <ConfirmDialog app={app} />
     </div>
   );

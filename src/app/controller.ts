@@ -12,15 +12,18 @@ import {
   type PendingDocument,
   type ReplaceFacts,
 } from '../editor';
-import { installDropTarget, pickFile, type DropKind } from '../io';
+import { copyBlob, download, downloadName, installDropTarget, pickFile, type DropKind } from '../io';
 import { JobFailure, WorkerClient, type Job, type JobResult } from '../worker/client';
 import type { FailReason } from '../worker/protocol';
-import type { AppState, Bar, Busy, Validation } from './state';
+import type { AppState, Bar, Busy, Toast, Validation } from './state';
 
 /** Progress is shown once an operation has run this long (NFR-02). */
 const PROGRESS_DELAY_MS = 500;
 /** Normal tier: "checking" is shown only when a result takes longer than this (no flicker). */
 const CHECKING_DELAY_MS = 300;
+/** CMP-Notice: a toast disappears after 2 s; at most 2 are stacked. */
+const TOAST_MS = 2000;
+const TOAST_MAX = 2;
 /** Main-thread slice when streaming text to the worker (architecture.md tunables). */
 const SLICE_MS = 8;
 
@@ -266,6 +269,13 @@ export class AppController {
 
   dismissBar(): void {
     this.state.bar.value = null;
+  }
+
+  /** CMP-Notice toast: newest last, at most TOAST_MAX, each removed after TOAST_MS. */
+  showToast(toast: Omit<Toast, 'seq'>): void {
+    const shown: Toast = { ...toast, seq: ++this.barSeq };
+    this.state.toasts.value = [...this.state.toasts.value, shown].slice(-TOAST_MAX);
+    setTimeout(() => (this.state.toasts.value = this.state.toasts.value.filter((t) => t !== shown)), TOAST_MS);
   }
 
   private showFailure(reason: FailReason, fileError: boolean): void {
@@ -525,6 +535,82 @@ export class AppController {
       }
     }
     this.editor?.focus();
+  }
+
+  // ---- export (F-007) ------------------------------------------------------------------------
+
+  /**
+   * RULE-10 — the most recent tool operation (beautify, minify, …), read from the editor's
+   * committed tool operations; none yet → `document.json`.
+   */
+  lastToolOperation(): EditorHandle['lastTool'] {
+    return this.editor?.lastTool ?? null;
+  }
+
+  /** The whole document as a UTF-8 Blob from the worker, with the document's line ending (ADR-0006 §3). */
+  private exportJob(busy: BusyHandle, ed: EditorHandle): { blob: Promise<Blob>; cancel: () => void } {
+    const job = this.worker.run(
+      { kind: 'export', version: ed.version, eol: ed.lineEnding === 'crlf' ? '\r\n' : '\n' },
+      { onProgress: (f) => busy.progress(f) },
+    );
+    busy.onCancel(() => job.cancel());
+    const blob = job.result.then((r) =>
+      r.type === 'blob' ? r.blob : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
+    );
+    return { blob, cancel: () => job.cancel() };
+  }
+
+  /**
+   * Implements: F-007.R1, F-007.R3, F-007.R6 — copies the whole document. Called from the click
+   * handler: the export job and the clipboard item are created synchronously (MOD-IO `copyBlob`),
+   * so the user activation holds across the worker round trip. Progress after 0.5 s, cancellable
+   * (NFR-02). Refused → the text view with the whole document selected and COPY-error.clipboard.
+   */
+  copy(): void {
+    const ed = this.editor;
+    if (this.blocked() || !ed || ed.isEmpty) return;
+    let outcome: 'copied' | 'blocked' | null = null;
+    void this.run('progress.exporting', async (busy) => {
+      const job = this.exportJob(busy, ed);
+      job.blob.catch(() => undefined); // a refusal may come first; copyBlob reports export failures
+      // Cancel also abandons a write still in progress after the export (the browser owns it).
+      const cancelled = new Promise<never>((_, reject) => busy.onCancel(() => reject(new Cancelled())));
+      cancelled.catch(() => undefined);
+      try {
+        outcome = await Promise.race([copyBlob(job.blob), cancelled]);
+      } catch (e) {
+        if (e instanceof Cancelled || reasonOf(e) === 'cancelled') throw new Cancelled();
+        throw e;
+      }
+      if (outcome === 'blocked') job.cancel(); // refused before the export ended: stop it
+    }).then(() => {
+      if (outcome === 'copied') this.showToast({ id: 'toast.copied', text: t('toast.copied') });
+      else if (outcome === 'blocked') this.copyRefused();
+    });
+  }
+
+  /** Implements: F-007.R3, F-007.AC7, CMP-Editor all-selected — the manual-copy fallback. */
+  private copyRefused(): void {
+    this.state.view.value = 'text';
+    this.editor?.selectAll();
+    this.showBar({ kind: 'error', id: 'error.clipboard', text: t('error.clipboard') });
+  }
+
+  /**
+   * Implements: F-007.R2, F-007.R4, F-007.R6, RULE-10 — downloads the document as a UTF-8 file
+   * built in the worker (exactly as shown, with its line ending); progress after 0.5 s,
+   * cancellable; saved through a local object URL (INV-02).
+   */
+  download(): void {
+    const ed = this.editor;
+    if (this.blocked() || !ed || ed.isEmpty) return;
+    const name = downloadName(ed.sourceName, this.lastToolOperation());
+    void this.run('progress.exporting', async (busy) => {
+      const blob = await this.exportJob(busy, ed).blob.catch((e: unknown) => {
+        throw reasonOf(e) === 'cancelled' ? new Cancelled() : e;
+      });
+      download(blob, name);
+    });
   }
 
   /**

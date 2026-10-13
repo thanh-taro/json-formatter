@@ -1,6 +1,6 @@
 // Implements: CMP-Notice bar placement (progress / info / error). At most one bar, newest wins,
 // progress has priority; bars are live regions (errors assertive); dismiss with
-// COPY-action.dismiss or Escape when focused. Toasts arrive with F-007.
+// COPY-action.dismiss or Escape when focused. Toasts: Toasts.tsx (F-007).
 import { t } from '../../copy';
 import type { AppController } from '../controller';
 import { Icon } from './Icon';
