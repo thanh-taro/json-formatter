@@ -8,6 +8,23 @@
 /** ENT-IndentStyle (RULE-01): 1–8 spaces, or one tab. */
 export type IndentStyle = { kind: 'spaces'; width: number } | { kind: 'tab' };
 
+/** Widths of a spaces indent (RULE-01). */
+export const MIN_INDENT_WIDTH = 1;
+export const MAX_INDENT_WIDTH = 8;
+const DEFAULT_INDENT_WIDTH = 2;
+
+/**
+ * Implements: RULE-01 — a valid ENT-IndentStyle from any input: a spaces width that is not a
+ * number falls back to the default 2; otherwise it is truncated to an integer and clamped to 1–8.
+ * Every re-indent entry point goes through this (a width of NaN would strip all indentation).
+ */
+export function indentStyle(style: IndentStyle): IndentStyle {
+  if (style.kind === 'tab') return { kind: 'tab' };
+  const w = Number(style.width);
+  if (!Number.isFinite(w)) return { kind: 'spaces', width: DEFAULT_INDENT_WIDTH };
+  return { kind: 'spaces', width: Math.min(MAX_INDENT_WIDTH, Math.max(MIN_INDENT_WIDTH, Math.trunc(w))) };
+}
+
 /** The detected source unit of RULE-09. */
 export interface SourceUnit {
   /** True when the unit is one tab (more indented lines start with a tab than with a space). */
@@ -28,6 +45,8 @@ export interface IndentStats {
   spaceCounts: Map<number, number>;
   /** Total tabs in the indentation of non-blank lines. */
   tabs: number;
+  /** Non-blank lines whose indentation has a tab after a space (conversion reorders them). */
+  spaceBeforeTab: number;
 }
 
 const SPACE = 32;
@@ -48,7 +67,10 @@ export class IndentScanner {
     increases: new Map(),
     spaceCounts: new Map(),
     tabs: 0,
+    spaceBeforeTab: 0,
   };
+  /** A tab followed a space in the current line's indentation. */
+  private reordered = false;
   /** Inside the leading indentation of the current line. */
   private inIndent = true;
   private first = 0;
@@ -66,7 +88,10 @@ export class IndentScanner {
         if (c === SPACE || c === TAB) {
           if (this.t + this.s === 0) this.first = c;
           if (c === SPACE) this.s++;
-          else this.t++;
+          else {
+            if (this.s) this.reordered = true;
+            this.t++;
+          }
           i++;
           continue;
         }
@@ -93,6 +118,7 @@ export class IndentScanner {
       else st.spaceStarts++;
     }
     st.tabs += this.t;
+    if (this.reordered) st.spaceBeforeTab++;
     if (this.s > 0) bump(st.spaceCounts, this.s);
     if (this.prev >= 0 && this.s > this.prev) bump(st.increases, this.s - this.prev);
     this.prev = this.s;
@@ -102,6 +128,7 @@ export class IndentScanner {
     this.inIndent = true;
     this.t = 0;
     this.s = 0;
+    this.reordered = false;
   }
 
   end(): IndentStats {
@@ -134,7 +161,24 @@ function convert(t: number, s: number, unit: SourceUnit): { units: number; rest:
   return { units: t + Math.floor(s / unit.spaces), rest: s % unit.spaces };
 }
 
-const widthOf = (target: IndentStyle) => (target.kind === 'tab' ? 1 : target.width);
+const widthOf = (target: IndentStyle) => {
+  const t = indentStyle(target);
+  return t.kind === 'tab' ? 1 : t.width;
+};
+
+/**
+ * True when converting would give back exactly the same text (e.g. a 2-space document
+ * re-indented to 2 spaces): then nothing changes and no undo step is taken (review m6).
+ */
+export function reindentIsNoop(stats: IndentStats, unit: SourceUnit, target: IndentStyle): boolean {
+  if (stats.spaceBeforeTab > 0) return false;
+  const t = indentStyle(target);
+  if (t.kind === 'spaces') return stats.tabs === 0 && unit.spaces === t.width;
+  // to tabs: tabs stay tabs; spaces stay only while fewer than one unit
+  if (unit.spaces === null) return true;
+  for (const s of stats.spaceCounts.keys()) if (s >= unit.spaces) return false;
+  return true;
+}
 
 /**
  * Change in length (UTF-16 units = UTF-8 bytes: indentation is ASCII) of the re-indented text,
@@ -169,7 +213,8 @@ export class Reindenter {
     private readonly unit: SourceUnit,
     target: IndentStyle,
   ) {
-    this.unitText = target.kind === 'tab' ? '\t' : ' '.repeat(target.width);
+    const t = indentStyle(target);
+    this.unitText = t.kind === 'tab' ? '\t' : ' '.repeat(t.width);
   }
 
   private prefix(): string {

@@ -4,7 +4,7 @@
 // actions arrive with F-002…F-010.
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../../copy';
-import type { IndentStyle } from '../../core';
+import { indentStyle, type IndentStyle } from '../../core';
 import type { AppController } from '../controller';
 import { Icon } from './Icon';
 
@@ -17,7 +17,8 @@ const indentValue = (s: IndentStyle) => (s.kind === 'tab' ? 'tab' : String(s.wid
 export function Toolbar({ app }: { app: AppController }) {
   const onIndent = (e: Event) => {
     const v = (e.currentTarget as HTMLSelectElement).value;
-    app.state.indent.value = v === 'tab' ? { kind: 'tab' } : { kind: 'spaces', width: Number(v) };
+    // RULE-01: validated at the boundary (review MJ-1); the custom 1–8 option arrives with F-002.
+    app.state.indent.value = indentStyle(v === 'tab' ? { kind: 'tab' } : { kind: 'spaces', width: Number(v) });
   };
   const empty = app.state.doc.value.empty;
   const busy = app.blocked();

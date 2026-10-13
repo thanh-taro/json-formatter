@@ -68,8 +68,9 @@ export type FromWorker =
   | { type: 'blob'; jobId: number; blob: Blob }
   /** The result of a `validate` job for `version` (MOD-Worker `validation(version, result)`). */
   | { type: 'validation'; jobId: number; version: number; result: ValidationResult }
-  /** Re-indent detection result: the unit and the change in length of the result (F-004.R7). */
-  | { type: 'reindentPlan'; jobId: number; version: number; unit: SourceUnit; delta: number }
+  /** Re-indent detection result: the unit, the change in length of the result (F-004.R7), and
+   * whether the result would be identical to the document (`unchanged`). */
+  | { type: 'reindentPlan'; jobId: number; version: number; unit: SourceUnit; delta: number; unchanged: boolean }
   /** No line of the document is indented (F-004.R5): nothing to change. */
   | { type: 'notIndented'; jobId: number }
   | { type: 'failed'; jobId: number; reason: FailReason; detail?: string }

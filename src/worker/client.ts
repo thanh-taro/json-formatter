@@ -27,7 +27,7 @@ export type JobResult =
   | { type: 'blob'; blob: Blob }
   | { type: 'validation'; version: number; result: ValidationResult }
   /** Re-indent detection (F-004): the unit and the change in length, or nothing indented. */
-  | { type: 'reindentPlan'; version: number; unit: SourceUnit; delta: number }
+  | { type: 'reindentPlan'; version: number; unit: SourceUnit; delta: number; unchanged: boolean }
   | { type: 'notIndented' };
 
 export interface Job {
@@ -68,7 +68,7 @@ function resultOf(msg: Extract<FromWorker, { type: JobResult['type'] }>): JobRes
     case 'validation':
       return { type: 'validation', version: msg.version, result: msg.result };
     case 'reindentPlan':
-      return { type: 'reindentPlan', version: msg.version, unit: msg.unit, delta: msg.delta };
+      return { type: 'reindentPlan', version: msg.version, unit: msg.unit, delta: msg.delta, unchanged: msg.unchanged };
     case 'notIndented':
       return { type: 'notIndented' };
   }

@@ -3,11 +3,11 @@
 // once, and the worker ↔ editor wiring (architecture.md "Load" data flow).
 import { formatCount, formatSize, hintFor, t, tCount } from '../copy';
 import {
+  indentStyle,
   isLargeTier,
   tierOf,
   type Issue,
   type LineEnding,
-  type SourceUnit,
   type Tier,
   type ValidationResult,
 } from '../core';
@@ -468,45 +468,47 @@ export class AppController {
   async reindent(): Promise<void> {
     if (this.blocked() || !this.editor || this.editor.isEmpty) return;
     const ed = this.editor;
-    const target = this.state.indent.value;
+    // RULE-01: an invalid width (NaN, < 1, > 8, fractional) never reaches the re-indenter.
+    const target = indentStyle(this.state.indent.value);
     const version = ed.version;
-    let plan: { unit: SourceUnit; delta: number } | null = null;
-    let none = false;
-    // Pass 1: detection (its share of the progress bar: the first quarter).
-    const planned = await this.run('progress.formatting', async (busy) => {
-      const job = this.worker.run(
+    const eol = ed.lineEnding;
+    const sourceName = ed.sourceName;
+    // Review m-1: both passes (and the confirmation between them) run as one busy operation,
+    // so the progress bar and cancel stay continuous.
+    await this.run('progress.formatting', async (busy) => {
+      // Pass 1: detection (the first quarter of the progress bar).
+      const planJob = this.worker.run(
         { kind: 'reindentPlan', version, target },
         { onProgress: (f) => busy.progress(f / 4) },
       );
-      busy.onCancel(() => job.cancel());
-      const r = await job.result;
-      if (r.type === 'notIndented') none = true;
-      else if (r.type === 'reindentPlan') plan = { unit: r.unit, delta: r.delta };
-      else throw new JobFailure('internal', `unexpected ${r.type}`);
-    });
-    if (!planned) return;
-    if (none || !plan) {
-      this.showBar({ kind: 'info', id: 'notice.no_indent', text: t('notice.no_indent') });
-      return;
-    }
-    const { unit, delta } = plan as { unit: SourceUnit; delta: number };
-    // Implements: F-004.R7 / RULE-02 — a result over 100 MB is confirmed first.
-    const bytesAfter = ed.bytes + delta;
-    if (tierOf(bytesAfter) === 'very-large' && !(await this.confirmVeryLarge(bytesAfter))) return;
-    if (this.editor !== ed || ed.version !== version) return;
-    const eol = ed.lineEnding;
-    const sourceName = ed.sourceName;
-    await this.run('progress.formatting', async (busy) => {
+      busy.onCancel(() => planJob.cancel());
+      const r = await planJob.result;
+      if (r.type === 'notIndented') {
+        this.showBar({ kind: 'info', id: 'notice.no_indent', text: t('notice.no_indent') });
+        return;
+      }
+      if (r.type !== 'reindentPlan') throw new JobFailure('internal', `unexpected ${r.type}`);
+      // Review m-6: an identical result changes nothing and takes no undo step.
+      if (r.unchanged) return;
+      // Implements: F-004.R7 / RULE-02 — a result over 100 MB is confirmed first.
+      const bytesAfter = ed.bytes + r.delta;
+      if (tierOf(bytesAfter) === 'very-large') {
+        const asking = this.confirmVeryLarge(bytesAfter);
+        busy.onCancel(() => this.state.confirm.value?.answer(false));
+        if (!(await asking)) throw new Cancelled();
+      }
+      if (this.editor !== ed || ed.version !== version) throw new Cancelled();
+      // Pass 2: conversion into a pending document, committed as one undo step.
       const pending = ed.beginReplace('reindent');
-      const total = Math.max(1, ed.bytes + delta);
+      const total = Math.max(1, bytesAfter);
       const job = this.worker.run(
-        { kind: 'reindent', version, target, unit },
+        { kind: 'reindent', version, target, unit: r.unit },
         {
           onChunk: (text) => this.append(pending, job, text),
           onProgress: (f) => busy.progress(0.25 + 0.75 * Math.min(f, pending.appended / total)),
         },
       );
-      await this.feed(job, pending, busy, (r) => keepLineEnding(loadedFacts(r), eol), { sourceName });
+      await this.feed(job, pending, busy, (res) => keepLineEnding(loadedFacts(res), eol), { sourceName });
     });
     this.editor?.focus();
   }

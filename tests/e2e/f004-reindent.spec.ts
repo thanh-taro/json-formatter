@@ -178,13 +178,62 @@ test.describe('F-004 re-indent', () => {
     await page.mouse.wheel(0, 4000);
     await expect.poll(() => page.locator('.cm-scroller').evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
     await reportShot(page, 'F-004/progress.png');
+    // review MJ-2: cancel during the conversion pass (detection is the first 25 %), once text
+    // has already been streamed into the pending document
+    await expect
+      .poll(async () => Number(await page.getByRole('progressbar').getAttribute('aria-valuenow')), {
+        timeout: 60_000,
+        intervals: [50],
+      })
+      .toBeGreaterThanOrEqual(40);
     await bar.getByRole('button', { name: COPY['action.cancel'] }).click();
     await waitIdle(page);
     await expect(bar).toBeHidden();
-    await expect(page.locator('.cm-line').first()).toHaveText('[');
     await page.locator('.cm-scroller').evaluate((el) => (el.scrollTop = 0));
+    await expect(page.locator('.cm-line').first()).toHaveText('[');
     await expect(page.locator('.cm-line').nth(1)).toHaveText('  {"fixture": "reindent"},');
     await expect(app(page)).toHaveAttribute('data-bytes', String(50 * MB));
+    // no undo entry was taken: one undo takes back the load itself
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+z');
+    await waitIdle(page);
+    await expect(app(page)).toHaveAttribute('data-bytes', '0', { timeout: 60_000 });
+  });
+
+  test('F-004.R2 RULE-17 review m-2 a CRLF document keeps CRLF line endings after re-indenting', async ({ page }) => {
+    await start(page);
+    const src = '[\r\n  1,\r\n  [\r\n    2\r\n  ]\r\n]\r\n';
+    const out = '[\r\n    1,\r\n    [\r\n        2\r\n    ]\r\n]\r\n';
+    await openFile(page, { name: 'crlf.json', mimeType: 'application/json', buffer: Buffer.from(src) });
+    await waitIdle(page);
+    await expect(app(page)).toHaveAttribute('data-line-ending', 'crlf');
+    await reindent(page, '4');
+    await expect.poll(() => docText(page)).toBe(out.replace(/\r\n/g, '\n').replace(/\n$/, '\n'));
+    await expect(app(page)).toHaveAttribute('data-line-ending', 'crlf');
+    await expect(app(page)).toHaveAttribute('data-bytes', String(Buffer.byteLength(out)));
+    await expect(app(page)).toHaveAttribute('data-source-name', 'crlf.json');
+  });
+
+  test('F-004.R2 review m-6 a re-indent that changes nothing takes no undo step and shows no notice', async ({
+    page,
+  }) => {
+    await start(page);
+    const src = '[\n  1,\n  [\n    2\n  ]\n]';
+    await setDoc(page, src);
+    await reindent(page, '2');
+    await waitIdle(page);
+    await expect.poll(() => docText(page)).toBe(src);
+    await expect(page.locator('[data-notice-id]')).toHaveCount(0);
+    // a real re-indent next: undoing it returns to the paste, and one more undo empties the
+    // document — had the no-op taken a step, the second undo would still show the paste
+    await reindent(page, '4');
+    await expect.poll(() => docText(page)).toBe('[\n    1,\n    [\n        2\n    ]\n]');
+    await waitIdle(page);
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect.poll(() => docText(page)).toBe(src);
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect.poll(() => docText(page)).toBe('');
   });
 
   test('F-004.AC8 RULE-02 a result over 100 MB asks first; Cancel changes nothing', async ({ page }) => {

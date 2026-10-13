@@ -2,7 +2,16 @@
 // no increase), conversion (tabs, spaces, leftover spaces, mixed runs), blank lines, invalid
 // documents, chunking, and the size prediction used for the RULE-02 check (F-004.R7).
 import { describe, expect, it } from 'vitest';
-import { detectUnit, IndentScanner, Reindenter, reindentDelta, reindentText, type IndentStyle } from '../../src/core';
+import {
+  detectUnit,
+  IndentScanner,
+  indentStyle,
+  Reindenter,
+  reindentDelta,
+  reindentIsNoop,
+  reindentText,
+  type IndentStyle,
+} from '../../src/core';
 
 const TAB: IndentStyle = { kind: 'tab' };
 const sp = (width: number): IndentStyle => ({ kind: 'spaces', width });
@@ -81,8 +90,57 @@ describe('RULE-09 re-indent', () => {
   });
 
   it('RULE-09 blank lines are skipped when comparing consecutive lines', () => {
-    // 0 → (blank) → 3: the increase is 3, not 0 → 3 via the blank line's 6 spaces
-    expect(unitOf('a\n      \n   b\n      c')).toEqual({ tab: false, spaces: 3 });
+    // skipped: 0 → 3 gives N = 3; counted, 0 → 2 → 3 would tie 2 and 1 and give N = 1
+    expect(unitOf('a\n  \n   b')).toEqual({ tab: false, spaces: 3 });
+    // a blank line of tabs does not count as a tab-indented line either
+    expect(unitOf('a\n\t\n\t\n  b')).toEqual({ tab: false, spaces: 2 });
+  });
+
+  it('RULE-09 spaces on lines that also have tabs count in the leading-space count', () => {
+    expect(unitOf('[\n\t  1\n]')).toEqual({ tab: true, spaces: 2 });
+    expect(reindentText('[\n\t  1\n]', sp(4))?.text).toBe('[\n        1\n]');
+  });
+
+  it('RULE-09 "starts with a tab" looks at the first character of the indentation only', () => {
+    // two lines start with a space (and contain a tab), one starts with a tab → spaces unit
+    const src = 'a\n  \tb\n  \tc\n\td';
+    expect(unitOf(src)).toEqual({ tab: false, spaces: 2 });
+    expect(reindentText(src, TAB)?.text).toBe('a\n\t\tb\n\t\tc\n\td');
+  });
+
+  it('RULE-01 review MJ-1 invalid spaces widths are clamped to 1–8 (NaN → 2), never stripping indentation', () => {
+    expect(indentStyle({ kind: 'spaces', width: Number.NaN })).toEqual(sp(2));
+    expect(indentStyle({ kind: 'spaces', width: Infinity })).toEqual(sp(2));
+    expect(indentStyle({ kind: 'spaces', width: 0 })).toEqual(sp(1));
+    expect(indentStyle({ kind: 'spaces', width: -3 })).toEqual(sp(1));
+    expect(indentStyle({ kind: 'spaces', width: 12 })).toEqual(sp(8));
+    expect(indentStyle({ kind: 'spaces', width: 3.7 })).toEqual(sp(3));
+    expect(indentStyle({ kind: 'spaces', width: 5 })).toEqual(sp(5));
+    expect(indentStyle(TAB)).toEqual(TAB);
+    // the re-indenter itself applies the same validation
+    expect(reindentText('[\n  1\n]', sp(Number.NaN))?.text).toBe('[\n  1\n]');
+    expect(reindentText('[\n  1\n]', sp(0))?.text).toBe('[\n 1\n]');
+    expect(reindentText('[\n  1\n]', sp(20))?.text).toBe('[\n        1\n]');
+    const scan = new IndentScanner();
+    scan.feed('[\n  1\n]');
+    const stats = scan.end();
+    expect(reindentDelta(stats, detectUnit(stats)!, sp(Number.NaN))).toBe(0);
+  });
+
+  it('review m-6 an identical result is recognised as a no-op', () => {
+    const noop = (src: string, target: IndentStyle) => {
+      const scan = new IndentScanner();
+      scan.feed(src);
+      const stats = scan.end();
+      return reindentIsNoop(stats, detectUnit(stats)!, target);
+    };
+    expect(noop('[\n  1,\n  [\n    2\n  ]\n]', sp(2))).toBe(true);
+    expect(noop('[\n  1,\n  [\n    2\n  ]\n]', sp(4))).toBe(false);
+    expect(noop('[\n\t1,\n\t\t2\n]', TAB)).toBe(true);
+    expect(noop('[\n\t1,\n\t\t 2\n]', TAB)).toBe(false); // N = 1: the space becomes a tab
+    expect(noop('[\n\t1,\n\t\t2\n  3\n]', TAB)).toBe(false); // 2 spaces become a tab
+    expect(noop('[\n  \t1,\n  2\n]', TAB)).toBe(false); // reordered
+    expect(noop('[\n  1,\n\t2\n]', sp(2))).toBe(false); // a tab becomes spaces
   });
 
   it('RULE-09 a tab unit still computes N from space-indented lines and converts them', () => {

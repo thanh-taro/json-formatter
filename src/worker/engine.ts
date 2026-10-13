@@ -7,7 +7,9 @@ import {
   detectUnit,
   IndentScanner,
   Reindenter,
+  indentStyle,
   reindentDelta,
+  reindentIsNoop,
   isLargeTier,
   LineBreakScanner,
   tierOf,
@@ -477,8 +479,9 @@ export class WorkerEngine {
    * in length of the result for `target` (so the RULE-02 check can run before converting,
    * F-004.R7), or `notIndented` when no line is indented.
    */
-  private async reindentPlan(jobId: number, version: number, target: IndentStyle): Promise<void> {
+  private async reindentPlan(jobId: number, version: number, style: IndentStyle): Promise<void> {
     try {
+      const target = indentStyle(style); // RULE-01: never an invalid width (review MJ-1)
       if (version !== this.version) throw new Superseded('document changed');
       const doc = this.mirror;
       const total = Math.max(1, doc.length);
@@ -498,7 +501,15 @@ export class WorkerEngine {
       const stats = scan.end();
       const unit = detectUnit(stats);
       if (!unit) this.post({ type: 'notIndented', jobId });
-      else this.post({ type: 'reindentPlan', jobId, version, unit, delta: reindentDelta(stats, unit, target) });
+      else
+        this.post({
+          type: 'reindentPlan',
+          jobId,
+          version,
+          unit,
+          delta: reindentDelta(stats, unit, target),
+          unchanged: reindentIsNoop(stats, unit, target),
+        });
     } catch (e) {
       this.fail(jobId, e);
     }
@@ -509,8 +520,9 @@ export class WorkerEngine {
    * `version` into a pending mirror (adopted on commit, INV-03) and streams the text to the main
    * thread at the end of each slice; only leading indentation changes.
    */
-  private async reindent(jobId: number, version: number, target: IndentStyle, unit: SourceUnit): Promise<void> {
+  private async reindent(jobId: number, version: number, style: IndentStyle, unit: SourceUnit): Promise<void> {
     try {
+      const target = indentStyle(style);
       this.pending = null;
       if (version !== this.version) throw new Superseded('document changed');
       const doc = this.mirror;

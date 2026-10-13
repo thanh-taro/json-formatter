@@ -3,6 +3,7 @@
 import { ChangeSet } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
 import { WorkerEngine } from '../../src/worker/engine';
+import { reindentText } from '../../src/core';
 import type { FromWorker, JobSpec } from '../../src/worker/protocol';
 
 function harness(text: string) {
@@ -42,6 +43,7 @@ describe('MOD-Worker re-indent', () => {
       version: 1,
       unit: { tab: false, spaces: 4 },
       delta: -12,
+      unchanged: false,
     });
     const conv = h.start({ kind: 'reindent', version: 1, target: { kind: 'tab' }, unit: { tab: false, spaces: 4 } });
     await h.engine.idle();
@@ -83,5 +85,40 @@ describe('MOD-Worker re-indent', () => {
     const plan = h.start({ kind: 'reindentPlan', version: 0, target: FOUR });
     await h.engine.idle();
     expect(h.last(plan)).toMatchObject({ type: 'failed', reason: 'cancelled' });
+  });
+
+  it('review m-5 a text over several slices ending in a whitespace-only line converts exactly', async () => {
+    const src = '[\n' + '    {"k": [1, 2]},\n\t  "x",\n\n'.repeat(60_000) + '    0\n]\n   ';
+    expect(src.length).toBeGreaterThan(1 << 20);
+    const h = harness(src);
+    const plan = h.start({ kind: 'reindentPlan', version: 1, target: TWO });
+    await h.engine.idle();
+    const p = h.last(plan);
+    if (p?.type !== 'reindentPlan') throw new Error(`plan: ${p?.type}`);
+    const conv = h.start({ kind: 'reindent', version: 1, target: TWO, unit: p.unit });
+    await h.engine.idle();
+    const expected = reindentText(src, TWO)!.text;
+    expect(h.text(conv)).toBe(expected);
+    expect(h.text(conv).endsWith('\n   ')).toBe(true);
+    expect(p.delta).toBe(expected.length - src.length);
+  });
+
+  it('review m-6 a plan whose result equals the document is flagged unchanged', async () => {
+    const h = harness('[\n  1,\n  [\n    2\n  ]\n]');
+    const plan = h.start({ kind: 'reindentPlan', version: 1, target: TWO });
+    await h.engine.idle();
+    expect(h.last(plan)).toMatchObject({ type: 'reindentPlan', unchanged: true, delta: 0 });
+  });
+
+  it('RULE-01 review MJ-1 an invalid width reaching the worker is clamped, never stripping indentation', async () => {
+    const h = harness('[\n  1\n]');
+    const conv = h.start({
+      kind: 'reindent',
+      version: 1,
+      target: { kind: 'spaces', width: Number.NaN },
+      unit: { tab: false, spaces: 2 },
+    });
+    await h.engine.idle();
+    expect(h.text(conv)).toBe('[\n  1\n]');
   });
 });
