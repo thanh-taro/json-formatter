@@ -3,7 +3,10 @@
 // our rules. Files are decoded like a loaded file (fatal UTF-8 keeping a BOM, RULE-13): bytes
 // that are not UTF-8 are rejected on load and never reach the validator. Skips when the corpus
 // is not fetched (`pnpm fixtures:jsontestsuite`).
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Thousands of generated cases: allow for a busy machine (the 5 s default is for unit tests).
+vi.setConfig({ testTimeout: 60_000 });
 import { validateText } from '../../src/core';
 import { hasCorpus, loadCorpus } from '../support/jsontestsuite';
 
@@ -73,7 +76,8 @@ const IMPLEMENTATION: Record<string, Outcome> = {
 if (process.env['CI'] && !hasCorpus()) throw new Error('JSONTestSuite corpus missing: run pnpm fixtures:jsontestsuite');
 
 describe.skipIf(!hasCorpus())('NFR-08 JSONTestSuite conformance', () => {
-  const cases = loadCorpus();
+  // Vitest collects a skipped describe's body too: do not read a missing corpus (review F-010 M2).
+  const cases = hasCorpus() ? loadCorpus() : [];
 
   it('NFR-08 every y_ case is accepted', () => {
     const accept = cases.filter((c) => c.expect === 'accept');

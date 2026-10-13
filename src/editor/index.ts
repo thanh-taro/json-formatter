@@ -1,9 +1,18 @@
 // MOD-Editor — editor engine in a shadow root, tiers, chunked commit, undo history (ADR-0004,
-// ADR-0006), issue marks and jump to a position (F-005). Find (F-010) plugs in later.
+// ADR-0006), issue marks and jump to a position (F-005), the find engine (F-010).
 import { bracketMatching, syntaxHighlighting } from '@codemirror/language';
 import { json } from '@codemirror/lang-json';
 import { defaultKeymap } from '@codemirror/commands';
-import { Annotation, ChangeSet, Compartment, EditorState, Text, Transaction, type Extension } from '@codemirror/state';
+import {
+  Annotation,
+  ChangeSet,
+  Compartment,
+  EditorSelection,
+  EditorState,
+  Text,
+  Transaction,
+  type Extension,
+} from '@codemirror/state';
 import {
   EditorView,
   drawSelection,
@@ -31,10 +40,13 @@ import { ColumnIndex } from './column';
 import { issueMarks, issuePosition, issuesEffect, type IssueMark } from './issues';
 import { createPending, type Pending } from './pending';
 import { editorTheme, jsonHighlight } from './theme';
+import { FindSession, type FindHost } from './find';
+import { findHighlight, findRefresh } from './find-view';
 
 export type { DocFacts, Snapshot, ToolKind } from './history';
 export type { IssueMark } from './issues';
 export { DiscardedError } from './pending';
+export type { FindSession, FindStatus } from './find';
 
 /** Typed input on lines at least this long is applied directly (ADR-0004 direct-input handler). */
 export const LONG_LINE = 100_000;
@@ -95,6 +107,8 @@ export interface EditorOptions {
   onHistoryKey?: (direction: 'undo' | 'redo') => void;
   /** RULE-15: history older than the last 3 tool operations was dropped. */
   onHistoryTrimmed?: () => void;
+  /** F-010.R1: the platform find shortcut was pressed while the editor has focus. */
+  onFindKey?: () => void;
 }
 
 export type ReplaceFacts = LoadedFacts & { sourceName?: string | null };
@@ -142,6 +156,11 @@ export interface EditorHandle {
   select(from: number, to: number): void;
   /** Where issue `index` of the marked result is now (mapped through later edits, INV-05). */
   issuePosition(index: number): number | null;
+  /**
+   * Implements: F-010.R2–R6 — starts finding `term` (RULE-18) from the cursor; replaces any
+   * previous session. The session recounts whenever the document changes.
+   */
+  find(term: string, options: { matchCase: boolean }): FindSession;
   destroy(): void;
 }
 
@@ -234,7 +253,11 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     { key: 'Mod-z', run: () => (options.onHistoryKey?.('undo'), true), preventDefault: true },
     { key: 'Mod-Shift-z', run: () => (options.onHistoryKey?.('redo'), true), preventDefault: true },
     { key: 'Mod-y', run: () => (options.onHistoryKey?.('redo'), true), preventDefault: true },
+    // Implements: F-010.R1 — the platform find shortcut while the editor has focus (platform-mapping).
+    { key: 'Mod-f', run: () => (options.onFindKey?.(), true), preventDefault: true },
   ]);
+  /** The open find session, if any (F-010). */
+  let findSession: FindSession | null = null;
 
   /**
    * Implements: F-001.R4 (large paste path), RULE-02, RULE-17 for pastes and external text drops
@@ -317,6 +340,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
         tierConf.of(tierExtension('normal', false)),
         busyConf.of([]),
         issueMarks,
+        findHighlight(() => findSession),
         EditorView.updateListener.of((u) => {
           if (u.docChanged) columns.update(u.changes, u.state.doc);
           if (u.docChanged || u.selectionSet) reportCursor(u.state);
@@ -325,6 +349,8 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     }),
     dispatchTransactions(trs: readonly Transaction[], v: EditorView) {
       v.update(trs);
+      // F-010 edge case: the document changed while find is open → recount.
+      if (findSession && trs.some((tr) => tr.docChanged)) findSession.restart();
       let userEdit = false;
       for (const tr of trs) {
         if (!tr.docChanged) continue;
@@ -660,7 +686,52 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
       });
       view.focus();
     },
+    find(term, { matchCase }) {
+      // the new session redraws the highlights once it knows its first match (review F-010 m2)
+      const previous = findSession;
+      findSession = null;
+      previous?.close(true);
+      const host: FindHost = {
+        doc: () => view.state.doc,
+        cursor: () => view.state.selection.main.from,
+        select(from, to) {
+          // F-010.R2: selected and scrolled into view; centred only when it is off screen.
+          const at = view.coordsAtPos(from);
+          const box = view.scrollDOM.getBoundingClientRect();
+          const onScreen = !!at && at.top >= box.top && at.bottom <= box.bottom;
+          view.dispatch({
+            selection: EditorSelection.single(from, to),
+            effects: EditorView.scrollIntoView(EditorSelection.range(from, to), { y: onScreen ? 'nearest' : 'center' }),
+          });
+        },
+        refresh: () => view.dispatch({ effects: findRefresh.of(null) }),
+        schedule(fn) {
+          let live = true;
+          const ch = new MessageChannel();
+          ch.port1.onmessage = () => {
+            ch.port1.close();
+            if (live) fn();
+          };
+          ch.port2.postMessage(0);
+          return () => {
+            live = false;
+            ch.port1.close();
+          };
+        },
+        now: () => performance.now(),
+      };
+      // closing forgets the session, so its decorations go
+      host.closed = () => {
+        if (findSession === session) findSession = null;
+      };
+      const session = new FindSession(host, term, { matchCase });
+      findSession = session;
+      // started after the caller has attached its listeners (MOD-Editor public surface)
+      queueMicrotask(() => session.start(true));
+      return session;
+    },
     destroy() {
+      findSession?.close();
       columns.reset();
       resize.disconnect();
       view.destroy();

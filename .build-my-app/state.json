@@ -53,7 +53,7 @@
     "build": {
       "title": "4 Implementation",
       "status": "in_progress",
-      "step": "4 wave 3: F-002+F-003 | F-004 | F-007 | F-010 building",
+      "step": "4 wave 3 finishing (F-004 sync, F-010 fixes) + wave 4 building (F-006, F-011)",
       "gate": {
         "status": "pending",
         "at": null,
@@ -574,9 +574,10 @@
     "build-F-004": {
       "round": 1,
       "max": 3,
-      "active": true,
+      "active": false,
       "started": "2026-10-13T15:16:09+00:00",
-      "outcome": null
+      "outcome": "converged",
+      "ended": "2026-10-13T15:57:22+00:00"
     },
     "build-F-007": {
       "round": 1,
@@ -597,8 +598,16 @@
     "build-F-010": {
       "round": 1,
       "max": 3,
-      "active": true,
+      "active": false,
       "started": "2026-10-13T15:43:10+00:00",
+      "outcome": "converged",
+      "ended": "2026-10-13T16:26:31+00:00"
+    },
+    "build-F-011": {
+      "round": 1,
+      "max": 3,
+      "active": true,
+      "started": "2026-10-13T16:08:51+00:00",
       "outcome": null
     }
   },
@@ -1170,9 +1179,25 @@
     {
       "at": "2026-10-13T15:43:10+00:00",
       "event": "loop build-F-010 started (max 3)"
+    },
+    {
+      "at": "2026-10-13T15:47:24+00:00",
+      "event": "build step: 4 wave 3 finishing (F-004 sync, F-010 fixes) + wave 4 building (F-006, F-011)"
+    },
+    {
+      "at": "2026-10-13T15:57:22+00:00",
+      "event": "loop build-F-004 ended: converged"
+    },
+    {
+      "at": "2026-10-13T16:08:51+00:00",
+      "event": "loop build-F-011 started (max 3)"
+    },
+    {
+      "at": "2026-10-13T16:26:31+00:00",
+      "event": "loop build-F-010 ended: converged"
     }
   ],
-  "updated": "2026-10-13T15:43:10+00:00",
+  "updated": "2026-10-13T16:26:31+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

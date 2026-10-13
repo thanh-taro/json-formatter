@@ -1,7 +1,7 @@
 ---
 id: F-010
 title: Find text in the document
-status: ready
+status: shipped
 milestone: M-1
 priority: P1
 personas: [PER-01]

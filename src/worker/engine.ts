@@ -4,6 +4,12 @@
 // (`post` is injected) so it runs under Vitest in Node as well as in the module worker.
 import { ChangeSet } from '@codemirror/state';
 import {
+  detectUnit,
+  IndentScanner,
+  Reindenter,
+  indentStyle,
+  reindentDelta,
+  reindentIsNoop,
   isLargeTier,
   LineBreakScanner,
   tierOf,
@@ -15,8 +21,10 @@ import {
   GROUP,
   type ContainerRef,
   type FormatMode,
+  type IndentStyle,
   type LineEnding,
   type SkipTable,
+  type SourceUnit,
   type ValidationOutcome,
 } from '../core';
 import { Mirror, MirrorBuilder } from './mirror';
@@ -70,25 +78,27 @@ function yieldTick(): Promise<void> {
 
 /** Time-slice bookkeeping for one job. */
 class Slicer {
-  private start = performance.now();
+  private start: number;
   private units = 0;
   constructor(
     private readonly engine: WorkerEngine,
     private readonly jobId: number,
     private readonly onSliceEnd: () => void,
     private readonly stale: () => boolean = () => false,
-  ) {}
+  ) {
+    this.start = engine.now();
+  }
 
   /** Call after each unit of work; yields at the end of a slice (≤ 16 ms or ≤ 1 MB of input). */
   async step(units: number, fraction: () => number): Promise<void> {
     this.units += units;
-    if (performance.now() - this.start < SLICE_MS && this.units < SLICE_UNITS) return;
+    if (this.engine.now() - this.start < SLICE_MS && this.units < SLICE_UNITS) return;
     this.onSliceEnd();
     this.engine.post({ type: 'progress', jobId: this.jobId, fraction: fraction() });
     await yieldTick();
     this.engine.throwIfCancelled(this.jobId);
     if (this.stale()) throw new Superseded('document changed');
-    this.start = performance.now();
+    this.start = this.engine.now();
     this.units = 0;
   }
 }
@@ -200,7 +210,14 @@ export class WorkerEngine {
   /** Messages that arrive while a re-seed is in flight, applied after its `end` (review M1). */
   private deferred: ToWorker[] = [];
 
-  constructor(readonly post: Post) {}
+  /**
+   * @param now the clock that time slices and format piece sizes are measured with; injectable so
+   *   tests can make slicing deterministic regardless of machine speed.
+   */
+  constructor(
+    readonly post: Post,
+    readonly now: () => number = () => performance.now(),
+  ) {}
 
   throwIfCancelled(jobId: number): void {
     if (this.cancelled.has(jobId)) throw new Cancelled();
@@ -343,6 +360,12 @@ export class WorkerEngine {
         break;
       case 'validate':
         run = () => this.validate(jobId, job.version, job.lineEnding, job.skipTable ?? false);
+        break;
+      case 'reindentPlan':
+        run = () => this.reindentPlan(jobId, job.version, job.target);
+        break;
+      case 'reindent':
+        run = () => this.reindent(jobId, job.version, job.target, job.unit);
         break;
       case 'format':
         run = () => this.format(jobId, job.version, job.mode, job.lineEnding, job.nonBreakBytes);
@@ -495,6 +518,92 @@ export class WorkerEngine {
   }
 
   /**
+   * Implements: F-004.R1, F-004.R3, F-004.R5, F-004.R6, RULE-09 — re-indent pass 1 on the mirror
+   * at `version` (valid or not) in ≤ 16 ms / 1 MB slices: the source unit and the exact change
+   * in length of the result for `target` (so the RULE-02 check can run before converting,
+   * F-004.R7), or `notIndented` when no line is indented.
+   */
+  private async reindentPlan(jobId: number, version: number, style: IndentStyle): Promise<void> {
+    try {
+      const target = indentStyle(style); // RULE-01: never an invalid width (review MJ-1)
+      if (version !== this.version) throw new Superseded('document changed');
+      const doc = this.mirror;
+      const total = Math.max(1, doc.length);
+      const slicer = new Slicer(
+        this,
+        jobId,
+        () => undefined,
+        () => this.version !== version,
+      );
+      const scan = new IndentScanner();
+      let done = 0;
+      for (const piece of pieces(doc.chunks)) {
+        scan.feed(piece);
+        done += piece.length;
+        await slicer.step(piece.length, () => done / total);
+      }
+      const stats = scan.end();
+      const unit = detectUnit(stats);
+      if (!unit) this.post({ type: 'notIndented', jobId });
+      else
+        this.post({
+          type: 'reindentPlan',
+          jobId,
+          version,
+          unit,
+          delta: reindentDelta(stats, unit, target),
+          unchanged: reindentIsNoop(stats, unit, target),
+        });
+    } catch (e) {
+      this.fail(jobId, e);
+    }
+  }
+
+  /**
+   * Implements: F-004.R1, F-004.R2, F-004.R6, RULE-09 — re-indent pass 2: converts the mirror at
+   * `version` into a pending mirror (adopted on commit, INV-03) and streams the text to the main
+   * thread at the end of each slice; only leading indentation changes.
+   */
+  private async reindent(jobId: number, version: number, style: IndentStyle, unit: SourceUnit): Promise<void> {
+    try {
+      const target = indentStyle(style);
+      this.pending = null;
+      if (version !== this.version) throw new Superseded('document changed');
+      const doc = this.mirror;
+      const total = Math.max(1, doc.length);
+      const fwd = new Forwarder(this, jobId);
+      const scan = new LineBreakScanner();
+      const builder = new MirrorBuilder();
+      const slicer = new Slicer(
+        this,
+        jobId,
+        () => fwd.flush(),
+        () => this.version !== version,
+      );
+      const conv = new Reindenter(unit, target);
+      const take = (text: string) => {
+        if (!text) return;
+        scan.feed(text);
+        builder.push(text);
+        fwd.add(text);
+      };
+      let done = 0;
+      for (const piece of pieces(doc.chunks)) {
+        take(conv.feed(piece));
+        done += piece.length;
+        await slicer.step(piece.length, () => done / total);
+      }
+      take(conv.end());
+      fwd.flush();
+      const mirror = builder.finish();
+      this.pending = { jobId, mirror };
+      this.post({ type: 'loaded', jobId, facts: factsOf(scan, mirror.length) });
+    } catch (e) {
+      this.fail(jobId, e);
+    }
+  }
+
+  /**
    * Implements: F-002.R1, F-002.R6, F-003.R1, F-003.R5 (ADR-0005 §2) — beautifies or minifies the
    * mirror at `version` with MOD-Core's formatting validator, in ≤ 16 ms slices that yield so
    * `cancel` gets through. The input is fed in pieces whose size adapts to the time they take, so
@@ -537,9 +646,9 @@ export class WorkerEngine {
       outer: for (const chunk of doc.chunks) {
         for (let at = 0; at < chunk.length;) {
           const part = at === 0 && piece >= chunk.length ? chunk : chunk.slice(at, at + piece);
-          const t0 = performance.now();
+          const t0 = this.now();
           if (!validator.feed(part)) break outer;
-          const ms = performance.now() - t0;
+          const ms = this.now() - t0;
           // ~1–4 ms of work per piece: expansion-heavy input gets small pieces
           if (ms > 4) piece = Math.max(1, piece >> 1);
           else if (ms < 1 && piece < SLICE_UNITS) piece <<= 1;

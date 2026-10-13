@@ -4,7 +4,7 @@
 // must arrive at least every second; otherwise (or on an `error` event) the worker is
 // terminated and restarted, every running job fails with `internal`, and the owner re-seeds
 // the mirror (callers discard their pending documents, INV-03).
-import type { ContainerRef, LineEnding, TreeItem, ValidationResult } from '../core';
+import type { ContainerRef, LineEnding, SourceUnit, TreeItem, ValidationResult } from '../core';
 import type { ChangeSetJSON, FailReason, FromWorker, JobSpec, TextFacts, ToWorker } from './protocol';
 
 export class JobFailure extends Error {
@@ -28,7 +28,10 @@ export type JobResult =
   | { type: 'blob'; blob: Blob }
   | { type: 'validation'; version: number; result: ValidationResult }
   | { type: 'treeRoot'; version: number; root: TreeItem }
-  | { type: 'treeRows'; version: number; rows: TreeItem[] };
+  | { type: 'treeRows'; version: number; rows: TreeItem[] }
+  /** Re-indent detection (F-004): the unit and the change in length, or nothing indented. */
+  | { type: 'reindentPlan'; version: number; unit: SourceUnit; delta: number; unchanged: boolean }
+  | { type: 'notIndented' };
 
 export interface Job {
   readonly jobId: number;
@@ -58,9 +61,8 @@ interface Running {
   reject: (e: JobFailure) => void;
 }
 
-type ResultMessage = Extract<FromWorker, { type: JobResult['type'] }>;
-
-function resultOf(msg: ResultMessage): JobResult {
+/** The job result carried by a final worker message. */
+function resultOf(msg: Extract<FromWorker, { type: JobResult['type'] }>): JobResult {
   switch (msg.type) {
     case 'loaded':
     case 'formatted':
@@ -73,6 +75,10 @@ function resultOf(msg: ResultMessage): JobResult {
       return { type: 'treeRoot', version: msg.version, root: msg.root };
     case 'treeRows':
       return { type: 'treeRows', version: msg.version, rows: msg.rows };
+    case 'reindentPlan':
+      return { type: 'reindentPlan', version: msg.version, unit: msg.unit, delta: msg.delta, unchanged: msg.unchanged };
+    case 'notIndented':
+      return { type: 'notIndented' };
   }
 }
 
@@ -170,7 +176,9 @@ export class WorkerClient {
       case 'blob':
       case 'validation':
       case 'treeRoot':
-      case 'treeRows': {
+      case 'treeRows':
+      case 'reindentPlan':
+      case 'notIndented': {
         const r = this.running.get(msg.jobId);
         this.running.delete(msg.jobId);
         if (r) this.settle(r, resultOf(msg));

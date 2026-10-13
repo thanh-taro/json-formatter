@@ -40,6 +40,7 @@ export {
   DEFAULT_INDENT,
   MIN_CUSTOM_WIDTH,
   MAX_CUSTOM_WIDTH,
+  indentStyle,
   indentText,
   type IndentStyle,
   type FormatMode,
@@ -67,3 +68,13 @@ export {
   type TreeItem,
   type ContainerRef,
 } from './tree';
+export {
+  IndentScanner,
+  Reindenter,
+  detectUnit,
+  reindentDelta,
+  reindentIsNoop,
+  reindentText,
+  type IndentStats,
+  type SourceUnit,
+} from './reindent';

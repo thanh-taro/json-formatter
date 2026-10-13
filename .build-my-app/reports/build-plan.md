@@ -25,3 +25,5 @@ Gate G4: all 11 features shipped, CI green, AC coverage 100% (or listed manual c
 - F-008.AC6/AC7 full-suite re-run (all M-1 features).
 - Real-clipboard copy > 5 s and in WebKit (manual QA if not automatable).
 - Parallel worktree e2e runs collide on ports 4173/4179; make the e2e ports configurable per worktree (env), CI unaffected.
+- Flaky under full-suite load: F-007.AC2 'beautified downloads as orders.json' (passes 5/5 alone) — investigate in QA.
+- Timing assertions in unit tests (editor-column 50 MB < 50 ms) flake under machine load; move to the perf suite or measure CPU time — QA.
