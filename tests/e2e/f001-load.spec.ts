@@ -418,7 +418,7 @@ test.describe('F-001 size tiers (RULE-02)', () => {
     await page.keyboard.type('X');
     // the next job gets no answer: the watchdog restarts the worker, re-seeds, and fails the job
     await openFile(page, { name: 'small.json', mimeType: 'application/json', buffer: Buffer.from('[1]') });
-    await expect(page.getByRole('alert').filter({ hasText: COPY['error.too_large'] })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('alert').filter({ hasText: COPY['error.failed'] })).toBeVisible({ timeout: 10_000 });
     await waitIdle(page);
     await expect(page.locator('.cm-line').first()).toHaveText('X[');
     // the new worker works; its snapshot of the previous (re-seeded) document is exact
@@ -430,6 +430,125 @@ test.describe('F-001 size tiers (RULE-02)', () => {
     await waitIdle(page);
     await expect(page.locator('.cm-line').first()).toHaveText('X[', { timeout: 60_000 });
     await expect(app(page)).toHaveAttribute('data-bytes', String(30 * MB + 1));
+  });
+
+  test('ADR-0005 F-001.R9 a restart in the middle of a re-seed starts the seed over and the mirror stays exact', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    const big = largeFixture('reseed', 30 * MB);
+    await seamWorker(page, { desyncOnSeed: true });
+    await start(page);
+    await openFile(page, big);
+    await expect(app(page)).toHaveAttribute('data-bytes', String(30 * MB), { timeout: 60_000 });
+    await waitIdle(page);
+    await killWorker(page);
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+Home');
+    await page.keyboard.type('Y');
+    await openFile(page, { name: 'small.json', mimeType: 'application/json', buffer: Buffer.from('[1]') });
+    await expect(page.getByRole('alert').filter({ hasText: COPY['error.failed'] })).toBeVisible({ timeout: 10_000 });
+    await waitIdle(page);
+    expect(await page.evaluate(() => (window as unknown as { __workers: Worker[] }).__workers.length)).toBe(3);
+    await openFile(page, { name: 'small.json', mimeType: 'application/json', buffer: Buffer.from('[1]') });
+    await waitIdle(page);
+    await expect.poll(() => docText(page)).toBe('[1]');
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(page.locator('.cm-line').first()).toHaveText('Y[', { timeout: 60_000 });
+    await expect(app(page)).toHaveAttribute('data-bytes', String(30 * MB + 1));
+  });
+
+  test('INV-04 review M2 undo after a failed snapshot keeps the document and drops only that history', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await seamWorker(page, { failExport: true });
+    await start(page);
+    await openFile(page, largeFixture('large', 30 * MB));
+    await expect(app(page)).toHaveAttribute('data-bytes', String(30 * MB), { timeout: 60_000 });
+    await waitIdle(page);
+    await openFile(page, { name: 'small.json', mimeType: 'application/json', buffer: Buffer.from('[1]') });
+    await expect.poll(() => docText(page)).toBe('[1]');
+    await waitIdle(page);
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(page.getByRole('status').filter({ hasText: COPY['notice.undo_trimmed'] })).toBeVisible();
+    await waitIdle(page);
+    await expect.poll(() => docText(page)).toBe('[1]');
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    // nothing older is left to undo
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+z');
+    await waitIdle(page);
+    await expect.poll(() => docText(page)).toBe('[1]');
+  });
+
+  test('INV-04 a worker restart during an undo restore keeps the entry undoable (COPY-error.failed)', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await seamWorker(page, { killOnLoadBlob: true });
+    await start(page);
+    await openFile(page, largeFixture('large', 30 * MB));
+    await expect(app(page)).toHaveAttribute('data-bytes', String(30 * MB), { timeout: 60_000 });
+    await waitIdle(page);
+    await openFile(page, { name: 'small.json', mimeType: 'application/json', buffer: Buffer.from('[1]') });
+    await expect.poll(() => docText(page)).toBe('[1]');
+    await waitIdle(page);
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(page.getByRole('alert').filter({ hasText: COPY['error.failed'] })).toBeVisible({ timeout: 10_000 });
+    await waitIdle(page);
+    await expect.poll(() => docText(page)).toBe('[1]');
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+z');
+    await waitIdle(page);
+    await expect(page.locator('.cm-line').first()).toHaveText('[', { timeout: 60_000 });
+    await expect(app(page)).toHaveAttribute('data-bytes', String(30 * MB));
+  });
+
+  test('F-001.AC9 review B1 cancelling while the final commit waits for the builder keeps the previous document', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'timing-sensitive; measured in Chromium');
+    test.setTimeout(180_000);
+    const file = largeFixture('b1', 95 * MB);
+    await seamWorker(page, { burst: true });
+    await start(page);
+    await paste(page, '{"previous": true}');
+    // Click Cancel from inside the page the moment the worker's result has been delivered while
+    // the main thread is still appending the burst to the pending document.
+    const clicked = page.evaluate(
+      () =>
+        new Promise<number>((resolve) => {
+          const w = window as unknown as { __burstAt?: number };
+          const deadline = performance.now() + 60_000;
+          const poll = () => {
+            if (performance.now() > deadline) return resolve(-1);
+            const button = [...document.querySelectorAll('.tk-notice--progress button')][0] as
+              HTMLButtonElement | undefined;
+            if (w.__burstAt !== undefined && button) {
+              const t0 = performance.now();
+              button.click();
+              resolve(t0 - w.__burstAt);
+            } else setTimeout(poll, 1);
+          };
+          poll();
+        }),
+    );
+    await openFile(page, file);
+    const sinceResult = await clicked;
+    expect(sinceResult).toBeGreaterThanOrEqual(0);
+    await waitIdle(page);
+    await expect.poll(() => docText(page)).toBe('{"previous": true}');
+    await expect(app(page)).toHaveAttribute('data-bytes', '18');
+    // the tab is responsive and the editor usable again
+    await content(page).click();
+    await page.keyboard.press('End');
+    await page.keyboard.type('!');
+    await expect.poll(() => docText(page)).toBe('{"previous": true}!');
   });
 
   test('RULE-02 security review MINOR-4 a second file dropped while the confirmation is open is ignored', async ({

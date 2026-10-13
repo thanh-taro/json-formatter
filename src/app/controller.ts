@@ -33,6 +33,14 @@ const yieldMain = (): Promise<void> =>
   });
 
 class Cancelled extends Error {}
+/** The large-tier undo Blob itself could not be produced (review round 3). */
+class SnapshotLost extends Error {}
+
+function reasonOf(e: unknown): FailReason {
+  if (e instanceof JobFailure) return e.reason;
+  if (e instanceof RangeError) return 'too-large';
+  return 'internal';
+}
 
 interface BusyHandle {
   progress: (fraction: number) => void;
@@ -138,13 +146,16 @@ export class AppController {
     this.state.bar.value = null;
   }
 
-  private showFailure(reason: FailReason): void {
+  private showFailure(reason: FailReason, fileError: boolean): void {
     if (reason === 'cancelled') return;
-    if (reason === 'encoding')
-      this.showBar({ kind: 'error', id: 'error.encoding', text: t('error.encoding'), offerOpen: true });
-    // Implements: F-001.R9 — allocation failure, a length check that failed, or the worker died
-    // while reading (platform-mapping: "worker error event as last resort").
-    else this.showBar({ kind: 'error', id: 'error.too_large', text: t('error.too_large'), offerOpen: true });
+    const bar = (id: 'error.encoding' | 'error.too_large' | 'error.unreadable' | 'error.failed') =>
+      this.showBar({ kind: 'error', id, text: t(id), offerOpen: fileError && id !== 'error.failed' });
+    // Implements: RULE-13 (encoding), F-001.R9 (allocation failure or a failed length check),
+    // F-001 edge cases (unreadable file; any other internal failure → COPY-error.failed, INV-03).
+    if (reason === 'encoding') bar('error.encoding');
+    else if (reason === 'too-large') bar('error.too_large');
+    else if (reason === 'unreadable') bar('error.unreadable');
+    else bar('error.failed');
   }
 
   // ---- busy policy (D-005) ---------------------------------------------------------------
@@ -157,7 +168,11 @@ export class AppController {
   }
 
   /** Runs `op` with the busy policy: editor read-only, actions disabled, progress after 0.5 s. */
-  private async run(label: Busy['label'], op: (busy: BusyHandle) => Promise<void>): Promise<boolean> {
+  private async run(
+    label: Busy['label'],
+    op: (busy: BusyHandle) => Promise<void>,
+    onFailure: (e: unknown) => void = (e) => this.showFailure(reasonOf(e), label === 'progress.loading'),
+  ): Promise<boolean> {
     if (this.blocked() || !this.editor) return false;
     const cancels: (() => void)[] = [];
     let cancelled = false;
@@ -194,8 +209,7 @@ export class AppController {
       });
       return true;
     } catch (e) {
-      if (!cancelled && !(e instanceof Cancelled))
-        this.showFailure(e instanceof JobFailure ? e.reason : e instanceof RangeError ? 'too-large' : 'internal');
+      if (!cancelled && !(e instanceof Cancelled)) onFailure(e);
       return false;
     } finally {
       clearTimeout(timer);
@@ -240,6 +254,15 @@ export class AppController {
 
   // ---- operations ---------------------------------------------------------------------------
 
+  /** Appends a chunk; a failure (memory) cancels the job at once instead of breaking the stream. */
+  private append(pending: PendingDocument, job: Job, text: string): void {
+    try {
+      pending.append(text);
+    } catch {
+      job.cancel(); // the commit then rethrows the latched failure
+    }
+  }
+
   /** Implements: RULE-02 / F-001.AC5, F-001.AC11 — confirmation before very large content. */
   private confirmVeryLarge(bytes: number): Promise<boolean> {
     return new Promise((resolve) => {
@@ -264,7 +287,7 @@ export class AppController {
       const job = this.worker.run(
         { kind: 'loadFile', file },
         {
-          onChunk: (text) => pending.append(text),
+          onChunk: (text) => this.append(pending, job, text),
           onProgress: (f) => busy.progress(Math.min(f, pending.appended / total)),
         },
       );
@@ -313,15 +336,24 @@ export class AppController {
       );
       const text = p.text;
       let t0 = performance.now();
-      for (let i = 0; i < text.length && !stop; i += LARGE_PASTE) {
-        const part = text.slice(i, i + LARGE_PASTE);
-        this.worker.sendText(job.jobId, part, i + LARGE_PASTE >= text.length);
-        pending.append(part);
-        busy.progress((i + part.length) / text.length);
-        if (performance.now() - t0 > SLICE_MS) {
-          await yieldMain();
-          t0 = performance.now();
+      try {
+        for (let i = 0; i < text.length && !stop; i += LARGE_PASTE) {
+          const part = text.slice(i, i + LARGE_PASTE);
+          this.worker.sendText(job.jobId, part, i + LARGE_PASTE >= text.length);
+          pending.append(part);
+          busy.progress((i + part.length) / text.length);
+          if (performance.now() - t0 > SLICE_MS) {
+            await yieldMain();
+            t0 = performance.now();
+          }
         }
+      } catch (e) {
+        // Review round 3: an append failure (memory) cancels the worker job too, which releases
+        // the streamed text; the document is unchanged (INV-03).
+        job.cancel();
+        pending.discard();
+        feeding.catch(() => undefined);
+        throw e;
       }
       if (!text.length) this.worker.sendText(job.jobId, '', true);
       await feeding;
@@ -334,32 +366,39 @@ export class AppController {
     if (this.blocked() || !this.editor) return;
     const step = direction === 'undo' ? this.editor.undo() : this.editor.redo();
     if (!step || step.kind === 'applied') return;
-    let cancelled = false;
-    const ok = await this.run('progress.restoring', async (busy) => {
-      busy.onCancel(() => (cancelled = true));
-      let blob: Blob;
-      try {
-        blob = await step.snapshot.blob;
-      } catch {
-        throw new JobFailure('internal', 'snapshot unavailable');
-      }
-      const job = this.worker.run(
-        { kind: 'loadBlob', blob },
-        {
-          onChunk: (text) => step.pending.append(text),
-          onProgress: (f) => busy.progress(Math.min(f, step.pending.appended / Math.max(1, blob.size))),
-        },
-      );
-      await this.feed(job, step.pending, busy);
-    }).catch(() => false);
+    let lost = false;
+    const ok = await this.run(
+      'progress.restoring',
+      async (busy) => {
+        let blob: Blob;
+        try {
+          blob = await step.snapshot.blob;
+        } catch {
+          throw new SnapshotLost();
+        }
+        const job = this.worker.run(
+          { kind: 'loadBlob', blob },
+          {
+            onChunk: (text) => this.append(step.pending, job, text),
+            onProgress: (f) => busy.progress(Math.min(f, step.pending.appended / Math.max(1, blob.size))),
+          },
+        );
+        await this.feed(job, step.pending, busy);
+      },
+      (e) => {
+        if (e instanceof SnapshotLost) lost = true;
+        else this.showFailure(reasonOf(e), false);
+      },
+    );
     if (!ok) {
-      if (cancelled) step.abort();
-      else {
-        // Review M2: a snapshot that cannot be restored is dropped (with everything older); the
-        // document stays as it is and the user is told that older history is gone.
+      if (lost) {
+        // Review M2 / round 3: only a Blob that itself could not be made is dropped (with
+        // everything older); the document is unchanged and the user is told older history is gone.
         step.drop();
-        if (this.state.bar.value?.kind === 'error') this.dismissBar();
         this.showBar({ kind: 'info', id: 'notice.undo_trimmed', text: t('notice.undo_trimmed') });
+      } else {
+        // Cancelled, or the restore failed (e.g. a worker restart): the entry stays undoable.
+        step.abort();
       }
     }
     this.editor?.focus();

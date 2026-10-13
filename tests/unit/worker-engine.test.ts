@@ -230,4 +230,28 @@ describe('MOD-Worker edits, export and large paste', () => {
     expect(h.end(stale)).toMatchObject({ type: 'failed', reason: 'cancelled', detail: 'superseded' });
     expect(h.end(fresh)?.type).toBe('blob');
   });
+
+  it('INV-03 review round 3 a superseded paste job releases its text', async () => {
+    const h = harness();
+    const running = h.start({ kind: 'export', version: 0, eol: '\n' });
+    const stale = h.start({ kind: 'insertText', version: 0, from: 0, to: 0, supersedes: 'paste' });
+    h.engine.handle({ type: 'text', jobId: stale, text: 'abc', end: false });
+    const fresh = h.start({ kind: 'export', version: 0, eol: '\n', supersedes: 'paste' });
+    await h.engine.idle();
+    expect(h.end(running)?.type).toBe('blob');
+    expect(h.end(stale)).toMatchObject({ type: 'failed', reason: 'cancelled' });
+    expect(h.end(fresh)?.type).toBe('blob');
+    expect((h.engine as unknown as { inboxes: Map<number, unknown> }).inboxes.size).toBe(0);
+  });
+
+  it('F-001 edge case a file the browser cannot read fails with "unreadable"', async () => {
+    const h = harness();
+    const gone = {
+      size: 10,
+      slice: () => ({ arrayBuffer: () => Promise.reject(new DOMException('moved', 'NotReadableError')) }),
+    } as unknown as Blob;
+    const id = h.start({ kind: 'loadFile', file: gone });
+    await h.engine.idle();
+    expect(h.end(id)).toMatchObject({ type: 'failed', reason: 'unreadable' });
+  });
 });

@@ -33,7 +33,7 @@ export interface TextFacts {
   endsWithLineBreak: boolean;
 }
 
-export type FailReason = 'invalid' | 'encoding' | 'too-large' | 'cancelled' | 'internal';
+export type FailReason = 'invalid' | 'encoding' | 'too-large' | 'unreadable' | 'cancelled' | 'internal';
 
 export type ToWorker =
   /** Start a job; its pending mirror (if any) waits for `adopt` or `cancel`. */

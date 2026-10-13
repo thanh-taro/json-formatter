@@ -137,13 +137,28 @@ export const notices = (page: Page) => page.evaluate(() => (window as unknown as
  * Test-side worker seam (no product hook): wraps `Worker` so that
  * - `slowMs`: every message from the worker is delivered `slowMs` later, in order (a slow read);
  * - `tooLarge`: a `loadFile` job for a file of that name fails as if the device ran out of memory;
+ * - `burst`, `failExport`, `killOnLoadBlob`, `desyncOnSeed`: see `SeamOptions`;
  * - every instance is listed in `window.__workers`, so `killWorker` can end one silently (WebKit
  *   under memory pressure, ADR-0005 §4).
  */
-export async function seamWorker(page: Page, opts: { slowMs?: number; tooLarge?: string }) {
+export interface SeamOptions {
+  slowMs?: number;
+  tooLarge?: string;
+  /** Hold a load's text chunks until its `loaded` result, then deliver them at once (B1). */
+  burst?: boolean;
+  /** Every `export` job (undo snapshot) fails. */
+  failExport?: boolean;
+  /** The worker dies silently when asked to restore an undo snapshot (`loadBlob`). */
+  killOnLoadBlob?: boolean;
+  /** On the first re-seed chunk, the worker reports a desync, so the client restarts mid-seed. */
+  desyncOnSeed?: boolean;
+}
+
+export async function seamWorker(page: Page, opts: SeamOptions) {
   await page.addInitScript((o) => {
     const Native = window.Worker;
     const list: Worker[] = [];
+    let desynced = false;
     (window as unknown as { __workers: Worker[] }).__workers = list;
     class Seamed extends Native {
       private queue: Promise<void> = Promise.resolve();
@@ -156,8 +171,38 @@ export async function seamWorker(page: Page, opts: { slowMs?: number; tooLarge?:
         listener: EventListenerOrEventListenerObject,
         options?: boolean | AddEventListenerOptions,
       ) {
-        if (type !== 'message' || !o.slowMs) return super.addEventListener(type, listener, options);
         const fn = typeof listener === 'function' ? listener : (e: Event) => listener.handleEvent(e);
+        if (type === 'message' && o.burst) {
+          let held: unknown[] = [];
+          let firstAt: number | null = null;
+          return super.addEventListener(
+            'message',
+            (e: Event) => {
+              const data = (e as MessageEvent).data as { type?: string };
+              // progress passes (the watchdog must keep seeing the worker alive)
+              if (data.type === 'chunk') {
+                firstAt ??= performance.now();
+                held.push(data);
+                return;
+              }
+              if (data.type === 'loaded') {
+                const all = [...held, data];
+                held = [];
+                // deliver once the progress bar is up (it appears after 0.5 s)
+                const wait = Math.max(0, 800 - (performance.now() - (firstAt ?? performance.now())));
+                firstAt = null;
+                setTimeout(() => {
+                  for (const d of all) fn(new MessageEvent('message', { data: d }));
+                  (window as unknown as { __burstAt: number }).__burstAt = performance.now();
+                }, wait);
+                return;
+              }
+              fn(e);
+            },
+            options,
+          );
+        }
+        if (type !== 'message' || !o.slowMs) return super.addEventListener(type, listener, options);
         return super.addEventListener(
           'message',
           (e: Event) => {
@@ -171,7 +216,23 @@ export async function seamWorker(page: Page, opts: { slowMs?: number; tooLarge?:
         );
       }
       override postMessage(message: unknown, transfer?: Transferable[] | StructuredSerializeOptions) {
-        const m = message as { type?: string; jobId?: number; job?: { kind?: string; file?: File } };
+        const m = message as { type?: string; phase?: string; jobId?: number; job?: { kind?: string; file?: File } };
+        const fake = (data: unknown) => setTimeout(() => this.dispatchEvent(new MessageEvent('message', { data })), 20);
+        if (o.failExport && m.type === 'job' && m.job?.kind === 'export') {
+          fake({ type: 'failed', jobId: m.jobId, reason: 'internal', detail: 'seam' });
+          return;
+        }
+        if (o.killOnLoadBlob && m.type === 'job' && m.job?.kind === 'loadBlob') {
+          o.killOnLoadBlob = false;
+          this.terminate();
+          return;
+        }
+        if (o.desyncOnSeed && !desynced && m.type === 'seed' && m.phase === 'chunk') {
+          desynced = true;
+          super.postMessage(message, transfer as Transferable[]);
+          fake({ type: 'failed', jobId: -1, reason: 'internal', detail: 'seam desync' });
+          return;
+        }
         if (o.tooLarge && m.type === 'job' && m.job?.kind === 'loadFile' && m.job.file?.name === o.tooLarge) {
           const jobId = m.jobId;
           setTimeout(() => {

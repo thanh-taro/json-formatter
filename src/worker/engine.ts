@@ -122,6 +122,9 @@ function reasonOf(e: unknown): FailReason {
   // Implements: F-001.R9 — allocation failures become "too large" instead of a crash.
   if (e instanceof RangeError) return 'too-large';
   if (e instanceof Error && /memory|allocation/i.test(e.message)) return 'too-large';
+  // F-001 edge case: the browser could not read the file (moved, deleted, no permission).
+  if (e instanceof DOMException && ['NotReadableError', 'NotFoundError', 'SecurityError'].includes(e.name))
+    return 'unreadable';
   return 'internal';
 }
 
@@ -249,6 +252,7 @@ export class WorkerEngine {
       // Extension point (F-005): newer work of the same kind drops queued stale work.
       for (const stale of this.queue.filter((j) => j.key === key)) {
         this.queue.splice(this.queue.indexOf(stale), 1);
+        this.inboxes.delete(stale.jobId);
         this.post({ type: 'failed', jobId: stale.jobId, reason: 'cancelled', detail: 'superseded' });
       }
     }
