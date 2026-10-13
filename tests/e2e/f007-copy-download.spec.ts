@@ -300,8 +300,7 @@ test.describe('F-007 download', () => {
     await paste(page, '{\n  "a": [1, 2]\n}');
     await toolbar(page).getByRole('button', { name: COPY['action.minify'] }).click();
     await waitIdle(page);
-    // RULE-10 needs the minify operation (F-003); the name rule itself is unit-tested.
-    test.skip((await docText(page)) !== '{"a":[1,2]}', 'minify (F-003) is not merged yet');
+    await expect.poll(() => docText(page)).toBe('{"a":[1,2]}');
     const downloading = page.waitForEvent('download');
     await downloadButton(page).click();
     const file = await downloading;

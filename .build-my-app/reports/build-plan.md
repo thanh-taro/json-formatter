@@ -27,3 +27,9 @@ Gate G4: all 11 features shipped, CI green, AC coverage 100% (or listed manual c
 - Parallel worktree e2e runs collide on ports 4173/4179; make the e2e ports configurable per worktree (env), CI unaffected.
 - Flaky under full-suite load: F-007.AC2 'beautified downloads as orders.json' (passes 5/5 alone) — investigate in QA.
 - Timing assertions in unit tests (editor-column 50 MB < 50 ms) flake under machine load; move to the perf suite or measure CPU time — QA.
+- F-006 minors for QA: expansion restore with duplicate keys after an earlier insert maps both to the first; one renamed key in a large object can exhaust the 200-block restore budget.
+
+### Integration follow-ups — results (2026-10-14)
+- Done: F-007.AC3 real minify (no skip); F-008.AC6/AC7 full M-1 session (tests/e2e/m1-session.ts) in host.spec + smoke; NFR-01 server-log checks (tests/e2e/network-log.ts).
+- Open (spec decision needed): on a first WebKit visit, before the offline worker controls the page, showing the tree fetches the lazy MOD-Tree chunk (`/assets/tree-*.js|css`) after load — NFR-01 says "no requests after load" while architecture.md makes MOD-Tree a lazy chunk. Chromium serves it from cache; returning visits pass in both. Proposed: either preload the tree chunk as part of the initial load (modulepreload, ~15 KB, off the critical path budget) or add to NFR-01 that lazily loaded own code chunks without user content are part of "load". Tests marked `test.fail` on WebKit until decided.
+- Firefox not run (cannot launch on this machine).

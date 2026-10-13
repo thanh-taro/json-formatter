@@ -2,6 +2,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { BG, HOST, instrument } from './fixtures';
+import { recordClipboard, useEveryM1Feature } from './m1-session';
 
 test.beforeEach(async ({ page }) => instrument(page));
 
@@ -42,4 +43,16 @@ test.describe('standalone, dark device', () => {
     await expect(page.getByRole('toolbar', { name: 'Document actions' })).toBeVisible();
     expect(await page.evaluate(() => window.__firstFrame)).toEqual({ theme: 'dark', bg: BG.dark });
   });
+});
+
+test('smoke: F-008.AC6 F-008.AC7 one session uses every M-1 feature, standalone and embedded', async ({ page }) => {
+  test.setTimeout(120_000);
+  await recordClipboard(page);
+  await page.goto('/?theme=dark');
+  await expect(page.locator('[data-screen="SCR-Formatter"]')).toHaveAttribute('data-busy', 'false');
+  await useEveryM1Feature(page, page);
+  await page.goto(`${HOST}/host.html?theme=light`);
+  const frame = page.frameLocator('iframe[name="tool"]');
+  await expect(frame.locator('[data-screen="SCR-Formatter"]')).toHaveAttribute('data-busy', 'false');
+  await useEveryM1Feature(page, page.frame({ name: 'tool' })!);
 });
