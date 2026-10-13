@@ -2,8 +2,8 @@
 id: SCR-Formatter
 title: Formatter
 status: ready
-features: [F-001, F-002, F-003, F-004, F-005, F-006, F-007, F-008, F-009]
-components: [CMP-Toolbar, CMP-Editor, CMP-TreeView, CMP-StatusBar, CMP-IssuePanel, CMP-DropOverlay]
+features: [F-001, F-002, F-003, F-004, F-005, F-006, F-007, F-008, F-009, F-010, F-011]
+components: [CMP-Toolbar, CMP-Editor, CMP-TreeView, CMP-StatusBar, CMP-IssuePanel, CMP-DropOverlay, CMP-SearchPanel]
 ---
 
 ## Purpose
@@ -12,7 +12,8 @@ The single screen: load, format, check, explore and export a JSON document.
 ## Layout regions
 1. CMP-Toolbar — load/clear, beautify, minify, re-indent with indent selector, view switch
    (text/tree), copy, download.
-2. Main area — CMP-Editor (text view) or CMP-TreeView (tree view); CMP-DropOverlay covers it
+2. Main area — CMP-Editor (text view, with CMP-SearchPanel docked at its top when open) or
+   CMP-TreeView (tree view); CMP-DropOverlay covers it
    while a file is dragged over.
 3. CMP-IssuePanel — shown when there are issues; collapsible.
 4. CMP-StatusBar — validity, size/lines, cursor position, privacy statement.

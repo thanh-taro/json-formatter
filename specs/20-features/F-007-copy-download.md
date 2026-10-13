@@ -27,7 +27,9 @@ Get the result out in one action, to wherever it is needed next.
 - **R3** If copying is not permitted by the environment, the user is told and the whole
   document is selected so they can copy it manually.
 - **R4** Downloading creates the file on the device only (INV-02).
-- **R5** If downloading is blocked by the environment, the user is told and offered copy instead.
+- **R5** If downloading is blocked by the environment in a way the browser reports, the user is
+  told and offered copy instead. (Some environments block downloads silently; there the tool
+  cannot tell.)
 - **R6** Copying or downloading a large document follows the progress and cancel behaviour of NFR-02.
 
 ## Acceptance criteria
@@ -36,7 +38,7 @@ Get the result out in one action, to wherever it is needed next.
 - **AC3** Given a pasted document that was minified, when the user downloads, then the file is named `minified.json`. (R2)
 - **AC4** Given clipboard writing is blocked, when the user chooses copy, then COPY-error.clipboard is shown and the whole document is selected. (R3)
 - **AC5** Given a document, when the user downloads it, then no network request is made. (R4)
-- **AC6** Given downloads are blocked, when the user chooses download, then COPY-error.download is shown. (R5)
+- **AC6** Given downloads are blocked and the browser reports it, when the user chooses download, then COPY-error.download is shown. (R5)
 - **AC7** Given the tree view is shown and clipboard writing is blocked, when the user chooses copy, then the text view is shown with the whole document selected and COPY-error.clipboard is shown. (R3)
 - **AC8** Given a 100 MB document, when the user copies it and it takes longer than 0.5 s, then progress is shown. (R6)
 

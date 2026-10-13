@@ -19,6 +19,10 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-action.copy_value** | Copy value | |
 | **COPY-action.reveal** | Show in text | |
 | **COPY-action.collapse_all** | Collapse all | |
+| **COPY-action.find** | Find | |
+| **COPY-action.find_next** | Next match | |
+| **COPY-action.find_prev** | Previous match | |
+| **COPY-action.close** | Close | |
 | **COPY-label.indent** | Indent | |
 | **COPY-label.editor** | JSON document | Accessible name of the editor |
 | **COPY-indent.spaces2** | 2 spaces | Default |
@@ -63,6 +67,15 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-tree.checking** | Updating tree… | |
 | **COPY-tree.too_large** | This document is too large for the tree view on this device. Use the text view. | |
 | **COPY-tree.invalid** | The tree needs valid JSON. Fix the error first. | Action: jump to error |
+
+## Find
+| ID | Text | Notes |
+|---|---|---|
+| **COPY-search.placeholder** | Find in document | |
+| **COPY-search.match_case** | Match case | |
+| **COPY-search.count** | {current} of {total} | |
+| **COPY-search.counting** | {current} of {total}+ | while counting |
+| **COPY-search.none** | No matches | |
 
 ## Privacy
 | ID | Text | Notes |

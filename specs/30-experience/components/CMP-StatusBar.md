@@ -2,7 +2,7 @@
 id: CMP-StatusBar
 title: Status bar
 status: ready
-tokens: []
+tokens: [size.statusbar, font.size.xs, space.3]
 ---
 
 ## Purpose

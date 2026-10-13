@@ -2,7 +2,7 @@
 id: CMP-IssuePanel
 title: Issue panel
 status: ready
-tokens: []
+tokens: [size.issuePanelMax, radius.pill, font.size.sm, space.3]
 ---
 
 ## Purpose

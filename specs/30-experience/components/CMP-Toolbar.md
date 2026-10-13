@@ -2,14 +2,14 @@
 id: CMP-Toolbar
 title: Toolbar
 status: ready
-tokens: []
+tokens: [size.toolbar, size.control, size.targetMin, size.touchTarget, radius.sm, font.size.sm, border.width.focus]
 ---
 
 ## Purpose
 Holds every document-level action.
 
 ## Anatomy
-Load group (open, clear) · Format group (beautify, minify, re-indent, indent selector) · View
+Load group (open, clear) · Find · Format group (beautify, minify, re-indent, indent selector) · View
 switch (text/tree) · Export group (copy, download).
 
 ## Variants & states

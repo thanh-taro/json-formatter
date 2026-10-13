@@ -11,6 +11,6 @@ current desktop browser.
 | **NFR-04** | Large documents: a 100 MB document opens, scrolls with no frame longer than 50 ms, and is editable; peak memory stays below 1.5 GB. Above 100 MB, best effort per RULE-02. | Manual + automated runs with generated 10/50/100/200 MB fixtures. |
 | **NFR-05** | Startup: interactive within 1.5 s on a 10 Mbit/s, 40 ms round-trip connection with a cold cache; within 0.5 s when cached. A size budget for the initial download is set in the architecture. | Lab measurement with network throttling. |
 | **NFR-06** | Accessibility: WCAG 2.2 AA; every action operable by keyboard; status changes announced. | Automated audit + manual screen-reader pass. |
-| **NFR-07** | Browser support: latest two versions of the major desktop browser engines (Chromium-based, Gecko-based, WebKit-based); usable down to 480 px wide; embedded and standalone. | Test matrix. |
+| **NFR-07** | Browser support: latest two versions of the major desktop browser engines (Chromium-based, Gecko-based, WebKit-based); usable down to 360 px wide (phone layouts of the host included); embedded and standalone. | Test matrix. |
 | **NFR-08** | Correctness: accepts every document the JSON standard accepts and rejects every one it rejects, measured against a public JSON conformance test suite; beautify/minify round-trips are token-identical (INV-01). | Conformance + property-based tests. |
 | **NFR-09** | Embedding safety: the tool can only be embedded by configured host origins and accepts messages only from them. | Header check + message-origin tests. |

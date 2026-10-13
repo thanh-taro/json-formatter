@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tree view variants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--selection:#2A1D47;--danger:#FF8595;--dangerBg:#3A1622;--syntaxKey:#8CCBFF;--syntaxString:#7FE3B8;--syntaxNumber:#FFC48A;--syntaxLiteral:#C4A6FF;--syntaxPunct:#9C92B0;color-scheme:dark}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--selection:#F0EAFE;--danger:#C0243B;--dangerBg:#FCE8EC;--syntaxKey:#0B5A94;--syntaxString:#0B6B49;--syntaxNumber:#8F4705;--syntaxLiteral:#5B2FCC;--syntaxPunct:#5E566F;color-scheme:light}
+.lab{font:500 12px 'JetBrains Mono',ui-monospace,monospace;color:var(--muted)}
+.tv{border:1px solid var(--line);background:var(--bg);height:248px;display:flex;flex-direction:column;overflow:hidden}
+.th{display:flex;align-items:center;gap:8px;height:30px;padding:0 6px 0 12px;background:var(--surface);border-bottom:1px solid var(--line);font:500 12px 'JetBrains Mono',monospace;color:var(--muted)}
+.tb{display:inline-flex;align-items:center;height:24px;padding:0 8px;border:0;border-radius:7px;background:none;color:var(--fg);font:500 12px Manrope,system-ui,sans-serif}
+.rows{flex:1;padding:4px 0;font:400 13px/20px 'JetBrains Mono',ui-monospace,monospace}
+.r{display:flex;align-items:center;gap:8px;height:20px;padding-right:8px;color:var(--fg)}
+.tw{width:14px;color:var(--muted);text-align:center;flex:none}
+.kind{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:7px;padding:0 5px;line-height:16px}
+.cnt{color:var(--muted)}
+.k{color:var(--syntaxKey)}.s{color:var(--syntaxString)}.n{color:var(--syntaxNumber)}.l{color:var(--syntaxLiteral)}
+.sel{background:var(--selection);box-shadow:inset 2px 0 0 var(--accent)}
+.ra{margin-left:auto;display:inline-flex;gap:4px}
+.ra button{height:20px;padding:0 6px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--fg);font:500 11px Manrope,system-ui,sans-serif}
+.grp{color:var(--muted)}
+.msg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;font:500 13px/1.5 Manrope,system-ui,sans-serif;color:var(--fg)}
+.msg button{height:28px;padding:0 10px;border:1px solid var(--lineStrong);border-radius:7px;background:none;color:var(--fg);font:500 13px Manrope,system-ui,sans-serif}
+</style>
+</helmet>
+<div style="width:1280px;box-sizing:border-box;padding:40px;display:flex;flex-direction:column;gap:48px;background:#0B0810">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="tk-{{t.id}}" style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:24px;padding:24px;border-radius:12px;background:var(--bg);color:var(--fg)">
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-TreeView / default / {{t.id}}</span>
+    <div class="tv" role="tree" aria-label="Document tree">
+      <div class="th"><span>$</span><div style="flex:1"></div><button type="button" class="tb" data-copy="COPY-action.collapse_all">Collapse all</button></div>
+      <div class="rows">
+        <div class="r" role="treeitem" aria-expanded="true" style="padding-left:12px"><span class="tw">▾</span><span>$</span><span class="kind">object</span><span class="cnt">1 key</span></div>
+        <div class="r" role="treeitem" aria-expanded="true" style="padding-left:30px"><span class="tw">▾</span><span class="k">order</span><span class="kind">object</span><span class="cnt">7 keys</span></div>
+        <div class="r" role="treeitem" style="padding-left:48px"><span class="tw"></span><span class="k">id</span><span class="kind">number</span><span class="n">9007199254740993</span></div>
+        <div class="r" role="treeitem" style="padding-left:48px"><span class="tw"></span><span class="k">status</span><span class="kind">string</span><span class="s">"shipped"</span></div>
+        <div class="r" role="treeitem" style="padding-left:48px"><span class="tw"></span><span class="k">total</span><span class="kind">number</span><span class="n">1499.50</span></div>
+        <div class="r" role="treeitem" aria-expanded="false" style="padding-left:48px"><span class="tw">▸</span><span class="k">items</span><span class="kind">array</span><span class="cnt">2 items</span></div>
+        <div class="r" role="treeitem" style="padding-left:48px"><span class="tw"></span><span class="k">coupon</span><span class="kind">null</span><span class="l">null</span></div>
+        <div class="r" role="treeitem" aria-expanded="false" style="padding-left:48px"><span class="tw">▸</span><span class="k">customer</span><span class="kind">object</span><span class="cnt">2 keys</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-TreeView / group rows / {{t.id}}</span>
+    <div class="tv" role="tree" aria-label="Document tree">
+      <div class="th"><span>$.events</span><div style="flex:1"></div><button type="button" class="tb" data-copy="COPY-action.collapse_all">Collapse all</button></div>
+      <div class="rows">
+        <div class="r" role="treeitem" aria-expanded="true" style="padding-left:12px"><span class="tw">▾</span><span class="k">events</span><span class="kind">array</span><span class="cnt">250 items</span></div>
+        <div class="r grp" role="treeitem" aria-expanded="true" style="padding-left:30px"><span class="tw">▾</span><span>[0 … 99]</span></div>
+        <div class="r" role="treeitem" aria-expanded="false" style="padding-left:48px"><span class="tw">▸</span><span class="k">0</span><span class="kind">object</span><span class="cnt">4 keys</span></div>
+        <div class="r" role="treeitem" aria-expanded="false" style="padding-left:48px"><span class="tw">▸</span><span class="k">1</span><span class="kind">object</span><span class="cnt">4 keys</span></div>
+        <div class="r" role="treeitem" aria-expanded="false" style="padding-left:48px"><span class="tw">▸</span><span class="k">2</span><span class="kind">object</span><span class="cnt">4 keys</span></div>
+        <div class="r grp" role="treeitem" aria-expanded="false" style="padding-left:30px"><span class="tw">▸</span><span>[100 … 199]</span></div>
+        <div class="r grp" role="treeitem" aria-expanded="false" style="padding-left:30px"><span class="tw">▸</span><span>[200 … 249]</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-TreeView / focused row (actions) / {{t.id}}</span>
+    <div class="tv" role="tree" aria-label="Document tree">
+      <div class="th"><span>$.order.items[1].sku</span><div style="flex:1"></div><button type="button" class="tb" data-copy="COPY-action.collapse_all">Collapse all</button></div>
+      <div class="rows">
+        <div class="r" role="treeitem" aria-expanded="true" style="padding-left:30px"><span class="tw">▾</span><span class="k">items</span><span class="kind">array</span><span class="cnt">2 items</span></div>
+        <div class="r" role="treeitem" aria-expanded="false" style="padding-left:48px"><span class="tw">▸</span><span class="k">0</span><span class="kind">object</span><span class="cnt">3 keys</span></div>
+        <div class="r" role="treeitem" aria-expanded="true" style="padding-left:48px"><span class="tw">▾</span><span class="k">1</span><span class="kind">object</span><span class="cnt">3 keys</span></div>
+        <div class="r sel" role="treeitem" aria-selected="true" style="padding-left:66px"><span class="tw"></span><span class="k">sku</span><span class="kind">string</span><span class="s">"TK-311"</span>
+          <span class="ra"><button type="button" data-copy="COPY-action.copy_path">Copy path</button><button type="button" data-copy="COPY-action.copy_value">Copy value</button><button type="button" data-copy="COPY-action.reveal">Show in text</button></span></div>
+        <div class="r" role="treeitem" style="padding-left:66px"><span class="tw"></span><span class="k">qty</span><span class="kind">number</span><span class="n">1</span></div>
+        <div class="r" role="treeitem" style="padding-left:66px"><span class="tw"></span><span class="k">gift</span><span class="kind">boolean</span><span class="l">true</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-TreeView / copy blocked (fallback field) / {{t.id}}</span>
+    <div class="tv" role="tree" aria-label="Document tree">
+      <div class="th"><span>$.order.items[1].sku</span><div style="flex:1"></div><button type="button" class="tb" data-copy="COPY-action.collapse_all">Collapse all</button></div>
+      <div class="rows">
+        <div class="r sel" role="treeitem" aria-selected="true" style="padding-left:66px"><span class="tw"></span><span class="k">sku</span><span class="kind">string</span><span class="s">"TK-311"</span></div>
+        <div style="margin:6px 12px 0 66px;padding:10px;display:flex;flex-direction:column;gap:8px;border:1px solid var(--lineStrong);border-radius:7px;background:var(--surface)">
+          <span style="font:500 12px Manrope,system-ui,sans-serif;color:var(--fg)" data-copy="COPY-error.clipboard">Copying isn't allowed here. The text is selected — press your copy shortcut.</span>
+          <label style="display:flex;flex-direction:column;gap:4px"><span class="lab" data-copy="COPY-action.copy_path">Copy path</span>
+          <input type="text" readonly="readonly" value="$.order.items[1].sku" style="height:28px;box-sizing:border-box;padding:0 8px;border:1px solid var(--accent);border-radius:7px;background:var(--selection);color:var(--fg);font:400 13px 'JetBrains Mono',monospace"></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-TreeView / invalid document / {{t.id}}</span>
+    <div class="tv">
+      <div class="msg">
+        <svg aria-hidden="true" viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--danger);fill:none;stroke-width:1.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <span data-copy="COPY-tree.invalid">The tree needs valid JSON. Fix the error first.</span>
+        <button type="button">Go to error · <span style="font-family:'JetBrains Mono',monospace" data-copy="COPY-issue.location">Line 8, column 50</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-TreeView / checking / {{t.id}}</span>
+    <div class="tv" role="tree" aria-label="Document tree" aria-busy="true" style="position:relative">
+      <div class="th"><span role="status" data-copy="COPY-tree.checking">Updating tree…</span><span style="width:120px;height:4px;border-radius:999px;background:var(--surface2);overflow:hidden;display:inline-block"><span style="display:block;width:64%;height:4px;background:var(--accent)"></span></span><div style="flex:1"></div><button type="button" class="tb" data-copy="COPY-action.cancel">Cancel</button></div>
+      <div class="rows" style="opacity:.45">
+        <div class="r" style="padding-left:12px"><span class="tw">▾</span><span>$</span><span class="kind">object</span><span class="cnt">1 key</span></div>
+        <div class="r" style="padding-left:30px"><span class="tw">▾</span><span class="k">order</span><span class="kind">object</span><span class="cnt">7 keys</span></div>
+        <div class="r" style="padding-left:48px"><span class="tw"></span><span class="k">id</span><span class="kind">number</span><span class="n">9007199254740993</span></div>
+        <div class="r" style="padding-left:48px"><span class="tw"></span><span class="k">status</span><span class="kind">string</span><span class="s">"shipped"</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-TreeView / unavailable (very large) / {{t.id}}</span>
+    <div class="tv">
+      <div class="msg">
+        <svg aria-hidden="true" viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:1.5"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span data-copy="COPY-tree.too_large">This document is too large for the tree view on this device. Use the text view.</span>
+        <button type="button" data-copy="COPY-view.text">Text</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-TreeView / building (progress) / {{t.id}}</span>
+    <div class="tv">
+      <div class="msg">
+        <span role="status" style="font-family:'JetBrains Mono',monospace" data-copy="COPY-progress.tree">Building tree… 37%</span>
+        <span style="width:200px;height:4px;border-radius:999px;background:var(--surface2);overflow:hidden;display:inline-block"><span style="display:block;width:37%;height:4px;background:var(--accent)"></span></span>
+        <button type="button" data-copy="COPY-action.cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2440}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { themes: [{ id: 'dark' }, { id: 'light' }] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Formatter — default</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--accent2Fg:#FFC48A;--selection:#2A1D47;--selectionLine:#4A3580;--danger:#FF8595;--success:#5BD6A0;--dangerBg:#3A1622;--warnBg:#33240F;--currentLine:#1C1526;--syntaxKey:#8CCBFF;--syntaxString:#7FE3B8;--syntaxNumber:#FFC48A;--syntaxLiteral:#C4A6FF;--syntaxPunct:#9C92B0;color-scheme:dark}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--accent2Fg:#8F4705;--selection:#F0EAFE;--selectionLine:#CDBBF8;--danger:#C0243B;--success:#13744C;--dangerBg:#FCE8EC;--warnBg:#FDEBD8;--currentLine:#F6F3FD;--syntaxKey:#0B5A94;--syntaxString:#0B6B49;--syntaxNumber:#8F4705;--syntaxLiteral:#5B2FCC;--syntaxPunct:#5E566F;color-scheme:light}
+.btn{display:inline-flex;align-items:center;gap:6px;height:28px;min-width:28px;padding:0 8px;border:1px solid transparent;border-radius:7px;background:none;color:var(--fg);font:500 13px Manrope,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface2)}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn.primary{background:var(--accent);color:var(--onAccent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.k{color:var(--syntaxKey)}.s{color:var(--syntaxString)}.n{color:var(--syntaxNumber)}.l{color:var(--syntaxLiteral)}.p{color:var(--syntaxPunct)}
+.warnmark{text-decoration:underline dotted var(--accent2Fg);text-underline-offset:3px}
+</style>
+</helmet>
+<div class="tk-{{theme}}" style="width:1200px;height:760px;box-sizing:border-box;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:Manrope,system-ui,sans-serif;overflow:hidden">
+
+  <div role="toolbar" aria-label="Document actions" style="height:38px;box-sizing:border-box;display:flex;align-items:center;gap:2px;padding:0 6px;background:var(--surface);border-bottom:1px solid var(--line)">
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg><span data-copy="COPY-action.open">Open file</span></button>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg><span data-copy="COPY-action.clear">Clear</span></button>
+    <div style="width:1px;height:20px;background:var(--line);margin:0 6px"></div>
+    <button type="button" class="btn primary"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M8 10h12M8 14h12M4 18h16"/></svg><span data-copy="COPY-action.beautify">Beautify</span></button>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg><span data-copy="COPY-action.minify">Minify</span></button>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M10 12h10M10 18h10M4 10l3 2-3 2"/></svg><span data-copy="COPY-action.reindent">Re-indent</span></button>
+    <label style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px;margin-left:4px;border:1px solid var(--line);border-radius:7px;background:var(--bg);font:500 12px Manrope,system-ui,sans-serif">
+      <span style="color:var(--muted)" data-copy="COPY-label.indent">Indent</span>
+      <span data-copy="COPY-indent.spaces2">2 spaces</span>
+      <svg aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:1.5"><path d="M7 10l5 5 5-5"/></svg>
+    </label>
+    <div style="width:1px;height:20px;background:var(--line);margin:0 6px"></div>
+    <div role="group" aria-label="View" style="display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden">
+      <button type="button" aria-pressed="true" style="height:26px;padding:0 10px;border:0;background:var(--surface2);color:var(--fg);font:600 12px Manrope,system-ui,sans-serif" data-copy="COPY-view.text">Text</button>
+      <button type="button" aria-pressed="false" style="height:26px;padding:0 10px;border:0;background:none;color:var(--muted);font:600 12px Manrope,system-ui,sans-serif" data-copy="COPY-view.tree">Tree</button>
+    </div>
+    <div style="flex:1"></div>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span data-copy="COPY-action.copy">Copy</span></button>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-copy="COPY-action.download">Download</span></button>
+  </div>
+
+  <div aria-label="JSON document" data-copy="COPY-label.editor" style="flex:1;min-height:0;display:flex;font:400 13px/20px 'JetBrains Mono',ui-monospace,Menlo,monospace;overflow:hidden">
+    <div aria-hidden="true" style="padding:6px 10px 6px 12px;background:var(--surface);border-right:1px solid var(--line);color:var(--muted);text-align:right;white-space:pre">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13</div>
+    <div style="flex:1;min-width:0;padding:6px 0;white-space:pre;overflow:hidden">
+<div style="padding:0 12px"><span class="p">{</span></div>
+<div style="padding:0 12px">  <span class="k">"order"</span><span class="p">: {</span></div>
+<div style="padding:0 12px;background:var(--currentLine)">    <span class="k">"id"</span><span class="p">: </span><span class="n warnmark">9007199254740993</span><span class="p">,</span></div>
+<div style="padding:0 12px">    <span class="k">"status"</span><span class="p">: </span><span class="s">"shipped"</span><span class="p">,</span></div>
+<div style="padding:0 12px">    <span class="k">"total"</span><span class="p">: </span><span class="n">1499.50</span><span class="p">,</span></div>
+<div style="padding:0 12px">    <span class="k">"items"</span><span class="p">: [</span></div>
+<div style="padding:0 12px">      <span class="p">{ </span><span class="k">"sku"</span><span class="p">: </span><span class="s">"TK-204"</span><span class="p">, </span><span class="k">"qty"</span><span class="p">: </span><span class="n">2</span><span class="p">, </span><span class="k">"gift"</span><span class="p">: </span><span class="l">false</span><span class="p"> },</span></div>
+<div style="padding:0 12px">      <span class="p">{ </span><span class="k">"sku"</span><span class="p">: </span><span class="s">"TK-311"</span><span class="p">, </span><span class="k">"qty"</span><span class="p">: </span><span class="n">1</span><span class="p">, </span><span class="k">"gift"</span><span class="p">: </span><span class="l">true</span><span class="p"> }</span></div>
+<div style="padding:0 12px">    <span class="p">],</span></div>
+<div style="padding:0 12px">    <span class="k">"coupon"</span><span class="p">: </span><span class="l">null</span><span class="p">,</span></div>
+<div style="padding:0 12px">    <span class="k">"customer"</span><span class="p">: { </span><span class="k">"name"</span><span class="p">: </span><span class="s">"Mai Tran"</span><span class="p">, </span><span class="k">"email"</span><span class="p">: </span><span class="s">"mai@example.com"</span><span class="p"> }</span></div>
+<div style="padding:0 12px">  <span class="p">}</span></div>
+<div style="padding:0 12px"><span class="p">}</span></div>
+    </div>
+  </div>
+
+  <section aria-label="Issues" style="border-top:1px solid var(--line);background:var(--surface)">
+    <div style="display:flex;align-items:center;gap:16px;height:30px;padding:0 12px;border-bottom:1px solid var(--line);font:600 11px Manrope,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">
+      <span>Problems 0</span>
+      <span style="color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent);height:30px;display:inline-flex;align-items:center">Warnings 1</span>
+      <div style="flex:1"></div>
+      <button type="button" class="btn" aria-label="Collapse issues" style="height:24px;min-width:24px;padding:0 4px"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></button>
+    </div>
+    <button type="button" style="width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;padding:8px 12px;border:0;background:none;color:var(--fg);text-align:left;font:500 13px Manrope,system-ui,sans-serif;cursor:pointer">
+      <span style="font:600 11px 'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:999px;color:var(--accent2Fg);background:var(--warnBg)">Warn</span>
+      <span>unsafe-number</span>
+      <span style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted)" data-copy="COPY-issue.location">Line 3, column 11</span>
+      <span style="grid-column:2 / -1;color:var(--muted)" data-copy="COPY-hint.unsafe_number">This number is kept exactly here, but many languages (including JavaScript) will round it.</span>
+    </button>
+  </section>
+
+  <div role="status" style="height:26px;box-sizing:border-box;display:flex;align-items:center;gap:16px;padding:0 12px;background:var(--surface);border-top:1px solid var(--line);font:500 12px 'JetBrains Mono',ui-monospace,monospace;color:var(--muted)">
+    <span style="display:inline-flex;align-items:center;gap:6px;color:var(--fg)"><span style="width:8px;height:8px;border-radius:50%;background:var(--success)"></span><span data-copy="COPY-status.valid">Valid JSON</span></span>
+    <span data-copy="COPY-status.size_lines">412 B · 13 lines</span>
+    <span>Ln 3, Col 11</span>
+    <div style="flex:1"></div>
+    <button type="button" title="Your data stays in this browser" style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 6px;border:0;border-radius:7px;background:none;color:var(--success);font:500 12px 'JetBrains Mono',monospace;cursor:pointer" aria-label="Your data stays in this browser" data-copy="COPY-privacy.badge_label"><svg aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1200,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? 'dark' };
+  }
+}
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 ### M-1 — Core value
 Load (paste/drop/open), lossless beautify & minify, re-indent, validation with precise errors
 and hints, read-only tree with copy path/value, copy & download, host integration, privacy
-statement. Features: F-001 … F-009.
+statement, find in text, offline use. Features: F-001 … F-011.
 
 ### M-2 — Explore & fix
 Tree search and expand-to-level; lenient parsing with one-click auto-fix (comments, trailing

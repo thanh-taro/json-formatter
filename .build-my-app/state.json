@@ -8,7 +8,7 @@
     "budget": "none"
   },
   "stack": null,
-  "design_tool": null,
+  "design_tool": "claude-design-canvas",
   "phases": {
     "setup": {
       "title": "0 Setup & discovery",
@@ -32,8 +32,8 @@
     },
     "design": {
       "title": "2 Design",
-      "status": "pending",
-      "step": null,
+      "status": "in_progress",
+      "step": "2.4 D1 components: audit round 1",
       "gate": {
         "status": "pending",
         "at": null,
@@ -42,7 +42,7 @@
     },
     "architecture": {
       "title": "3 Architecture & spikes",
-      "status": "pending",
+      "status": "in_progress",
       "step": null,
       "gate": {
         "status": "pending",
@@ -199,6 +199,144 @@
       "answer": "100 steps normal; last 3 tool ops for >10MB",
       "asked": "2026-10-13T06:31:49+00:00",
       "answered": "2026-10-13T06:31:49+00:00"
+    },
+    {
+      "id": "D-008",
+      "question": "Theme sync with portal (portal F-012 excludes it)",
+      "options": [
+        "portal change",
+        "no portal change",
+        "shared cookie"
+      ],
+      "recommendation": "portal change",
+      "kind": "product",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Small portal change: ?theme= on embed URL + postMessage on change; change request to be written for taro-kit, not applied by us",
+      "asked": "2026-10-13T06:55:27+00:00",
+      "answered": "2026-10-13T06:55:27+00:00"
+    },
+    {
+      "id": "D-009",
+      "question": "Tool address",
+      "options": [
+        "json.tarokit.app",
+        "json-formatter.tarokit.app"
+      ],
+      "recommendation": "json.tarokit.app",
+      "kind": "product",
+      "phase": "design",
+      "status": "answered",
+      "answer": "https://json-formatter.tarokit.app",
+      "asked": "2026-10-13T06:55:27+00:00",
+      "answered": "2026-10-13T06:55:27+00:00"
+    },
+    {
+      "id": "D-010",
+      "question": "Style direction",
+      "options": [
+        "A Workbench",
+        "B Market",
+        "C Terminal"
+      ],
+      "recommendation": "A Workbench",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "A Workbench",
+      "asked": "2026-10-13T06:59:08+00:00",
+      "answered": "2026-10-13T06:59:08+00:00"
+    },
+    {
+      "id": "D-011",
+      "question": "Design tool",
+      "options": [
+        "Claude Design canvas",
+        "code-first",
+        "Figma"
+      ],
+      "recommendation": "Claude Design canvas",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Claude Design canvas",
+      "asked": "2026-10-13T07:00:19+00:00",
+      "answered": "2026-10-13T07:00:19+00:00"
+    },
+    {
+      "id": "D-012",
+      "question": "Support phone widths",
+      "options": [
+        "down to 360px",
+        "480px+"
+      ],
+      "recommendation": "down to 360px",
+      "kind": "product",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Down to 360 px",
+      "asked": "2026-10-13T07:01:02+00:00",
+      "answered": "2026-10-13T07:01:03+00:00"
+    },
+    {
+      "id": "D-013",
+      "question": "Find in text (O-4)",
+      "options": [
+        "M-1",
+        "M-2"
+      ],
+      "recommendation": "M-1",
+      "kind": "product",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Add to M-1",
+      "asked": "2026-10-13T07:08:29+00:00",
+      "answered": "2026-10-13T07:08:29+00:00"
+    },
+    {
+      "id": "D-014",
+      "question": "Offline support (O-5)",
+      "options": [
+        "M-1",
+        "no"
+      ],
+      "recommendation": "M-1",
+      "kind": "product",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Yes in M-1 (cache-only service worker, ADR-0012)",
+      "asked": "2026-10-13T07:08:30+00:00",
+      "answered": "2026-10-13T07:08:30+00:00"
+    },
+    {
+      "id": "D-015",
+      "question": "Spec clarifications O-1..O-3",
+      "options": [
+        "accept",
+        "discuss"
+      ],
+      "recommendation": "accept",
+      "kind": "product",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Accept all three",
+      "asked": "2026-10-13T07:08:30+00:00",
+      "answered": "2026-10-13T07:08:30+00:00"
+    },
+    {
+      "id": "D-016",
+      "question": "Run spikes now in parallel with design",
+      "options": [
+        "yes",
+        "wait"
+      ],
+      "recommendation": "yes",
+      "kind": "technical",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Yes",
+      "asked": "2026-10-13T07:08:30+00:00",
+      "answered": "2026-10-13T07:08:30+00:00"
     }
   ],
   "loops": {
@@ -209,6 +347,13 @@
       "started": "2026-10-13T06:27:18+00:00",
       "outcome": "converged",
       "ended": "2026-10-13T06:35:18+00:00"
+    },
+    "design-D1": {
+      "round": 1,
+      "max": 3,
+      "active": true,
+      "started": "2026-10-13T07:06:39+00:00",
+      "outcome": null
     }
   },
   "log": [
@@ -363,9 +508,141 @@
     {
       "at": "2026-10-13T06:42:27+00:00",
       "event": "gate product-spec passed: M-1 spec: 9 features ready; lint 0/0; 2 review rounds; D-001..D-007"
+    },
+    {
+      "at": "2026-10-13T06:42:44+00:00",
+      "event": "phase design -> in_progress"
+    },
+    {
+      "at": "2026-10-13T06:42:44+00:00",
+      "event": "design step: 2.1 style builder: discovery"
+    },
+    {
+      "at": "2026-10-13T06:42:44+00:00",
+      "event": "phase architecture -> in_progress"
+    },
+    {
+      "at": "2026-10-13T06:42:44+00:00",
+      "event": "design step: 3.1 architect agent proposing stack (background)"
+    },
+    {
+      "at": "2026-10-13T06:42:48+00:00",
+      "event": "design step: 2.1 style builder: discovery"
+    },
+    {
+      "at": "2026-10-13T06:42:48+00:00",
+      "event": "architecture: 3.1 architect agent proposing stack in background"
+    },
+    {
+      "at": "2026-10-13T06:55:27+00:00",
+      "event": "decision D-008 opened: Theme sync with portal (portal F-012 excludes it)"
+    },
+    {
+      "at": "2026-10-13T06:55:27+00:00",
+      "event": "decision D-008 answered: Small portal change: ?theme= on embed URL + postMessage on change; change request to be written for taro-kit, not applied by us"
+    },
+    {
+      "at": "2026-10-13T06:55:27+00:00",
+      "event": "decision D-009 opened: Tool address"
+    },
+    {
+      "at": "2026-10-13T06:55:27+00:00",
+      "event": "decision D-009 answered: https://json-formatter.tarokit.app"
+    },
+    {
+      "at": "2026-10-13T06:55:28+00:00",
+      "event": "Portal = ~/Documents/personals/taro-kit (Astro+Preact, Night Market tokens, tools on subdomains, sandboxed iframe ADR-0009). Tool reuses portal tokens; style: pro/dense, VS Code/JetBrains-like, compact."
+    },
+    {
+      "at": "2026-10-13T06:57:41+00:00",
+      "event": "design step: 2.1 style directions published (A Workbench / B Market / C Terminal); awaiting pick"
+    },
+    {
+      "at": "2026-10-13T06:57:42+00:00",
+      "event": "set style_directions_url"
+    },
+    {
+      "at": "2026-10-13T06:59:08+00:00",
+      "event": "decision D-010 opened: Style direction"
+    },
+    {
+      "at": "2026-10-13T06:59:08+00:00",
+      "event": "decision D-010 answered: A Workbench"
+    },
+    {
+      "at": "2026-10-13T07:00:19+00:00",
+      "event": "decision D-011 opened: Design tool"
+    },
+    {
+      "at": "2026-10-13T07:00:19+00:00",
+      "event": "decision D-011 answered: Claude Design canvas"
+    },
+    {
+      "at": "2026-10-13T07:00:19+00:00",
+      "event": "set design_tool"
+    },
+    {
+      "at": "2026-10-13T07:00:20+00:00",
+      "event": "design step: 2.3 design plan"
+    },
+    {
+      "at": "2026-10-13T07:01:02+00:00",
+      "event": "decision D-012 opened: Support phone widths"
+    },
+    {
+      "at": "2026-10-13T07:01:03+00:00",
+      "event": "decision D-012 answered: Down to 360 px"
+    },
+    {
+      "at": "2026-10-13T07:01:17+00:00",
+      "event": "set design_canvas_url"
+    },
+    {
+      "at": "2026-10-13T07:01:17+00:00",
+      "event": "design step: 2.4 D1 components: making"
+    },
+    {
+      "at": "2026-10-13T07:06:39+00:00",
+      "event": "loop design-D1 started (max 3)"
+    },
+    {
+      "at": "2026-10-13T07:06:40+00:00",
+      "event": "design step: 2.4 D1 components: audit round 1"
+    },
+    {
+      "at": "2026-10-13T07:08:29+00:00",
+      "event": "decision D-013 opened: Find in text (O-4)"
+    },
+    {
+      "at": "2026-10-13T07:08:29+00:00",
+      "event": "decision D-013 answered: Add to M-1"
+    },
+    {
+      "at": "2026-10-13T07:08:30+00:00",
+      "event": "decision D-014 opened: Offline support (O-5)"
+    },
+    {
+      "at": "2026-10-13T07:08:30+00:00",
+      "event": "decision D-014 answered: Yes in M-1 (cache-only service worker, ADR-0012)"
+    },
+    {
+      "at": "2026-10-13T07:08:30+00:00",
+      "event": "decision D-015 opened: Spec clarifications O-1..O-3"
+    },
+    {
+      "at": "2026-10-13T07:08:30+00:00",
+      "event": "decision D-015 answered: Accept all three"
+    },
+    {
+      "at": "2026-10-13T07:08:30+00:00",
+      "event": "decision D-016 opened: Run spikes now in parallel with design"
+    },
+    {
+      "at": "2026-10-13T07:08:30+00:00",
+      "event": "decision D-016 answered: Yes"
     }
   ],
-  "updated": "2026-10-13T06:42:27+00:00",
+  "updated": "2026-10-13T07:08:30+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
@@ -404,5 +681,7 @@
       "q": "Iframe integration: clipboard, drop, download, theme sync, sizing",
       "success": "works in Chrome/Firefox/Safari with the real sandbox/allow attributes"
     }
-  ]
+  ],
+  "style_directions_url": "https://claude.ai/artifact/LkKrHevgjd7DKgGsZP5uUS",
+  "design_canvas_url": "https://claude.ai/artifact/8xP24369wHcxHjdw7QtKgW"
 }

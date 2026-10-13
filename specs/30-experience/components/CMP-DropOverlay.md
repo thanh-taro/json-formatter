@@ -2,7 +2,7 @@
 id: CMP-DropOverlay
 title: Drop overlay
 status: ready
-tokens: []
+tokens: [radius.md, border.width.focus, motion.duration.base]
 ---
 
 ## Purpose

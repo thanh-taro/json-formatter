@@ -2,7 +2,7 @@
 id: CMP-TreeView
 title: Tree view
 status: ready
-tokens: []
+tokens: [font.size.code, size.codeLine, size.treeIndent, radius.sm]
 ---
 
 ## Purpose

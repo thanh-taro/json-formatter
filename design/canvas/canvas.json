@@ -1,0 +1,23 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-13T09:30:00Z"},
+  "title": "JSON Formatter Designs",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1200, "h": 760, "title": "SCR-Formatter / default / embedded", "is_interactive": true},
+    "CMP-Toolbar.dc.html": {"x": 0, "y": 1240, "w": 1280, "h": 1440, "title": "CMP-Toolbar"},
+    "CMP-Editor.dc.html": {"x": 1360, "y": 1240, "w": 1280, "h": 1180, "title": "CMP-Editor"},
+    "CMP-StatusBar.dc.html": {"x": 2720, "y": 1240, "w": 1280, "h": 1060, "title": "CMP-StatusBar"},
+    "CMP-IssuePanel.dc.html": {"x": 0, "y": 2800, "w": 1280, "h": 900, "title": "CMP-IssuePanel"},
+    "CMP-TreeView.dc.html": {"x": 1360, "y": 2800, "w": 1280, "h": 2440, "title": "CMP-TreeView"},
+    "CMP-DropOverlay.dc.html": {"x": 2720, "y": 2800, "w": 1280, "h": 680, "title": "CMP-DropOverlay"}
+  },
+  "order": ["Main.dc.html", "CMP-Toolbar.dc.html", "CMP-Editor.dc.html", "CMP-StatusBar.dc.html", "CMP-IssuePanel.dc.html", "CMP-TreeView.dc.html", "CMP-DropOverlay.dc.html"],
+  "notes": {
+    "screens": {"x": 0, "y": -300, "text": "Screens", "kind": "title1", "maxW": 1200},
+    "components": {"x": 0, "y": 940, "text": "Components (D1) — both themes", "kind": "title1", "maxW": 4000},
+    "about": {"x": 1280, "y": 0, "w": 420, "text": "JSON Formatter · Workbench style (D-010). Tokens mirror the taro-kit portal (Night Market) plus editor roles from specs/30-experience/tokens.json. Every UI string carries data-copy=COPY-ID; JSON in the editor and tree is SAMPLE data.", "fill": "purple"}
+  },
+  "designSystems": []
+}

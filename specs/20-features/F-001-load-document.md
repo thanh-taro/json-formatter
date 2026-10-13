@@ -6,7 +6,7 @@ milestone: M-1
 priority: P0
 personas: [PER-01]
 entities: [ENT-Document]
-rules: [RULE-02, RULE-13, RULE-15]
+rules: [RULE-02, RULE-13, RULE-15, RULE-17]
 screens: [SCR-Formatter]
 components: [CMP-Editor, CMP-Toolbar, CMP-DropOverlay]
 nfr: [NFR-02, NFR-04]
@@ -62,5 +62,6 @@ COPY-empty.title and COPY-empty.body. Loading shows COPY-progress.loading with c
 - Dropping a folder, or non-file content outside the editor text → ignored with COPY-error.not_a_file. Dragging text within the editor behaves as normal text editing.
 - Empty file → document becomes empty (not an error).
 - File with CRLF line endings → kept as-is; the document's line ending is recorded (used by beautify).
+- File or paste with mixed LF and CRLF → normalised to the dominant line ending (RULE-17).
 
 ## Open questions

@@ -6,7 +6,7 @@ milestone: M-1
 priority: P0
 personas: [PER-01]
 entities: [ENT-Document, ENT-IndentStyle]
-rules: [RULE-01, RULE-03, RULE-07, RULE-15]
+rules: [RULE-01, RULE-02, RULE-03, RULE-07, RULE-15]
 screens: [SCR-Formatter]
 components: [CMP-Toolbar, CMP-Editor]
 nfr: [NFR-02, NFR-03, NFR-08]
@@ -32,6 +32,8 @@ value (PRN-02).
 - **R6** Beautifying a large document shows progress and can be cancelled; the interface stays
   responsive throughout (PRN-04). While it runs, the document cannot be edited and other
   actions are unavailable; scrolling and cancel remain available.
+- **R7** If the result would exceed 100 MB, the user confirms first (RULE-02); declining leaves
+  the document unchanged.
 
 ## Acceptance criteria
 - **AC1** Given the document `{"a":[1,2],"b":{}}` and indent 2 spaces, when the user beautifies, then the document is exactly `{\n  "a": [\n    1,\n    2\n  ],\n  "b": {}\n}`. (R1, R2)
@@ -43,6 +45,7 @@ value (PRN-02).
 - **AC7** Given a document that was beautified, when the user undoes once, then the document is exactly as before beautifying. (R5)
 - **AC8** Given a 50 MB valid document, when the user beautifies, then progress is shown; the user can scroll and cancel; editing and all other actions are unavailable; cancelling leaves the document unchanged. (R6)
 - **AC9** Given a valid document with CRLF line endings that ends with a line break, when the user beautifies, then every line break in the result is CRLF and the result ends with one line break. (R1)
+- **AC10** Given a 20 KB document nested 10,000 levels deep, when the user beautifies with 2 spaces, then COPY-confirm.very_large is shown and the document is unchanged unless the user chooses COPY-action.continue. (R7)
 
 ## UX notes
 CMP-Toolbar: COPY-action.beautify and the indent selector (COPY-label.indent, options

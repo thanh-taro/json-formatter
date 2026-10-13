@@ -2,7 +2,7 @@
 id: CMP-Editor
 title: Text editor
 status: ready
-tokens: []
+tokens: [font.size.code, font.lineHeight.code, size.codeLine, space.3]
 ---
 
 ## Purpose
