@@ -5,6 +5,8 @@ import { defineConfig, type Plugin } from 'vite';
 import { readBootScript } from './scripts/lib/boot.mjs';
 // @ts-expect-error -- plain ESM build script without type declarations
 import { hostOrigins } from './scripts/gen-headers.mjs';
+// @ts-expect-error -- plain ESM build script without type declarations
+import { offline } from './scripts/lib/offline.mjs';
 
 /** Inlines the boot script (MOD-Host) at the top of <head>; its hash is in public/_headers. */
 function bootScript(): Plugin {
@@ -17,7 +19,7 @@ function bootScript(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [preact(), bootScript()],
+  plugins: [preact(), bootScript(), offline() as Plugin],
   define: {
     __HOST_ORIGINS__: JSON.stringify(hostOrigins()),
   },

@@ -1,5 +1,5 @@
 // MOD-Host — theme, origin-checked host messages, ready signal (ADR-0008); offline worker
-// (ADR-0012) arrives with F-011.
+// (ADR-0012, F-011) in ./offline.ts (page side) and ./sw.ts (/sw.js).
 // Implements: F-008.R1, F-008.R2, F-008.R4 (message side), F-008.R5, F-008.R6, RULE-16, INV-02,
 // NFR-09 (message-origin side).
 import { acceptThemeMessage, readyMessage, readyTargets } from './contract';
