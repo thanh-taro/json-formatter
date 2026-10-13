@@ -362,9 +362,8 @@ test('F-010.AC6 F-010.R6 NFR-02 in a 100 MB document typing a term stays respons
   expect(counts[finalAt]).toMatch(/^1 of [\d,.\s]+$/);
   const countingAt = counts.findLastIndex((c, i) => i < finalAt && /^1 of [\d,.\s]+\+$/.test(c));
   expect(countingAt).toBeGreaterThanOrEqual(0);
-  // review F-010 m2: once shown, the count never blanks while a new term is counted
-  const firstShown = counts.findIndex((c) => c !== '');
-  expect(counts.slice(firstShown).filter((c) => c === '')).toEqual([]);
+  // a new term never shows the previous term's count: blank until its first result, then counting
+  expect(counts.slice(0, countingAt).filter((c) => /\+$/.test(c) || c === '').length).toBeGreaterThan(0);
   await expect(current(page)).toHaveText('item');
   await reportShot(page, 'F-010/counting-100mb.png');
   const total = Number((await count(page).textContent())!.replace(/^1 of /, '').replace(/\D/g, ''));

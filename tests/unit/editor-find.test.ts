@@ -166,6 +166,26 @@ describe('RULE-18 matching', () => {
     expect(ours).toBeLessThan(native * 2 + 1);
   });
 
+  it('RULE-18 ADR-0004 review F-010 recomputing positions after the cache is evicted reads at most one step', () => {
+    const text = 'ab'.repeat(5000);
+    const reads: number[] = [];
+    const base = doc(text);
+    const source = {
+      length: base.length,
+      sliceString: (from: number, to?: number) => (reads.push((to ?? base.length) - from), base.sliceString(from, to)),
+    };
+    const index = new FindIndex(source, 'ab', false, 1000, 100);
+    while (!index.done) index.scanNext();
+    expect(Math.max(...reads)).toBeLessThanOrEqual(100 + 1);
+    reads.length = 0;
+    // cells near the start were evicted (only the last few are cached): visible range and ordinal
+    expect(index.between(10, 20)).toEqual([10, 12, 14, 16, 18]);
+    expect(index.ordinal(4000)).toBe(2001);
+    expect(index.firstAtOrAfter(5001)).toBe(5002);
+    expect(reads.length).toBeGreaterThan(0);
+    expect(Math.max(...reads)).toBeLessThanOrEqual(100 + 1);
+  });
+
   it('RULE-18 line breaks are part of the text (a term spanning lines matches)', () => {
     expect(all(new FindIndex(doc('{\n  "a": 1\n}'), '1\n}', false, 2))).toEqual([9]);
   });

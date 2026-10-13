@@ -3,9 +3,9 @@
 // as it is found and the total counted in later slices. The stock search package is not used
 // (synchronous, seconds at 50–100 MB, no count).
 //
-// Memory: only a count and a resume position per window are kept (≈ 100 windows at 100 MB);
-// match positions are recomputed per window on demand (a few cached), so a term with millions of
-// matches costs no per-match memory.
+// Memory: only a start, a count and a resume position per cell (≤ 256 K units) are kept (≈ 400
+// cells at 100 MB); match positions are recomputed per cell on demand (a few cached), so a term
+// with millions of matches costs no per-match memory.
 
 /** Window size in editor positions (architecture.md tunables: find window 1 MB). */
 export const FIND_WINDOW = 1 << 20;
@@ -13,8 +13,8 @@ export const FIND_WINDOW = 1 << 20;
 export const FIND_SLICE_MS = 8;
 /** Units lower-cased and scanned per step inside a window (bounds one piece of work). */
 export const FIND_STEP = 1 << 18;
-/** Windows whose match positions stay cached (the visible range and the current match). */
-const CACHED_WINDOWS = 4;
+/** Cells whose match positions stay cached (the visible range and the current match). */
+const CACHED_CELLS = 16;
 
 /** The part of the editor's `Text` the engine reads. */
 export interface FindSource {
@@ -63,17 +63,23 @@ function lowerBound(a: readonly number[], x: number): number {
 /**
  * Implements: RULE-18 — the matches of one term in one version of the document: literal,
  * case-insensitive unless `matchCase`, never overlapping (leftmost first, scanning from the start
- * of the document). Window k holds the matches starting in [k·W, (k+1)·W); a match may run into
- * the next window, whose scan then resumes after it.
+ * of the document). The text is scanned in cells: windows of ~1 MB, each split into steps of
+ * ≤ FIND_STEP units, so every piece of main-thread work — counting, or recomputing a cell's match
+ * positions for the visible range or for next/previous — is bounded (review F-010 M1). A match
+ * may run into the next cell, whose scan then resumes after it.
  */
 export class FindIndex {
   readonly windows: number;
   readonly termLength: number;
   private readonly needle: string;
-  /** resume[k]: where the leftmost-first scan continues for window k. */
-  private readonly resume: number[] = [0];
-  /** prefix[k]: matches in windows before k (prefix.length = scanned + 1). */
+  /** Start of each scanned cell (sorted). */
+  private readonly cellFrom: number[] = [];
+  /** Where the leftmost-first scan resumes in each scanned cell (≥ its start). */
+  private readonly cellResume: number[] = [];
+  /** prefix[c]: matches in cells before c (prefix.length = scanned cells + 1). */
   private readonly prefix: number[] = [0];
+  /** The next cell to scan. */
+  private next = { from: 0, resume: 0 };
   private readonly cache = new Map<number, number[]>();
 
   constructor(
@@ -88,48 +94,41 @@ export class FindIndex {
     this.windows = Math.max(1, Math.ceil(src.length / window));
   }
 
-  /** Windows scanned so far (always a prefix of the document). */
-  get scanned(): number {
-    return this.prefix.length - 1;
-  }
   get done(): boolean {
-    return this.scanned >= this.windows;
+    return this.next.from >= this.src.length;
   }
   /** Matches counted so far (final once `done`). */
   get total(): number {
-    return this.prefix[this.scanned]!;
+    return this.prefix[this.cells]!;
+  }
+  private get cells(): number {
+    return this.cellFrom.length;
   }
 
-  /** The window being scanned in steps (a window's matches count only once it is complete). */
-  private partial: { k: number; pos: number; positions: number[] } | null = null;
-
-  /** Scans the next window completely and returns its index. */
+  /** Scans the rest of the current window and returns its index. */
   scanNext(): number {
-    const k = this.scanned;
+    const k = Math.floor(this.next.from / this.window);
     while (!this.scanStep());
     return k;
   }
 
   /**
-   * Scans one step (≤ FIND_STEP units) of the next window; returns true when the window is
-   * complete. Steps keep each piece of main-thread work small even where lower-casing is slow
-   * (non-ASCII text), so a slice never overruns by a whole window (review F-010 M1).
+   * Scans the next cell (≤ FIND_STEP units, never across a window boundary); returns true when a
+   * window is complete or the document is.
    */
   scanStep(): boolean {
-    const k = this.scanned;
-    const part = (this.partial ??= { k, pos: this.resume[k]!, positions: [] });
-    const end = this.windowEnd(k);
-    if (part.pos < end) part.pos = this.scanRange(part.pos, Math.min(end, part.pos + this.step), part.positions);
-    if (part.pos < end) return false;
-    this.partial = null;
-    this.prefix.push(this.total + part.positions.length);
-    this.resume.push(part.pos);
-    this.remember(k, part.positions);
-    return true;
-  }
-
-  private windowEnd(k: number): number {
-    return Math.min(this.src.length, (k + 1) * this.window);
+    if (this.done) return true;
+    const { from, resume } = this.next;
+    const windowEnd = (Math.floor(from / this.window) + 1) * this.window;
+    const end = Math.min(this.src.length, from + this.step, windowEnd);
+    const positions: number[] = [];
+    const after = this.scanRange(resume, end, positions);
+    this.prefix.push(this.total + positions.length);
+    this.cellFrom.push(from);
+    this.cellResume.push(resume);
+    this.remember(this.cells - 1, positions);
+    this.next = { from: end, resume: after };
+    return end >= windowEnd || this.done;
   }
 
   /**
@@ -149,45 +148,47 @@ export class FindIndex {
     return Math.max(after, end);
   }
 
-  /** All matches of scanned window `k`, recomputed from its resume position. */
-  private scanWindow(k: number): number[] {
-    const positions: number[] = [];
-    const end = this.windowEnd(k);
-    for (let pos = this.resume[k]!; pos < end;) pos = this.scanRange(pos, Math.min(end, pos + this.step), positions);
-    return positions;
+  private remember(c: number, positions: number[]): void {
+    this.cache.delete(c);
+    this.cache.set(c, positions);
+    if (this.cache.size > CACHED_CELLS) this.cache.delete(this.cache.keys().next().value!);
   }
 
-  private remember(k: number, positions: number[]): void {
-    this.cache.delete(k);
-    this.cache.set(k, positions);
-    if (this.cache.size > CACHED_WINDOWS) this.cache.delete(this.cache.keys().next().value!);
+  private count(c: number): number {
+    return this.prefix[c + 1]! - this.prefix[c]!;
   }
 
-  private count(k: number): number {
-    return this.prefix[k + 1]! - this.prefix[k]!;
-  }
-
-  /** Match positions in scanned window `k`. */
-  private matchesIn(k: number): readonly number[] {
-    const hit = this.cache.get(k);
+  /** Match positions in scanned cell `c` (recomputed from its resume position: ≤ one step). */
+  private matchesIn(c: number): readonly number[] {
+    const hit = this.cache.get(c);
     if (hit) {
-      this.remember(k, hit);
+      this.remember(c, hit);
       return hit;
     }
-    const positions = this.scanWindow(k);
-    this.remember(k, positions);
+    const end = c + 1 < this.cells ? this.cellFrom[c + 1]! : this.next.from;
+    const positions: number[] = [];
+    this.scanRange(this.cellResume[c]!, end, positions);
+    this.remember(c, positions);
     return positions;
   }
 
-  private windowOf(pos: number): number {
-    return Math.min(this.windows - 1, Math.max(0, Math.floor(pos / this.window)));
+  /** The scanned cell containing `pos` (the first or last cell when outside), -1 when none. */
+  private cellOf(pos: number): number {
+    let lo = 0;
+    let hi = this.cells;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (this.cellFrom[mid]! <= pos) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo - 1;
   }
 
   /** The first match at or after `pos`: a position, `null` when there is none, `undefined` while unknown. */
   firstAtOrAfter(pos: number): number | null | undefined {
-    for (let k = this.windowOf(pos); k < this.scanned; k++) {
-      if (!this.count(k)) continue;
-      const ms = this.matchesIn(k);
+    for (let c = Math.max(0, this.cellOf(pos)); c < this.cells; c++) {
+      if (!this.count(c)) continue;
+      const ms = this.matchesIn(c);
       const i = lowerBound(ms, pos);
       if (i < ms.length) return ms[i];
     }
@@ -197,11 +198,10 @@ export class FindIndex {
   /** The last match before `pos`: a position, `null` when there is none, `undefined` while unknown. */
   lastBefore(pos: number): number | null | undefined {
     if (pos <= 0) return null;
-    const top = this.windowOf(pos - 1);
-    if (top >= this.scanned) return undefined;
-    for (let k = top; k >= 0; k--) {
-      if (!this.count(k)) continue;
-      const ms = this.matchesIn(k);
+    if (!this.done && pos - 1 >= this.next.from) return undefined;
+    for (let c = this.cellOf(pos - 1); c >= 0; c--) {
+      if (!this.count(c)) continue;
+      const ms = this.matchesIn(c);
       const i = lowerBound(ms, pos) - 1;
       if (i >= 0) return ms[i];
     }
@@ -215,18 +215,17 @@ export class FindIndex {
 
   /** 1-based number of the match at `pos` (a scanned match). */
   ordinal(pos: number): number {
-    const k = this.windowOf(pos);
-    return this.prefix[k]! + lowerBound(this.matchesIn(k), pos) + 1;
+    const c = this.cellOf(pos);
+    return this.prefix[c]! + lowerBound(this.matchesIn(c), pos) + 1;
   }
 
   /** Scanned matches overlapping [from, to), in order. */
   between(from: number, to: number): number[] {
     const out: number[] = [];
-    const first = this.windowOf(from - this.termLength + 1);
-    const lastK = Math.min(this.scanned - 1, this.windowOf(to - 1));
-    for (let k = first; k <= lastK; k++) {
-      if (!this.count(k)) continue;
-      for (const p of this.matchesIn(k)) if (p + this.termLength > from && p < to) out.push(p);
+    const last = this.cellOf(to - 1);
+    for (let c = Math.max(0, this.cellOf(from - this.termLength + 1)); c <= last; c++) {
+      if (!this.count(c)) continue;
+      for (const p of this.matchesIn(c)) if (p + this.termLength > from && p < to) out.push(p);
     }
     return out;
   }
@@ -382,7 +381,8 @@ export class FindSession {
     if (!index || this.closed) return;
     const t0 = this.host.now();
     do {
-      if (index.scanStep()) this.resolve();
+      index.scanStep();
+      this.resolve();
     } while (!index.done && this.host.now() - t0 < FIND_SLICE_MS);
     if (index.done) this.resolve();
     this.emit();

@@ -90,7 +90,9 @@ export class FindController {
       this.announcement.value = '';
       return;
     }
-    // The previous count stays shown until the new search knows its first match (review m2).
+    // A new term or match case never shows the previous term's count: nothing until the new
+    // search knows its first result. (Recounts after an edit keep the count: FindSession.)
+    this.status.value = null;
     const session = ed.find(term, { matchCase: this.matchCase.value });
     this.session = session;
     session.onCount((s) => {
