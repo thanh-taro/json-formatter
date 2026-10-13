@@ -2,7 +2,9 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 export const CORPUS_DIR = new URL('../fixtures/JSONTestSuite/test_parsing/', import.meta.url);
-export const hasCorpus = (): boolean => existsSync(CORPUS_DIR);
+/** True only when the corpus is really there (an empty or partial checkout skips the suite). */
+export const hasCorpus = (): boolean =>
+  existsSync(CORPUS_DIR) && readdirSync(CORPUS_DIR).some((f) => f.endsWith('.json'));
 
 /** y_ must be accepted, n_ must be rejected, i_ is implementation-defined (recorded per case). */
 export type Expectation = 'accept' | 'reject' | 'implementation';

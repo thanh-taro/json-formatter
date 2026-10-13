@@ -133,3 +133,39 @@ export function prunable(cachedKeys: readonly string[], seeded: readonly string[
     return !isPagePath(u.pathname) && !keep.has(k);
   });
 }
+
+const CHUNKS_META = /<meta\s+name="tk-chunks"\s+content="([^"]*)"/;
+
+/**
+ * The build chunks a page names in its `tk-chunks` meta (MOD-Build), as cache keys; null when
+ * the page has no such list (then it cannot be checked and is never stored).
+ */
+export function pageChunks(html: string, origin: string): string[] | null {
+  const m = CHUNKS_META.exec(html);
+  if (!m) return null;
+  const out: string[] = [];
+  for (const p of (m[1] ?? '').split(/\s+/).filter(Boolean)) {
+    let u: URL;
+    try {
+      u = new URL(p, origin);
+    } catch {
+      return null;
+    }
+    const key = cacheKey(u, origin);
+    if (!key || !isAssetPath(u.pathname)) return null;
+    out.push(key);
+  }
+  return out;
+}
+
+/**
+ * Whether a fetched page may replace the stored one: every chunk it names is already in the
+ * cache. The page fetched for seeding can be a newer HTML than the one that was loaded (the HTTP
+ * cache may hold an unseeded version); storing it without its assets would open blank offline.
+ */
+export function pageStorable(html: string, cachedKeys: readonly string[], origin: string): boolean {
+  const chunks = pageChunks(html, origin);
+  if (!chunks) return false;
+  const have = new Set(cachedKeys);
+  return chunks.every((c) => have.has(c));
+}

@@ -292,4 +292,33 @@ test.describe('F-011 offline', () => {
     await useTheTool(third);
     await context.close();
   });
+
+  test('F-011.AC1 a newer page in the HTTP cache whose assets were never loaded does not replace the stored page', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/?theme=dark');
+    await opened(page);
+    await seeded(page);
+    // A new version is published; this session asks the worker to seed an address it never
+    // loaded, so the page fetched for seeding is the new HTML whose assets are not cached.
+    await admin(request, '/publish?on=1');
+    const mark = (await serverLog(request)).now;
+    await page.evaluate(async () =>
+      (await navigator.serviceWorker.ready).active?.postMessage({ type: 'seed', urls: ['/?theme=light'] }),
+    );
+    await expect
+      .poll(async () => (await serverLog(request)).log.some((e) => e.t > mark && e.path === '/?theme=light'))
+      .toBe(true);
+    await page.waitForTimeout(500);
+    const storedPage = await page.evaluate(async (name) => (await (await caches.open(name)).match('/'))?.text(), CACHE);
+    expect(storedPage).toBeTruthy();
+    expect(storedPage).not.toContain('tk-test-version');
+    // Offline, the stored (loaded) version opens complete and works.
+    await admin(request, '/offline?on=1');
+    await page.goto('/?theme=dark');
+    await opened(page);
+    await expect(page.locator('meta[name="tk-test-version"]')).toHaveCount(0);
+    await useTheTool(page);
+  });
 });

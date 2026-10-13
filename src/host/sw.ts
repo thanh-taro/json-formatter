@@ -10,7 +10,17 @@
 // closed, and the page never reloads itself (F-011.R3).
 // Classic script: this file must not import anything shared with the page (one bundle entry).
 // Implements: F-011.R1, F-011.R2, F-011.R3, NFR-01 (D-021 exception only), PRN-01.
-import { CACHE_NAME, cacheKey, prunable, routeOf, seedPlan, staleCaches } from './offline-policy';
+import {
+  CACHE_NAME,
+  cacheKey,
+  pageChunks,
+  pageStorable,
+  prunable,
+  routeOf,
+  seedPlan,
+  staleCaches,
+  type SeedTarget,
+} from './offline-policy';
 
 // Minimal service-worker typings (the DOM lib is in scope; WebWorker types would clash).
 interface ExtendableEvent extends Event {
@@ -74,31 +84,43 @@ scope.addEventListener('fetch', (event) => {
 });
 
 // Seeding: the page posts the files it already loaded; they come from the HTTP cache. Assets
-// first, the page last (always replaced); pruning only after a complete seed.
+// first, then the page — stored only when every chunk it names is in the cache (the HTML the HTTP
+// cache returns may be a newer, unseeded version than the page that was loaded); otherwise the
+// stored page is kept. Pruning only after a page was stored. Seeds run one at a time.
+let seeding: Promise<unknown> = Promise.resolve();
+
+async function seed(assets: readonly SeedTarget[], page: SeedTarget): Promise<void> {
+  const cache = await caches.open(CACHE_NAME);
+  const get = async (href: string) => {
+    try {
+      const res = await fetch(href, { cache: 'force-cache' });
+      return usable(res) ? res : null;
+    } catch {
+      return null; // offline or evicted: kept for the next visit
+    }
+  };
+  for (const { href, key } of assets) {
+    if (await cache.match(key)) continue;
+    const res = await get(href);
+    if (!res) return;
+    await cache.put(key, res);
+  }
+  const res = await get(page.href);
+  if (!res) return;
+  const keys = (await cache.keys()).map((r) => r.url);
+  const html = await res.clone().text();
+  if (!pageStorable(html, keys, ORIGIN)) return;
+  await cache.put(page.key, res);
+  // Keep what this session loaded and everything the stored page names.
+  const keep = [...assets.map((a) => a.key), ...(pageChunks(html, ORIGIN) ?? [])];
+  for (const key of prunable(keys, keep, ORIGIN)) await cache.delete(key);
+}
+
 scope.addEventListener('message', (event) => {
   if (event.origin !== ORIGIN) return;
   const { assets, page } = seedPlan(event.data, ORIGIN);
   if (!page) return;
-  event.waitUntil(
-    (async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const store = async (href: string, key: string) => {
-        try {
-          const res = await fetch(href, { cache: 'force-cache' });
-          if (!usable(res)) return false;
-          await cache.put(key, res);
-          return true;
-        } catch {
-          return false; // offline or evicted: kept for the next visit
-        }
-      };
-      for (const { href, key } of assets) {
-        if (!(await cache.match(key)) && !(await store(href, key))) return;
-      }
-      if (!(await store(page.href, page.key))) return;
-      const keys = (await cache.keys()).map((r) => r.url);
-      const seeded = assets.map((a) => a.key);
-      for (const key of prunable(keys, seeded, ORIGIN)) await cache.delete(key);
-    })(),
-  );
+  const run = () => seed(assets, page);
+  seeding = seeding.then(run, run);
+  event.waitUntil(seeding);
 });

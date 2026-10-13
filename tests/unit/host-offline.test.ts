@@ -7,6 +7,8 @@ import {
   CACHE_NAME,
   cacheKey,
   MAX_SEED_URLS,
+  pageChunks,
+  pageStorable,
   prunable,
   routeOf,
   seedPlan,
@@ -122,6 +124,18 @@ describe('seeding', () => {
       `${O}/third-party-notices.txt`,
       `${O}/assets/a.js?x=1`,
     ]);
+  });
+});
+
+describe('which fetched page may be stored', () => {
+  const page = (chunks: string) => `<head><meta name="tk-chunks" content="${chunks}" /></head>`;
+  it('F-011.R1 a page is stored only when every chunk it names is cached', () => {
+    expect(pageChunks(page('/assets/a.js /assets/b.css'), O)).toEqual([`${O}/assets/a.js`, `${O}/assets/b.css`]);
+    expect(pageStorable(page('/assets/a.js'), [`${O}/`, `${O}/assets/a.js`], O)).toBe(true);
+    expect(pageStorable(page('/assets/a.js /assets/b.js'), [`${O}/assets/a.js`], O)).toBe(false);
+    expect(pageStorable('<head><title>no list</title></head>', [`${O}/assets/a.js`], O)).toBe(false);
+    expect(pageStorable(page('https://evil.example/assets/a.js'), [], O)).toBe(false);
+    expect(pageStorable(page('/sw.js'), [], O)).toBe(false);
   });
 });
 
