@@ -4,7 +4,7 @@
 // must arrive at least every second; otherwise (or on an `error` event) the worker is
 // terminated and restarted, every running job fails with `internal`, and the owner re-seeds
 // the mirror (callers discard their pending documents, INV-03).
-import type { LineEnding, ValidationResult } from '../core';
+import type { ContainerRef, LineEnding, TreeItem, ValidationResult } from '../core';
 import type { ChangeSetJSON, FailReason, FromWorker, JobSpec, TextFacts, ToWorker } from './protocol';
 
 export class JobFailure extends Error {
@@ -26,7 +26,9 @@ export type JobResult =
   | { type: 'loaded'; facts: TextFacts }
   | { type: 'formatted'; facts: TextFacts }
   | { type: 'blob'; blob: Blob }
-  | { type: 'validation'; version: number; result: ValidationResult };
+  | { type: 'validation'; version: number; result: ValidationResult }
+  | { type: 'treeRoot'; version: number; root: TreeItem }
+  | { type: 'treeRows'; version: number; rows: TreeItem[] };
 
 export interface Job {
   readonly jobId: number;
@@ -54,6 +56,24 @@ interface Running {
   settled: boolean;
   resolve: (r: JobResult) => void;
   reject: (e: JobFailure) => void;
+}
+
+type ResultMessage = Extract<FromWorker, { type: JobResult['type'] }>;
+
+function resultOf(msg: ResultMessage): JobResult {
+  switch (msg.type) {
+    case 'loaded':
+    case 'formatted':
+      return { type: msg.type, facts: msg.facts };
+    case 'blob':
+      return { type: 'blob', blob: msg.blob };
+    case 'validation':
+      return { type: 'validation', version: msg.version, result: msg.result };
+    case 'treeRoot':
+      return { type: 'treeRoot', version: msg.version, root: msg.root };
+    case 'treeRows':
+      return { type: 'treeRows', version: msg.version, rows: msg.rows };
+  }
 }
 
 function defaultWorker(): WorkerLike {
@@ -148,18 +168,12 @@ export class WorkerClient {
       case 'loaded':
       case 'formatted':
       case 'blob':
-      case 'validation': {
+      case 'validation':
+      case 'treeRoot':
+      case 'treeRows': {
         const r = this.running.get(msg.jobId);
         this.running.delete(msg.jobId);
-        if (r)
-          this.settle(
-            r,
-            msg.type === 'loaded' || msg.type === 'formatted'
-              ? { type: msg.type, facts: msg.facts }
-              : msg.type === 'blob'
-                ? { type: 'blob', blob: msg.blob }
-                : { type: 'validation', version: msg.version, result: msg.result },
-          );
+        if (r) this.settle(r, resultOf(msg));
         return;
       }
       case 'failed': {
@@ -234,9 +248,29 @@ export class WorkerClient {
     version: number,
     lineEnding: LineEnding,
     skipTable = false,
+    hooks: JobHooks = {},
   ): Promise<{ version: number; result: ValidationResult }> {
-    return this.run({ kind: 'validate', version, lineEnding, skipTable, supersedes: 'validate' }).result.then((r) =>
-      r.type === 'validation' ? r : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
+    return this.run({ kind: 'validate', version, lineEnding, skipTable, supersedes: 'validate' }, hooks).result.then(
+      (r) => (r.type === 'validation' ? r : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`))),
+    );
+  }
+
+  /** Implements: F-006.R1, F-006.R8 — the tree's root at `version` (progress while the
+   * standalone structural pass runs, ADR-0007 §1); `cancel` stops it within one slice. */
+  treeOpen(version: number, hooks: JobHooks = {}): { root: Promise<TreeItem>; cancel: () => void } {
+    const job = this.run({ kind: 'treeOpen', version }, hooks);
+    return {
+      root: job.result.then((r) =>
+        r.type === 'treeRoot' ? r.root : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
+      ),
+      cancel: () => job.cancel(),
+    };
+  }
+
+  /** Implements: F-006.R2, F-006.R3 — children [from, from + count) of a container at `version`. */
+  treeChildren(version: number, container: ContainerRef, from: number, count: number): Promise<TreeItem[]> {
+    return this.run({ kind: 'treeChildren', version, container, from, count }).result.then((r) =>
+      r.type === 'treeRows' ? r.rows : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
     );
   }
 

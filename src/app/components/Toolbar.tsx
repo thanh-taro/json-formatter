@@ -2,7 +2,7 @@
 // "empty document" and "busy" states; toolbar keyboard model (WAI-ARIA APG: one Tab stop,
 // Left/Right arrows move between enabled controls, Home/End go to the first/last). Export group
 // wired by F-007 (COPY-action.copy, COPY-action.download); beautify, minify and the indent selector
-// (F-002, F-003). The other actions arrive with F-004…F-010.
+// (F-002, F-003); the view switch (F-006). The other actions arrive with F-004…F-010.
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../../copy';
 import type { AppController } from '../controller';
@@ -20,6 +20,7 @@ export function Toolbar({ app }: { app: AppController }) {
   const busy = app.blocked();
   // Busy: every action disabled except cancel (in the progress bar), D-005.
   const off = empty || busy;
+  const view = app.state.view.value;
   const bar = useRef<HTMLDivElement>(null);
   const current = useRef<HTMLElement | null>(null);
 
@@ -99,11 +100,24 @@ export function Toolbar({ app }: { app: AppController }) {
         </button>
         <IndentSelector app={app} disabled={off} />
       </div>
+      {/* Implements: F-006.R1 — the view switch (COPY-label.view). */}
       <div class="tk-toolbar__group" role="group" aria-label={t('label.view')}>
-        <button type="button" class="tk-button" aria-pressed="true" disabled={off}>
+        <button
+          type="button"
+          class="tk-button"
+          aria-pressed={view === 'text'}
+          disabled={off}
+          onClick={() => app.showTextView()}
+        >
           {t('view.text')}
         </button>
-        <button type="button" class="tk-button" aria-pressed="false" disabled={off}>
+        <button
+          type="button"
+          class="tk-button"
+          aria-pressed={view === 'tree'}
+          disabled={off}
+          onClick={() => app.showTreeView()}
+        >
           {t('view.tree')}
         </button>
       </div>

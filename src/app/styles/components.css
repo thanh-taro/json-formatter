@@ -30,6 +30,15 @@
     block-size: var(--tk-size-target-min);
   }
 
+  /* CMP-TreeView host (F-006): covers the main area in the tree view; MOD-Tree renders inside. */
+  .tk-tree-host {
+    position: absolute;
+    inset: 0;
+  }
+  .tk-tree-host[hidden] {
+    display: none;
+  }
+
   /* CMP-Editor host: the engine lives in its shadow root (ADR-0004). */
   .tk-editor {
     position: relative;

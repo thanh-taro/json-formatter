@@ -48,3 +48,22 @@ export {
 export { beautifiedBytes, formatText } from './format';
 export { PositionResolver, resolvePositions, type Position } from './positions';
 export { positionsOf, resultOf, validateText, type ValidationResult } from './result';
+export {
+  KIND_OBJECT,
+  KIND_ARRAY,
+  KIND_STRING,
+  KIND_NUMBER,
+  KIND_TRUE,
+  KIND_FALSE,
+  KIND_NULL,
+  GROUP,
+  PREVIEW_MAX,
+  TreeIndex,
+  formatPath,
+  groupSize,
+  isContainer,
+  kindName,
+  type NodeKind,
+  type TreeItem,
+  type ContainerRef,
+} from './tree';

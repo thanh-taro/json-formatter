@@ -31,7 +31,13 @@ export function formatCount(n: number): string {
 }
 
 /** Messages with a count whose final word is singular when the count is 1 (copy.md notes). */
-export type CountedId = 'status.valid_warnings' | 'status.size_lines' | 'status.size_lines_short' | 'issue.more';
+export type CountedId =
+  | 'status.valid_warnings'
+  | 'status.size_lines'
+  | 'status.size_lines_short'
+  | 'issue.more'
+  | 'tree.count_keys'
+  | 'tree.count_items';
 
 /**
  * `t()` for a message with a count (`{count}`, or `{lines}` for the size line): the number is

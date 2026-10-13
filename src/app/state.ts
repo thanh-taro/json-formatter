@@ -77,8 +77,12 @@ export function createAppState() {
     dragging: signal(false),
     /** Newest last (F-007.R1). */
     toasts: signal<readonly Toast[]>([]),
-    /** The main area's view (SCR-Formatter; the tree view arrives with F-006). */
+    /** The main area's view (SCR-Formatter, F-006.R1). */
     view: signal<'text' | 'tree'>('text'),
+    /** The editor's current document version (MOD-App "current version"; INV-05). */
+    version: signal(0),
+    /** Progress (0–1) of the validation running for `version` (CMP-TreeView checking, NFR-02). */
+    checkProgress: signal(0),
     /** The indent style chosen in CMP-Toolbar's indent selector (RULE-01, default 2 spaces);
      * shared by beautify (F-002) and re-indent (F-004). */
     indent: signal<IndentStyle>({ kind: 'spaces', width: 2 }),

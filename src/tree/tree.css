@@ -1,0 +1,336 @@
+/* CMP-TreeView (F-006; design CMP-TreeView, FLOW-03, SCR-Formatter tree boards). Tokens only
+   (ADR-0011). Rows are size.treeRow high, size.touchTarget on coarse pointers; the virtual list
+   reads the row height from --tk-tree-row. */
+@layer components {
+  .tk-tree {
+    --tk-tree-row: var(--tk-size-tree-row);
+    --tk-tree-target: var(--tk-size-target-min);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--tk-color-bg);
+    color: var(--tk-color-fg);
+  }
+  @media (pointer: coarse) {
+    .tk-tree {
+      --tk-tree-row: var(--tk-size-touch-target);
+      --tk-tree-target: var(--tk-size-touch-target);
+    }
+  }
+  .tk-tree [hidden] {
+    display: none !important;
+  }
+
+  /* Header: selected row's path · actions · collapse all (D-018). */
+  .tk-tree__header {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--tk-space-2);
+    min-block-size: var(--tk-size-panel-header);
+    padding-block: 0;
+    padding-inline: var(--tk-space-3) var(--tk-space-1);
+    background: var(--tk-color-surface);
+    border-block-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    color: var(--tk-color-muted);
+  }
+  .tk-tree__path {
+    flex: 1;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--tk-color-fg);
+  }
+  .tk-tree__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--tk-space-1);
+  }
+  .tk-tree__action,
+  .tk-tree__collapse {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--tk-space-2);
+    min-block-size: var(--tk-tree-target);
+    min-inline-size: var(--tk-tree-target);
+    padding-inline: var(--tk-space-2);
+    border: var(--tk-border-width-hairline) solid transparent;
+    border-radius: var(--tk-radius-sm);
+    background: none;
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-body);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-medium);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .tk-tree__action:hover:not(:disabled),
+  .tk-tree__collapse:hover:not(:disabled) {
+    background: var(--tk-color-surface2);
+  }
+  .tk-tree__action:disabled,
+  .tk-tree__collapse:disabled {
+    color: var(--tk-color-muted);
+    cursor: default;
+  }
+  .tk-tree__icon {
+    display: inline-flex;
+    flex: none;
+  }
+  .tk-tree__icon svg,
+  .tk-tree__message-icon svg {
+    inline-size: var(--tk-size-icon-sm);
+    block-size: var(--tk-size-icon-sm);
+    stroke-width: 1.5;
+  }
+  .tk-tree__sep {
+    inline-size: var(--tk-border-width-hairline);
+    block-size: var(--tk-space-5);
+    margin-inline: var(--tk-space-1);
+    background: var(--tk-color-line);
+  }
+  /* Coarse pointers: icon-only actions, each a touch target, named by its hidden label. */
+  @media (pointer: coarse) {
+    .tk-tree__header {
+      min-block-size: calc(var(--tk-size-touch-target) + var(--tk-space-2));
+    }
+    .tk-tree__action {
+      padding-inline: 0;
+    }
+    .tk-tree__action-label {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  /* Checking bar (F-006.R10): COPY-tree.checking, progress, cancel. */
+  .tk-tree__checking {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--tk-space-2);
+    min-block-size: var(--tk-size-toolbar);
+    padding-block: var(--tk-space-1);
+    padding-inline: var(--tk-space-3) var(--tk-space-1);
+    border-block-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
+    background: var(--tk-color-surface2);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-medium);
+  }
+  .tk-tree__checking-label,
+  .tk-tree__progress-label {
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    white-space: nowrap;
+  }
+  .tk-tree__spacer-flex {
+    flex: 1;
+  }
+  .tk-tree__track {
+    display: inline-block;
+    inline-size: calc(var(--tk-space-10) * 4);
+    max-inline-size: 30%;
+    block-size: var(--tk-space-1);
+    border-radius: var(--tk-radius-pill);
+    background: var(--tk-color-line);
+    overflow: hidden;
+  }
+  .tk-tree__message .tk-tree__track {
+    max-inline-size: 60%;
+  }
+  .tk-tree__fill {
+    display: block;
+    block-size: 100%;
+    background: var(--tk-color-accent);
+  }
+
+  /* Manual copy field (F-006.R9). */
+  .tk-tree__fallback {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--tk-space-2);
+    padding: var(--tk-space-2) var(--tk-space-3);
+    border-block-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
+    background: var(--tk-color-surface);
+  }
+  .tk-tree__fallback-label {
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    color: var(--tk-color-muted);
+  }
+  .tk-tree__fallback-input {
+    flex: 1;
+    min-inline-size: calc(var(--tk-space-10) * 4);
+    min-block-size: var(--tk-size-control);
+    padding-inline: var(--tk-space-2);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-accent);
+    border-radius: var(--tk-radius-sm);
+    background: var(--tk-color-selection);
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-code);
+  }
+  @media (pointer: coarse) {
+    .tk-tree__fallback-input {
+      min-block-size: var(--tk-size-touch-target);
+      font-size: var(--tk-font-size-input);
+    }
+  }
+
+  /* The virtual list (ADR-0007 §4). */
+  .tk-tree__viewport {
+    position: relative;
+    flex: 1;
+    min-block-size: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-code);
+    contain: strict;
+  }
+  .tk-tree__viewport:focus-visible {
+    outline-offset: calc(-1 * var(--tk-border-width-focus));
+  }
+  .tk-tree__spacer {
+    position: relative;
+    inline-size: 100%;
+  }
+  .tk-tree__layer {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+    will-change: transform;
+  }
+  .tk-tree__row {
+    --tk-tree-level: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    block-size: var(--tk-tree-row);
+    padding-inline: calc(var(--tk-tree-level) * var(--tk-size-tree-indent) + var(--tk-space-1)) var(--tk-space-1);
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: default;
+    line-height: var(--tk-tree-row);
+  }
+  .tk-tree__row:focus-visible {
+    outline-offset: calc(-1 * var(--tk-border-width-focus));
+  }
+  .tk-tree__row--selected {
+    background: var(--tk-color-selection);
+    box-shadow: inset var(--tk-border-width-focus) 0 0 var(--tk-color-accent);
+  }
+  .tk-tree__twisty {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--tk-tree-target);
+    block-size: var(--tk-tree-target);
+    color: var(--tk-color-muted);
+    cursor: pointer;
+  }
+  .tk-tree__twisty svg {
+    inline-size: var(--tk-size-icon-sm);
+    block-size: var(--tk-size-icon-sm);
+    stroke-width: 1.5;
+  }
+  .tk-tree__row[aria-expanded='true'] .tk-tree__twisty svg {
+    transform: rotate(90deg);
+  }
+  .tk-tree__twisty--leaf {
+    visibility: hidden;
+  }
+  .tk-tree__key {
+    color: var(--tk-color-syntax-key);
+  }
+  .tk-tree__key--root,
+  .tk-tree__row--loading .tk-tree__key {
+    color: var(--tk-color-fg);
+  }
+  .tk-tree__key--group {
+    color: var(--tk-color-muted);
+  }
+  .tk-tree__kind {
+    padding-inline: var(--tk-space-1);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line);
+    border-radius: var(--tk-radius-sm);
+    color: var(--tk-color-muted);
+    font-size: var(--tk-font-size-xs);
+    line-height: var(--tk-space-4);
+  }
+  .tk-tree__value {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tk-tree__value--count {
+    color: var(--tk-color-muted);
+  }
+  .tk-tree__value--string {
+    color: var(--tk-color-syntax-string);
+  }
+  .tk-tree__value--number {
+    color: var(--tk-color-syntax-number);
+  }
+  .tk-tree__value--literal {
+    color: var(--tk-color-syntax-literal);
+  }
+  /* Out of date (INV-05): the previous tree, dimmed. */
+  .tk-tree__viewport--stale .tk-tree__row,
+  .tk-tree__viewport--stale .tk-tree__key,
+  .tk-tree__viewport--stale .tk-tree__value {
+    color: var(--tk-color-muted);
+  }
+
+  /* Invalid, unavailable and building states. */
+  .tk-tree__message {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--tk-space-3);
+    padding: var(--tk-space-4);
+    text-align: center;
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-medium);
+    line-height: var(--tk-space-5);
+  }
+  .tk-tree__message-text {
+    margin: 0;
+    max-inline-size: calc(var(--tk-space-16) * 6);
+  }
+  .tk-tree__message-icon {
+    display: inline-flex;
+    color: var(--tk-color-muted);
+  }
+  .tk-tree__message-icon svg {
+    inline-size: var(--tk-size-icon-md);
+    block-size: var(--tk-size-icon-md);
+  }
+  .tk-tree__message-icon--danger {
+    color: var(--tk-color-danger);
+  }
+  .tk-tree__go-location {
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    color: var(--tk-color-muted);
+  }
+  @media (pointer: coarse) {
+    .tk-tree__message .tk-button {
+      min-block-size: var(--tk-size-touch-target);
+    }
+  }
+}
