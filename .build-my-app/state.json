@@ -52,8 +52,8 @@
     },
     "build": {
       "title": "4 Implementation",
-      "status": "pending",
-      "step": null,
+      "status": "in_progress",
+      "step": "4 wave 1: F-001 | F-008+F-009 building (worktrees)",
       "gate": {
         "status": "pending",
         "at": null,
@@ -530,6 +530,14 @@
       "started": "2026-10-13T07:28:26+00:00",
       "outcome": "converged",
       "ended": "2026-10-13T08:05:22+00:00"
+    },
+    "build-F-008": {
+      "round": 1,
+      "max": 3,
+      "active": false,
+      "started": "2026-10-13T11:14:39+00:00",
+      "outcome": "converged",
+      "ended": "2026-10-13T11:23:31+00:00"
     }
   },
   "log": [
@@ -1004,9 +1012,25 @@
     {
       "at": "2026-10-13T10:37:42+00:00",
       "event": "gate architecture passed: Stack approved; 5 spikes ADAPT; 12 ADRs accepted; deps approved"
+    },
+    {
+      "at": "2026-10-13T10:38:38+00:00",
+      "event": "phase build -> in_progress"
+    },
+    {
+      "at": "2026-10-13T10:38:38+00:00",
+      "event": "build step: 4 wave 1: F-001 | F-008+F-009 building (worktrees)"
+    },
+    {
+      "at": "2026-10-13T11:14:39+00:00",
+      "event": "loop build-F-008 started (max 3)"
+    },
+    {
+      "at": "2026-10-13T11:23:31+00:00",
+      "event": "loop build-F-008 ended: converged"
     }
   ],
-  "updated": "2026-10-13T10:37:42+00:00",
+  "updated": "2026-10-13T11:23:31+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
