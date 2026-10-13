@@ -5,6 +5,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 const CI = !!process.env['CI'];
 
+// E2E_PORT_BASE (default 4173): see tests/e2e/server.mjs.
+const PORT_BASE = Number(process.env.E2E_PORT_BASE ?? 4173);
+
 export default defineConfig({
   testDir: './tests/e2e',
   // The server-side request log is shared, so tests run one at a time.
@@ -15,12 +18,12 @@ export default defineConfig({
   timeout: 30_000,
   reporter: CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: `http://localhost:${PORT_BASE}`,
     trace: 'retain-on-failure',
   },
   webServer: {
     command: 'node tests/e2e/server.mjs',
-    url: 'http://localhost:4179/health',
+    url: `http://localhost:${PORT_BASE + 6}/health`,
     reuseExistingServer: !CI,
   },
   projects: [

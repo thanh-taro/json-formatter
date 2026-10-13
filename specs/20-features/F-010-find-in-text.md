@@ -51,6 +51,6 @@ count (COPY-search.count / COPY-search.counting / COPY-search.none), close (COPY
 
 ## Edge cases
 - Search while the tree view is shown → find opens in the text view.
-- Document changes while find is open → matches are recounted.
+- Document changes while find is open → matches are recounted; the next match after the cursor is highlighted as current but not selected, so typing is never interrupted.
 
 ## Open questions

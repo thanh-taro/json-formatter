@@ -2,7 +2,16 @@
 // undo contract (MOD-App "run(operation)"), the RULE-02 tiers and confirmation, notices shown
 // once, and the worker ↔ editor wiring (architecture.md "Load" data flow).
 import { formatCount, formatSize, hintFor, t, tCount } from '../copy';
-import { isLargeTier, tierOf, type Issue, type Tier, type ValidationResult } from '../core';
+import {
+  beautifiedBytes,
+  isLargeTier,
+  tierOf,
+  type FormatMode,
+  type IndentStyle,
+  type Issue,
+  type Tier,
+  type ValidationResult,
+} from '../core';
 import {
   createEditor,
   LARGE_PASTE,
@@ -12,16 +21,20 @@ import {
   type PendingDocument,
   type ReplaceFacts,
 } from '../editor';
-import { installDropTarget, pickFile, type DropKind } from '../io';
+import { copyBlob, download, downloadName, installDropTarget, pickFile, type DropKind } from '../io';
 import { JobFailure, WorkerClient, type Job, type JobResult } from '../worker/client';
 import type { FailReason } from '../worker/protocol';
+import { needsVeryLargeConfirm } from './confirm';
 import { FindController } from './find';
-import type { AppState, Bar, Busy, Validation } from './state';
+import type { AppState, Bar, Busy, Toast, Validation } from './state';
 
 /** Progress is shown once an operation has run this long (NFR-02). */
 const PROGRESS_DELAY_MS = 500;
 /** Normal tier: "checking" is shown only when a result takes longer than this (no flicker). */
 const CHECKING_DELAY_MS = 300;
+/** CMP-Notice: a toast disappears after 2 s; at most 2 are stacked. */
+const TOAST_MS = 2000;
+const TOAST_MAX = 2;
 /** Main-thread slice when streaming text to the worker (architecture.md tunables). */
 const SLICE_MS = 8;
 
@@ -54,6 +67,10 @@ interface BusyHandle {
 type FactsOf = (result: JobResult) => ReplaceFacts;
 const loadedFacts: FactsOf = (r) => {
   if (r.type !== 'loaded') throw new JobFailure('internal', `unexpected ${r.type}`);
+  return r.facts;
+};
+const formattedFacts: FactsOf = (r) => {
+  if (r.type !== 'formatted') throw new JobFailure('internal', `unexpected ${r.type}`);
   return r.facts;
 };
 
@@ -273,6 +290,13 @@ export class AppController {
     this.state.bar.value = null;
   }
 
+  /** CMP-Notice toast: newest last, at most TOAST_MAX, each removed after TOAST_MS. */
+  showToast(toast: Omit<Toast, 'seq'>): void {
+    const shown: Toast = { ...toast, seq: ++this.barSeq };
+    this.state.toasts.value = [...this.state.toasts.value, shown].slice(-TOAST_MAX);
+    setTimeout(() => (this.state.toasts.value = this.state.toasts.value.filter((t) => t !== shown)), TOAST_MS);
+  }
+
   private showFailure(reason: FailReason, fileError: boolean): void {
     if (reason === 'cancelled') return;
     const bar = (id: 'error.encoding' | 'error.too_large' | 'error.unreadable' | 'error.failed') =>
@@ -446,6 +470,95 @@ export class AppController {
     this.editor.focus();
   }
 
+  // ---- beautify / minify (F-002, F-003) ----------------------------------------------------
+
+  /** Implements: RULE-01 / F-002.R2 — the indent selector (2 or 4 spaces, tab, custom 1–8). */
+  setIndent(style: IndentStyle): void {
+    this.state.indent.value = style;
+  }
+
+  /**
+   * Implements: F-002.R1–R7, F-003.R1–R5; INV-03, INV-04, RULE-02 — beautifies or
+   * minifies the whole document in the worker. The validation of the current text decides first:
+   * an invalid document stays unchanged and its first error is shown and focused; a beautify
+   * whose result (predicted from that validation) would exceed 100 MB is confirmed first. The
+   * result streams into a pending document, committed as one undo step (Blob snapshot in the
+   * large tiers, ADR-0006); cancel or failure leaves the document as it was. Busy policy D-005
+   * throughout: read-only editor, actions disabled, progress after 0.5 s, cancel.
+   */
+  async format(kind: 'beautify' | 'minify'): Promise<void> {
+    const ed = this.editor;
+    if (this.blocked() || !ed || ed.isEmpty) return;
+    const version = ed.version;
+    let result = await this.validationOf(version);
+    if (!result || this.editor !== ed || ed.version !== version) return;
+    if (result.validity !== 'valid') {
+      // F-002.R4 / F-003.R3 / INV-03: unchanged; the first error is shown (issue panel) and focused.
+      this.jumpTo(0);
+      return;
+    }
+    const mode: FormatMode = kind === 'beautify' ? { kind, indent: this.state.indent.value } : { kind };
+    const lineEnding = ed.lineEnding;
+    const nonBreakBytes = ed.bytes - (ed.lineCount - 1) * (lineEnding === 'crlf' ? 2 : 1);
+    if (mode.kind === 'beautify') {
+      // A result without layout facts cannot be sized: validate again (the worker's pass has them).
+      if (!result.layout) result = await this.validationOf(version, true);
+      if (!result || this.editor !== ed || ed.version !== version) return;
+      // Implements: RULE-02 / F-002.R7 / F-002.AC10 — confirm a result over 100 MB (unless the
+      // document already is); declining keeps the document. Unknown size: ask (current size).
+      const bytes = result.layout
+        ? beautifiedBytes(result.layout, nonBreakBytes, mode.indent, lineEnding)
+        : Math.max(ed.bytes, 100_000_001);
+      if (needsVeryLargeConfirm(ed.bytes, bytes) && !(await this.confirmVeryLarge(result.layout ? bytes : ed.bytes)))
+        return;
+      if (this.editor !== ed || ed.version !== version) return;
+    }
+    await this.run('progress.formatting', async (busy) => {
+      // RULE-10: committed as tool operation `kind` (the editor records the most recent one).
+      const pending = ed.beginReplace(kind);
+      const job = this.worker.run(
+        { kind: 'format', version, mode, lineEnding, nonBreakBytes },
+        { onChunk: (text) => this.append(pending, job, text), onProgress: (f) => busy.progress(f) },
+      );
+      // RULE-10: a formatted document keeps the name of the file it came from.
+      await this.feed(job, pending, busy, formattedFacts, { sourceName: ed.sourceName });
+    });
+  }
+
+  /**
+   * The validation result of the document at `version`: the shown one when it is current,
+   * otherwise (or when `fresh`) computed now under the busy policy (the worker reuses a finished
+   * pass); null when cancelled or failed.
+   */
+  private async validationOf(version: number, fresh = false): Promise<ValidationResult | null> {
+    const shown = this.state.validation.value;
+    if (!fresh && shown.version === version && shown.result && (shown.state === 'valid' || shown.state === 'invalid'))
+      return shown.result;
+    const ed = this.editor;
+    if (!ed) return null;
+    let result: ValidationResult | null = null;
+    await this.run('progress.formatting', async (busy) => {
+      const job = this.worker.run(
+        {
+          kind: 'validate',
+          version,
+          lineEnding: ed.lineEnding,
+          skipTable: isLargeTier(tierOf(ed.bytes)),
+          supersedes: 'validate',
+        },
+        { onProgress: (f) => busy.progress(f) },
+      );
+      busy.onCancel(() => job.cancel());
+      const r = await job.result;
+      if (r.type !== 'validation') throw new JobFailure('internal', `unexpected ${r.type}`);
+      if (this.editor?.version !== r.version) return;
+      clearTimeout(this.checkingTimer);
+      this.showValidation({ state: stateOf(r.result), result: r.result, version: r.version });
+      result = r.result;
+    });
+    return result;
+  }
+
   /** Implements: F-001.R4 large-paste path (ADR-0006 §2), F-001.AC11; also large external drops. */
   async largePaste(p: LargePaste): Promise<void> {
     if (this.blocked() || !this.editor) return;
@@ -530,6 +643,82 @@ export class AppController {
       }
     }
     this.editor?.focus();
+  }
+
+  // ---- export (F-007) ------------------------------------------------------------------------
+
+  /**
+   * RULE-10 — the most recent tool operation (beautify, minify, …), read from the editor's
+   * committed tool operations; none yet → `document.json`.
+   */
+  lastToolOperation(): EditorHandle['lastTool'] {
+    return this.editor?.lastTool ?? null;
+  }
+
+  /** The whole document as a UTF-8 Blob from the worker, with the document's line ending (ADR-0006 §3). */
+  private exportJob(busy: BusyHandle, ed: EditorHandle): { blob: Promise<Blob>; cancel: () => void } {
+    const job = this.worker.run(
+      { kind: 'export', version: ed.version, eol: ed.lineEnding === 'crlf' ? '\r\n' : '\n' },
+      { onProgress: (f) => busy.progress(f) },
+    );
+    busy.onCancel(() => job.cancel());
+    const blob = job.result.then((r) =>
+      r.type === 'blob' ? r.blob : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
+    );
+    return { blob, cancel: () => job.cancel() };
+  }
+
+  /**
+   * Implements: F-007.R1, F-007.R3, F-007.R6 — copies the whole document. Called from the click
+   * handler: the export job and the clipboard item are created synchronously (MOD-IO `copyBlob`),
+   * so the user activation holds across the worker round trip. Progress after 0.5 s, cancellable
+   * (NFR-02). Refused → the text view with the whole document selected and COPY-error.clipboard.
+   */
+  copy(): void {
+    const ed = this.editor;
+    if (this.blocked() || !ed || ed.isEmpty) return;
+    let outcome: 'copied' | 'blocked' | null = null;
+    void this.run('progress.exporting', async (busy) => {
+      const job = this.exportJob(busy, ed);
+      job.blob.catch(() => undefined); // a refusal may come first; copyBlob reports export failures
+      // Cancel also abandons a write still in progress after the export (the browser owns it).
+      const cancelled = new Promise<never>((_, reject) => busy.onCancel(() => reject(new Cancelled())));
+      cancelled.catch(() => undefined);
+      try {
+        outcome = await Promise.race([copyBlob(job.blob), cancelled]);
+      } catch (e) {
+        if (e instanceof Cancelled || reasonOf(e) === 'cancelled') throw new Cancelled();
+        throw e;
+      }
+      if (outcome === 'blocked') job.cancel(); // refused before the export ended: stop it
+    }).then(() => {
+      if (outcome === 'copied') this.showToast({ id: 'toast.copied', text: t('toast.copied') });
+      else if (outcome === 'blocked') this.copyRefused();
+    });
+  }
+
+  /** Implements: F-007.R3, F-007.AC7, CMP-Editor all-selected — the manual-copy fallback. */
+  private copyRefused(): void {
+    this.state.view.value = 'text';
+    this.editor?.selectAll();
+    this.showBar({ kind: 'error', id: 'error.clipboard', text: t('error.clipboard') });
+  }
+
+  /**
+   * Implements: F-007.R2, F-007.R4, F-007.R6, RULE-10 — downloads the document as a UTF-8 file
+   * built in the worker (exactly as shown, with its line ending); progress after 0.5 s,
+   * cancellable; saved through a local object URL (INV-02).
+   */
+  download(): void {
+    const ed = this.editor;
+    if (this.blocked() || !ed || ed.isEmpty) return;
+    const name = downloadName(ed.sourceName, this.lastToolOperation());
+    void this.run('progress.exporting', async (busy) => {
+      const blob = await this.exportJob(busy, ed).blob.catch((e: unknown) => {
+        throw reasonOf(e) === 'cancelled' ? new Cancelled() : e;
+      });
+      download(blob, name);
+    });
   }
 
   /**

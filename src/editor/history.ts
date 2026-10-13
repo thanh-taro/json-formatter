@@ -18,6 +18,14 @@ export interface DocFacts {
   sourceName: string | null;
   /** UTF-8 bytes of the text without its line breaks. */
   nonBreakBytes: number;
+  /** RULE-10: the most recent tool operation of the recorded state (undo/redo restore it with
+   * the text); absent → left as it is (paste and typing are not tool operations). */
+  lastTool?: ToolKind | null;
+}
+
+/** Implements: RULE-10 — the most recent tool operation once `next` facts are applied. */
+export function toolAfter(current: ToolKind | null, next: DocFacts): ToolKind | null {
+  return next.lastTool !== undefined ? next.lastTool : current;
 }
 
 /** A previous document kept outside the JS heap (ADR-0006 §4). */

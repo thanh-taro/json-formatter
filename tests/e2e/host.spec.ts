@@ -153,9 +153,7 @@ test('F-008.AC5 NFR-09 a theme message from an unlisted origin is ignored', asyn
   const tool = await embed(page, 'theme=dark&sibling=1');
   await expect(page.frameLocator('iframe[name="sibling"]').locator('body')).toBeAttached();
   await page.evaluate(() => window.fireSibling?.({ type: 'taro:theme', value: 'light' }));
-  await expect
-    .poll(() => tool.evaluate(() => window.__inbound?.filter((m) => m.origin === 'http://localhost:4175').length))
-    .toBe(1);
+  await expect.poll(() => tool.evaluate(() => window.__inbound?.filter((m) => m.origin === UNLISTED).length)).toBe(1);
   expect(await themeOf(tool)).toBe('dark');
   // The allowed host still can.
   await page.evaluate(() => window.setTheme?.('light'));
