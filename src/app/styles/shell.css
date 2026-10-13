@@ -58,6 +58,29 @@
     background: var(--tk-color-surface2);
     border-color: var(--tk-color-line-strong);
   }
+  /* CMP-Toolbar indent selector: the custom width field (1–8 spaces). */
+  .tk-indent-width {
+    inline-size: var(--tk-space-12);
+    min-height: var(--tk-size-control);
+    padding-inline: var(--tk-space-1);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-sm);
+    background: var(--tk-color-bg);
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-sm);
+  }
+  .tk-indent-width:disabled {
+    color: var(--tk-color-muted);
+  }
+  /* Coarse pointers: form fields at 16 px (no zoom on focus, CMP-Toolbar design). */
+  @media (pointer: coarse) {
+    .tk-select select,
+    .tk-indent-width {
+      min-block-size: var(--tk-size-touch-target);
+      font-size: var(--tk-font-size-input);
+    }
+  }
   .tk-button:disabled,
   .tk-select select:disabled {
     color: var(--tk-color-muted);

@@ -17,7 +17,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const DIST = path.join(ROOT, 'dist');
 const HOST_DIR = path.join(ROOT, 'tests/e2e/host');
-export const PORTS = { tool: 4173, host: 4174, unlisted: 4175, admin: 4179 };
+// E2E_PORT_BASE (default 4173) lets parallel worktrees run the suite without colliding.
+const BASE = Number(process.env.E2E_PORT_BASE ?? 4173);
+export const PORTS = { tool: BASE, host: BASE + 1, unlisted: BASE + 2, admin: BASE + 6 };
 const HOST_ORIGIN = `http://localhost:${PORTS.host}`;
 
 if (!fs.existsSync(path.join(DIST, 'index.html')) || !fs.existsSync(path.join(DIST, '_headers'))) {

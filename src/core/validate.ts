@@ -2,14 +2,19 @@
 // that consumes the document as string chunks and can suspend/resume at any chunk boundary.
 // An explicit container stack replaces recursion (RULE-14). Promoted from the SP-formatter
 // prototype (spike/formatter `spikes/formatter/src/core.ts`: JSONTestSuite 95/95 y_, 188/188 n_,
-// 110,000 property cases), validation path only — beautify/minify plug their emitters into the
-// same state machine (F-002, F-003). Positions are editor positions (UTF-16 units, one per line
-// break); the hot loop keeps no line/column state (`resolvePositions` does that afterwards).
+// 110,000 property cases). Beautify and minify plug their emitter into the same state machine
+// (`format` option, promoted from the spike's `Engine` modes, ADR-0005 §1): they emit only exact
+// slices of the input plus generated whitespace and stop at the first error like validation.
+// Positions are editor positions (UTF-16 units, one per line break); the hot loop keeps no
+// line/column state (`resolvePositions` does that afterwards).
 //
 // Implements: RULE-03 (strict RFC 8259, BOM tolerated with a warning, empty documents),
 // RULE-04 (first error with its code-specific position), RULE-05 (warnings, capped at 1,000),
-// RULE-14 (depth 10,000), F-005.R3, F-005.R4; ADR-0007 §1 (skip table built in the same pass).
+// RULE-14 (depth 10,000), F-005.R3, F-005.R4; ADR-0007 §1 (skip table built in the same pass);
+// RULE-07, RULE-08, INV-01, F-002.R1, F-002.R3, F-003.R1, F-003.R2 (format emitter); RULE-02
+// (layout facts for the beautified-size prediction, F-002.R7).
 import { classifyNumber } from './numbers';
+import { indentText, type FormatMode } from './indent';
 import { WARNING_CAP, type IssueCode, type RawIssue } from './issues';
 
 // expectations
@@ -123,6 +128,11 @@ const SIMPLE_ESC: Record<string, string> = {
   '/': '/',
 };
 
+const FLAT_RE = /^/;
+/** Forces V8 to flatten a cons string before it leaves the formatter (rope-shaped output was
+ * retained at 6.3× its size in SP-formatter; flat: 1.0×, ADR-0005 §1). */
+const flat = (s: string): string => (FLAT_RE.test(s), s);
+
 /** The member name a valid key body denotes (escapes decoded), for RULE-05 duplicate keys. */
 export function decodeKey(raw: string): string {
   return raw.replace(/\\(u[0-9a-fA-F]{4}|.)/g, (_, e: string) =>
@@ -155,6 +165,36 @@ export interface ValidatorOptions {
   /** Threshold and minimum capacity of the table (tests only change them). */
   skipThreshold?: number;
   skipMinCapacity?: number;
+  /** Beautify or minify while validating (F-002, F-003): output goes to `emit` in flat chunks of
+   * about `chunkUnits` units; line breaks are `eol` (the worker's mirror uses '\n'). */
+  format?: { mode: FormatMode; eol: string; emit: (chunk: string) => void; chunkUnits: number };
+}
+
+/**
+ * Layout facts of a valid document, counted in the validation pass (ADR-0005 §1 "document
+ * facts"): enough to predict the beautified size for any indent style (`beautifiedBytes`).
+ */
+export interface LayoutFacts {
+  /** Spaces and tabs between tokens (insignificant whitespace other than line breaks). */
+  blanks: number;
+  /** Colons (each gets one space after it, RULE-07). */
+  colons: number;
+  /** Line breaks a beautify generates, not counting the final one. */
+  breaks: number;
+  /** Sum of the nesting depths of the lines those breaks start (indent units). */
+  depthSum: number;
+  /** The document ends with a line break (RULE-07 keeps one). */
+  endsWithLineBreak: boolean;
+}
+
+/** What a format pass emitted (valid documents only). */
+export interface OutputFacts {
+  /** Output length in UTF-16 units. */
+  length: number;
+  /** Line breaks emitted (each counts once, whatever `eol` is). */
+  breaks: number;
+  /** Generated characters other than line breaks (indentation, the space after colons): ASCII. */
+  generated: number;
 }
 
 /** The outcome of validating a whole document (positions not yet resolved). */
@@ -169,6 +209,10 @@ export interface ValidationOutcome {
   /** Document length in editor positions. */
   length: number;
   skipTable: SkipTable | null;
+  /** Valid documents: facts for the beautified-size prediction (RULE-02). */
+  layout: LayoutFacts | null;
+  /** Format passes over valid documents: what was emitted. */
+  output: OutputFacts | null;
 }
 
 /** Resumable strict validator: `feed` chunks in order, then `end`. */
@@ -213,8 +257,38 @@ export class Validator {
   private skipCt = new Uint32Array(0);
 
   private error: RawIssue | null = null;
+  private lastChar = -1;
+
+  // layout facts (RULE-02 prediction)
+  private blanks = 0;
+  private colons = 0;
+  private lBreaks = 0;
+  private depthSum = 0;
+
+  // format emitter (F-002, F-003): 0 none, 1 beautify, 2 minify
+  private readonly fmt: 0 | 1 | 2 = 0;
+  private readonly emit: (chunk: string) => void = () => undefined;
+  private readonly chunkUnits: number = 1 << 20;
+  private readonly eol: string = '\n';
+  private readonly indent: string = '';
+  /** eol + indentation for the deepest line so far; shallower lines use a prefix of it. */
+  private pad = '';
+  private out = '';
+  private needBreak = false;
+  private outLength = 0;
+  private outBreaks = 0;
+  private generated = 0;
 
   constructor(opts: ValidatorOptions = {}) {
+    if (opts.format) {
+      const f = opts.format;
+      this.fmt = f.mode.kind === 'beautify' ? 1 : 2;
+      this.emit = f.emit;
+      this.chunkUnits = f.chunkUnits;
+      this.eol = f.eol;
+      if (f.mode.kind === 'beautify') this.indent = indentText(f.mode.indent);
+      this.pad = this.eol;
+    }
     this.warn = opts.warnings ?? true;
     this.maxDepth = opts.maxDepth ?? MAX_DEPTH;
     this.stack = new Uint8Array(this.maxDepth + 2);
@@ -325,6 +399,40 @@ export class Validator {
     this.skipN++;
   }
 
+  /**
+   * Implements: RULE-07 — a generated line break followed by `d` indentation levels. One string
+   * for the deepest line so far is kept and sliced (no string per depth: 10,000 levels would
+   * cache ~100 MB).
+   */
+  private newline(d: number): string {
+    const len = this.eol.length + this.indent.length * d;
+    if (this.pad.length < len) {
+      const levels = (this.pad.length - this.eol.length) / this.indent.length;
+      this.pad = this.eol + this.indent.repeat(Math.max(d, 64, 2 * levels));
+    }
+    this.outBreaks++;
+    this.generated += len - this.eol.length;
+    return this.pad.length === len ? this.pad : this.pad.slice(0, len);
+  }
+
+  /**
+   * Appends `piece` to the output buffer and emits it as one flat chunk once it reaches
+   * `chunkUnits`. Called at every generated line break, so pathological expansion (20 KB at
+   * 10,000 levels → 200 M units within one `feed`) still streams in bounded chunks (ADR-0005 §1).
+   */
+  private put(out: string, piece: string): string {
+    out += piece;
+    if (out.length < this.chunkUnits) return out;
+    this.flush(out);
+    return '';
+  }
+
+  private flush(out: string): void {
+    if (!out.length) return;
+    this.outLength += out.length;
+    this.emit(flat(out));
+  }
+
   /** Feeds the next chunk. Returns false once an error has been found. */
   feed(s: string): boolean {
     if (this.tok === T_DONE) return false;
@@ -339,6 +447,13 @@ export class Validator {
     let depth = this.depth;
     let i = 0;
     let c = 0;
+    let blanks = this.blanks;
+    // format emitter: `s[runStart, i)` is input still to be copied to `out` verbatim
+    const fmt = this.fmt;
+    const beautify = fmt === 1;
+    let out = this.out;
+    let runStart = 0;
+    let needBreak = this.needBreak;
 
     outer: while (i < n) {
       // ---- continue a token in progress ----
@@ -502,12 +617,15 @@ export class Validator {
       c = s.charCodeAt(i);
       const cls = c < 128 ? CLS[c]! : C_OTHER;
       if (cls === C_WS) {
-        i++;
+        // Implements: INV-01 / RULE-07 / RULE-08 — insignificant whitespace is never copied.
+        if (fmt !== 0 && i > runStart) out += s.slice(runStart, i);
         while (i < n) {
           c = s.charCodeAt(i);
-          if (c === 32 || c === 10 || c === 13 || c === 9) i++;
-          else break;
+          if (c === 32 || c === 9) blanks++;
+          else if (c !== 10 && c !== 13) break;
+          i++;
         }
+        runStart = i;
         continue;
       }
       // Implements: RULE-03 — a leading byte-order mark is tolerated and reported (RULE-05).
@@ -533,12 +651,19 @@ export class Validator {
         case S_VALUE:
         case S_VALUE_OR_CLOSE: {
           if (cls === C_RBRACK && expect === S_VALUE_OR_CLOSE) {
-            // empty array
+            // empty array — RULE-07: `[]` stays on one line
             if (skip) this.recordContainer(this.openPos[depth]!, base + i + 1, 0);
+            needBreak = false;
             depth--;
             i++;
             expect = depth === 0 ? S_END : S_AFTER;
             continue;
+          }
+          if (needBreak) {
+            // RULE-07: each array element on its own line
+            out = this.put(out, s.slice(runStart, i) + this.newline(depth));
+            runStart = i;
+            needBreak = false;
           }
           this.seenValue = true;
           switch (cls) {
@@ -572,6 +697,7 @@ export class Validator {
                 this.keyFrame[depth] = this.keys.length;
                 this.keySets[depth] = null;
               }
+              needBreak = beautify;
               expect = cls === C_LBRACE ? S_KEY_OR_CLOSE : S_VALUE_OR_CLOSE;
               i++;
               continue;
@@ -611,6 +737,12 @@ export class Validator {
         case S_KEY_OR_CLOSE:
         case S_KEY: {
           if (cls === C_QUOTE) {
+            if (needBreak) {
+              // RULE-07: each object member on its own line
+              out = this.put(out, s.slice(runStart, i) + this.newline(depth));
+              runStart = i;
+              needBreak = false;
+            }
             this.tokStart = base + i;
             this.isKey = true;
             this.keyText = '';
@@ -624,9 +756,10 @@ export class Validator {
               this.fail('trailing-comma', this.commaPos);
               break outer;
             }
-            // empty object
+            // empty object — RULE-07: `{}` stays on one line
             if (warn) this.closeObjectKeys(depth);
             if (skip) this.recordContainer(this.openPos[depth]!, base + i + 1, 0);
+            needBreak = false;
             depth--;
             i++;
             expect = depth === 0 ? S_END : S_AFTER;
@@ -641,6 +774,13 @@ export class Validator {
         case S_COLON: {
           if (cls === C_COLON) {
             i++;
+            this.colons++;
+            if (beautify) {
+              // RULE-07: `"key": value` — one space after the colon
+              out += s.slice(runStart, i) + ' ';
+              runStart = i;
+              this.generated++;
+            }
             this.commaPos = -1;
             expect = S_VALUE;
             continue;
@@ -654,6 +794,7 @@ export class Validator {
             this.commaPos = base + i;
             this.commas[depth]!++;
             i++;
+            needBreak = beautify;
             expect = stack[depth] === OBJECT ? S_KEY : S_VALUE;
             continue;
           }
@@ -664,8 +805,17 @@ export class Validator {
               break outer;
             }
             if (want === OBJECT && warn) this.closeObjectKeys(depth);
-            if (skip) this.recordContainer(this.openPos[depth]!, base + i + 1, this.commas[depth]! + 1);
+            const children = this.commas[depth]! + 1;
+            if (skip) this.recordContainer(this.openPos[depth]!, base + i + 1, children);
+            // RULE-02 prediction: a line per child at `depth`, the closing line at `depth − 1`
+            this.lBreaks += children + 1;
+            this.depthSum += children * depth + depth - 1;
             depth--;
+            if (beautify) {
+              // RULE-07: the closing bracket on its own line, one level out
+              out = this.put(out, s.slice(runStart, i) + this.newline(depth));
+              runStart = i;
+            }
             i++;
             expect = depth === 0 ? S_END : S_AFTER;
             continue;
@@ -695,6 +845,15 @@ export class Validator {
     if (this.tok !== T_DONE) this.tok = tok;
     this.depth = depth;
     this.base = base + n;
+    this.blanks = blanks;
+    this.lastChar = s.charCodeAt(n - 1);
+    if (fmt !== 0) {
+      this.needBreak = needBreak;
+      // After an error nothing more is emitted (the caller discards the output, INV-03).
+      if (this.tok === T_DONE) out = '';
+      else if (n > runStart) out = this.put(out, s.slice(runStart, n));
+      this.out = out;
+    }
     // Keys and numbers crossing the chunk boundary keep their text so far.
     if (warn && this.tok !== T_DONE) {
       const local = this.tokStart - base;
@@ -740,12 +899,22 @@ export class Validator {
         } else if (!this.seenValue) {
           // RULE-03: zero characters is empty; RULE-04 empty-document: only whitespace (or a BOM).
           if (endPos === 0)
-            return { validity: 'empty', error: null, warnings: [], warningOverflow: 0, length: 0, skipTable: null };
+            return {
+              validity: 'empty',
+              error: null,
+              warnings: [],
+              warningOverflow: 0,
+              length: 0,
+              skipTable: null,
+              layout: null,
+              output: null,
+            };
           this.fail('empty-document', 0);
         }
       }
     }
     if (this.error) {
+      this.out = '';
       return {
         validity: 'invalid',
         error: this.error,
@@ -753,7 +922,21 @@ export class Validator {
         warningOverflow: 0,
         length: endPos,
         skipTable: null,
+        layout: null,
+        output: null,
       };
+    }
+    const endsWithLineBreak = this.lastChar === 10 || this.lastChar === 13;
+    let output: OutputFacts | null = null;
+    if (this.fmt !== 0) {
+      // RULE-07: the result ends with a line break only if the input ended with one; RULE-08: never.
+      if (this.fmt === 1 && endsWithLineBreak) {
+        this.out += this.eol;
+        this.outBreaks++;
+      }
+      this.flush(this.out);
+      this.out = '';
+      output = { length: this.outLength, breaks: this.outBreaks, generated: this.generated };
     }
     return {
       validity: 'valid',
@@ -762,6 +945,14 @@ export class Validator {
       warningOverflow: this.warnOverflow,
       length: endPos,
       skipTable: this.skipT ? this.finishSkipTable() : null,
+      layout: {
+        blanks: this.blanks,
+        colons: this.colons,
+        breaks: this.lBreaks,
+        depthSum: this.depthSum,
+        endsWithLineBreak,
+      },
+      output,
     };
   }
 

@@ -24,3 +24,4 @@ Gate G4: all 11 features shipped, CI green, AC coverage 100% (or listed manual c
 - F-007.AC7 from the tree view (needs F-006); F-007.AC3 with a real minify (needs F-003).
 - F-008.AC6/AC7 full-suite re-run (all M-1 features).
 - Real-clipboard copy > 5 s and in WebKit (manual QA if not automatable).
+- Parallel worktree e2e runs collide on ports 4173/4179; make the e2e ports configurable per worktree (env), CI unaffected.

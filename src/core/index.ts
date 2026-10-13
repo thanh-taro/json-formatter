@@ -33,6 +33,18 @@ export {
   type SkipTable,
   type ValidatorOptions,
   type ValidationOutcome,
+  type LayoutFacts,
+  type OutputFacts,
 } from './validate';
+export {
+  DEFAULT_INDENT,
+  MIN_CUSTOM_WIDTH,
+  MAX_CUSTOM_WIDTH,
+  indentText,
+  type IndentStyle,
+  type FormatMode,
+  type FormatSink,
+} from './indent';
+export { beautifiedBytes, formatText } from './format';
 export { PositionResolver, resolvePositions, type Position } from './positions';
 export { positionsOf, resultOf, validateText, type ValidationResult } from './result';

@@ -1,14 +1,19 @@
 // Implements: CMP-Toolbar — load group wired (F-001: COPY-action.open, COPY-action.clear);
 // "empty document" and "busy" states; toolbar keyboard model (WAI-ARIA APG: one Tab stop,
 // Left/Right arrows move between enabled controls, Home/End go to the first/last). Export group
-// wired by F-007 (COPY-action.copy, COPY-action.download). The other actions arrive with F-002…F-010.
+// wired by F-007 (COPY-action.copy, COPY-action.download); beautify, minify and the indent selector
+// (F-002, F-003). The other actions arrive with F-004…F-010.
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../../copy';
 import type { AppController } from '../controller';
 import { Icon } from './Icon';
+import { IndentSelector } from './IndentSelector';
 
+const CONTROLS = 'button, select, input';
 const controlsOf = (bar: HTMLElement) =>
-  [...bar.querySelectorAll<HTMLButtonElement | HTMLSelectElement>('button, select')].filter((c) => !c.disabled);
+  [...bar.querySelectorAll<HTMLButtonElement | HTMLSelectElement | HTMLInputElement>(CONTROLS)].filter(
+    (c) => !c.disabled,
+  );
 
 export function Toolbar({ app }: { app: AppController }) {
   const empty = app.state.doc.value.empty;
@@ -25,13 +30,13 @@ export function Toolbar({ app }: { app: AppController }) {
     const controls = controlsOf(el);
     const active =
       current.current && controls.includes(current.current as HTMLButtonElement) ? current.current : controls[0];
-    for (const c of el.querySelectorAll<HTMLElement>('button, select')) c.tabIndex = c === active ? 0 : -1;
+    for (const c of el.querySelectorAll<HTMLElement>(CONTROLS)) c.tabIndex = c === active ? 0 : -1;
   });
 
   const move = (target: HTMLElement | undefined) => {
     const el = bar.current;
     if (!el || !target) return;
-    for (const c of el.querySelectorAll<HTMLElement>('button, select')) c.tabIndex = c === target ? 0 : -1;
+    for (const c of el.querySelectorAll<HTMLElement>(CONTROLS)) c.tabIndex = c === target ? 0 : -1;
     current.current = target;
     target.focus();
   };
@@ -43,6 +48,8 @@ export function Toolbar({ app }: { app: AppController }) {
     const i = controls.indexOf(e.target as HTMLButtonElement);
     if (i < 0) return;
     let next: HTMLElement | undefined;
+    // the indent width field keeps Left/Right for its caret (Up/Down change its value)
+    if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target instanceof HTMLInputElement) return;
     if (e.key === 'ArrowRight') next = controls[(i + 1) % controls.length];
     else if (e.key === 'ArrowLeft') next = controls[(i - 1 + controls.length) % controls.length];
     else if (e.key === 'Home') next = controls[0];
@@ -81,23 +88,16 @@ export function Toolbar({ app }: { app: AppController }) {
         </button>
       </div>
       <div class="tk-toolbar__group">
-        <button type="button" class="tk-button" disabled={off}>
+        <button type="button" class="tk-button" disabled={off} onClick={() => void app.format('beautify')}>
           {t('action.beautify')}
         </button>
-        <button type="button" class="tk-button" disabled={off}>
+        <button type="button" class="tk-button" disabled={off} onClick={() => void app.format('minify')}>
           {t('action.minify')}
         </button>
         <button type="button" class="tk-button" disabled={off}>
           {t('action.reindent')}
         </button>
-        <label class="tk-select">
-          <span class="tk-visually-hidden">{t('label.indent')}</span>
-          <select disabled={off}>
-            <option value="2">{t('indent.spaces2')}</option>
-            <option value="4">{t('indent.spaces4')}</option>
-            <option value="tab">{t('indent.tab')}</option>
-          </select>
-        </label>
+        <IndentSelector app={app} disabled={off} />
       </div>
       <div class="tk-toolbar__group" role="group" aria-label={t('label.view')}>
         <button type="button" class="tk-button" aria-pressed="true" disabled={off}>

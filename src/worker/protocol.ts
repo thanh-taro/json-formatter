@@ -2,7 +2,7 @@
 // thread and the worker, a document version and/or job id on every message. Hand-written, no
 // RPC library. New operations (validate, format, re-indent, tree queries) plug in by adding a
 // `JobSpec` kind with its worker handler and, where needed, a result message.
-import type { BreakCounts, LineEnding, ValidationResult } from '../core';
+import type { BreakCounts, FormatMode, LineEnding, ValidationResult } from '../core';
 
 /** `ChangeSet.toJSON()` of @codemirror/state. */
 export type ChangeSetJSON = readonly (number | readonly [number, ...string[]])[];
@@ -23,6 +23,11 @@ export type JobSpec = { supersedes?: string } &
      * `lineEnding` is the document's, for ENT-Issue code-point offsets; `skipTable` in the
      * large tiers (RULE-02, measured in UTF-8 bytes by the main thread; ADR-0007 §1). */
     | { kind: 'validate'; version: number; lineEnding: LineEnding; skipTable?: boolean }
+    /** Beautify or minify the mirror at `version` (F-002, F-003) into a pending mirror, streaming
+     * the result as `chunk`s; refused with `failed(invalid)` when the document is not valid.
+     * `lineEnding` is the document's (breaks are reported in it, RULE-07); `nonBreakBytes` is the
+     * UTF-8 size of the document without its line breaks (for the result's facts). */
+    | { kind: 'format'; version: number; mode: FormatMode; lineEnding: LineEnding; nonBreakBytes: number }
   );
 
 export type JobKind = JobSpec['kind'];
@@ -60,6 +65,8 @@ export type FromWorker =
   | { type: 'chunk'; jobId: number; text: string }
   /** A load or insert job finished; its pending mirror waits for `adopt`. */
   | { type: 'loaded'; jobId: number; facts: TextFacts }
+  /** A format job finished; its pending mirror waits for `adopt` (MOD-Worker `formatted`). */
+  | { type: 'formatted'; jobId: number; facts: TextFacts }
   | { type: 'blob'; jobId: number; blob: Blob }
   /** The result of a `validate` job for `version` (MOD-Worker `validation(version, result)`). */
   | { type: 'validation'; jobId: number; version: number; result: ValidationResult }
