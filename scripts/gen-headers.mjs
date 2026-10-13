@@ -7,9 +7,48 @@ import { BOOT_SOURCE, bootScriptHash } from './lib/boot.mjs';
 const OUT = abs('public/_headers');
 export const DEFAULT_HOST_ORIGINS = 'https://tarokit.app';
 
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/**
+ * One HOST_ORIGINS entry as a serialised origin, or an Error explaining why it is refused
+ * (NFR-09: the list feeds frame-ancestors and the compiled-in allow-list, so a wildcard,
+ * keyword, path or stray directive must never reach either). https only; http for local hosts
+ * (e2e stub host).
+ */
+export function normaliseOrigin(entry) {
+  if (/['";*]/.test(entry) || entry === 'null') return new Error(`not an origin: ${entry}`);
+  let url;
+  try {
+    url = new URL(entry);
+  } catch {
+    return new Error(`not an origin: ${entry}`);
+  }
+  const local = url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname);
+  if (url.protocol !== 'https:' && !local) return new Error(`not https: ${entry}`);
+  if (url.username || url.password || url.search || url.hash || url.pathname !== '/') {
+    return new Error(`origin must have no path, query or credentials: ${entry}`);
+  }
+  if (url.origin.toLowerCase() !== entry.toLowerCase().replace(/\/$/, '')) {
+    return new Error(`not a serialised origin: ${entry} (did you mean ${url.origin}?)`);
+  }
+  return url.origin;
+}
+
+/** Parses a HOST_ORIGINS value; throws (failing gen and build) on any refused entry. */
+export function parseHostOrigins(value) {
+  const out = [];
+  const errors = [];
+  for (const entry of value.split(/[\s,]+/).filter(Boolean)) {
+    const origin = normaliseOrigin(entry);
+    if (origin instanceof Error) errors.push(origin.message);
+    else if (!out.includes(origin)) out.push(origin);
+  }
+  if (errors.length) throw new Error(`HOST_ORIGINS refused: ${errors.join('; ')}`);
+  return out;
+}
+
 export function hostOrigins() {
-  const v = process.env.HOST_ORIGINS ?? DEFAULT_HOST_ORIGINS;
-  return v.split(/[\s,]+/).filter(Boolean);
+  return parseHostOrigins(process.env.HOST_ORIGINS ?? DEFAULT_HOST_ORIGINS);
 }
 
 export function pageCsp(origins = hostOrigins()) {
@@ -41,6 +80,7 @@ export function genHeaders({ check }) {
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Cross-Origin-Opener-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   Cache-Control: no-cache
 /assets/*
   ! Cache-Control

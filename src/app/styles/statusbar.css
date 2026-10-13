@@ -1,0 +1,124 @@
+/* CMP-StatusBar privacy statement and details popover (F-009, design CMP-StatusBar). */
+@layer components {
+  .tk-formatter {
+    --tk-statusbar-height: var(--tk-size-statusbar);
+    --tk-statusbar-target: var(--tk-size-target-min);
+  }
+  @media (pointer: coarse) {
+    .tk-formatter {
+      --tk-statusbar-height: var(--tk-size-touch-target);
+      --tk-statusbar-target: var(--tk-size-touch-target);
+    }
+  }
+
+  .tk-statusbar {
+    container: tk-statusbar / inline-size;
+    padding-inline-end: var(--tk-space-1);
+  }
+
+  .tk-icon {
+    display: inline-flex;
+    flex: none;
+  }
+  .tk-icon svg {
+    width: var(--tk-size-icon-sm);
+    height: var(--tk-size-icon-sm);
+  }
+
+  /* Badge: COPY-privacy.badge next to its icon. */
+  .tk-statusbar__privacy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--tk-space-2);
+    margin-inline-start: auto;
+    min-height: var(--tk-statusbar-target);
+    min-width: var(--tk-statusbar-target);
+    padding-inline: var(--tk-space-2);
+    border: 0;
+    border-radius: var(--tk-radius-sm);
+    background: none;
+    color: var(--tk-color-success);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-medium);
+    cursor: pointer;
+  }
+  .tk-statusbar__privacy:hover,
+  .tk-statusbar__privacy:has(~ .tk-privacy:popover-open) {
+    background: var(--tk-color-surface2);
+  }
+  .tk-statusbar__privacy .tk-statusbar__privacy-icon-label {
+    display: none;
+  }
+
+  /* Narrow (CMP-StatusBar "narrow", under 600 px): icon only, named COPY-privacy.badge_label. */
+  @container tk-statusbar (width < 600px) {
+    .tk-statusbar__privacy {
+      padding-inline: 0;
+    }
+    .tk-statusbar__privacy .tk-statusbar__privacy-text {
+      display: none;
+    }
+    .tk-statusbar__privacy .tk-statusbar__privacy-icon-label {
+      display: block;
+    }
+  }
+
+  /* Details: native popover in the top layer, anchored above the badge at the inline end. */
+  .tk-privacy {
+    position: fixed;
+    inset: auto var(--tk-space-1) calc(var(--tk-statusbar-height) + var(--tk-space-1)) auto;
+    width: min(var(--tk-size-min-width), 100vw - 2 * var(--tk-space-1));
+    height: auto;
+    margin: 0;
+    padding: var(--tk-space-3) var(--tk-space-2) var(--tk-space-4) var(--tk-space-4);
+    overflow: visible;
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-body);
+    font-size: var(--tk-font-size-sm);
+    line-height: var(--tk-font-line-height-normal);
+    white-space: normal;
+  }
+  .tk-privacy:popover-open {
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-space-2);
+  }
+  .tk-privacy__header {
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+  }
+  .tk-privacy__icon {
+    color: var(--tk-color-success);
+  }
+  .tk-privacy__title {
+    flex: 1;
+    font-weight: var(--tk-font-weight-semibold);
+  }
+  .tk-privacy__body {
+    padding-inline-end: var(--tk-space-2);
+  }
+
+  .tk-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--tk-statusbar-target);
+    height: var(--tk-statusbar-target);
+    padding: 0;
+    border: 0;
+    border-radius: var(--tk-radius-sm);
+    background: none;
+    color: var(--tk-color-muted);
+    cursor: pointer;
+  }
+  .tk-icon-button:hover {
+    background: var(--tk-color-surface2);
+    color: var(--tk-color-fg);
+  }
+}

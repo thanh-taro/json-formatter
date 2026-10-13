@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Unlisted sibling</title>
+  </head>
+  <body>
+    <script>
+      // Unlisted origin (F-008.AC5): when told to, posts a message straight into the sibling
+      // tool frame, which it can reach through parent.frames.
+      window.addEventListener('message', (e) => {
+        if (e.data && e.data.cmd === 'fire') parent.frames['tool'].postMessage(e.data.msg, '*');
+      });
+    </script>
+  </body>
+</html>

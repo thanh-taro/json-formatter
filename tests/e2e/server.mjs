@@ -5,8 +5,10 @@
 //   host      http://localhost:4174   (tests/e2e/host/, allow-listed as frame ancestor)
 //   unlisted  http://localhost:4175   (tests/e2e/host/, not allow-listed)
 //   admin     http://localhost:4179   (/health, /log, /reset — server-side request log, NFR-01)
-// The deployed frame-ancestors list (https://tarokit.app) is replaced by the host origin here,
-// because the stub host cannot run on the real portal origin.
+// The deployed HOST_ORIGINS list (https://tarokit.app) is replaced by the stub host origin here,
+// because the stub host cannot run on the real portal origin. The setting has two outputs
+// (ADR-0008 §4) and both are replaced: the frame-ancestors header and the compiled-in
+// allow-list in the served scripts (each deployed origin's string literal).
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -44,9 +46,35 @@ function parseHeaders(src) {
   }
   return rules;
 }
-const headersSrc = fs
-  .readFileSync(path.join(DIST, '_headers'), 'utf8')
-  .replace(/frame-ancestors [^;\n]+/g, `frame-ancestors ${HOST_ORIGIN}`);
+const builtHeaders = fs.readFileSync(path.join(DIST, '_headers'), 'utf8');
+const DEPLOYED_ORIGINS = (/frame-ancestors ([^;\n]+)/.exec(builtHeaders)?.[1] ?? '')
+  .split(/\s+/)
+  .filter((o) => /^https?:\/\//.test(o));
+const headersSrc = builtHeaders.replace(/frame-ancestors [^;\n]+/g, `frame-ancestors ${HOST_ORIGIN}`);
+
+/** The compiled-in allow-list, with each deployed origin literal replaced by the stub host. */
+const ORIGIN_LITERALS = DEPLOYED_ORIGINS.map(
+  (o) => new RegExp(`(["'\`])${o.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}\\1`, 'g'),
+);
+function rewriteAllowList(body) {
+  let text = body.toString('utf8');
+  for (const literal of ORIGIN_LITERALS) text = text.replace(literal, `$1${HOST_ORIGIN}$1`);
+  return text;
+}
+// Fail loudly when the bundle shape changes and the rewrite would silently miss the list.
+{
+  const assets = path.join(DIST, 'assets');
+  const js = fs.readdirSync(assets).filter((f) => f.endsWith('.js'));
+  const found = ORIGIN_LITERALS.map((re) =>
+    js.some((f) => new RegExp(re.source).test(fs.readFileSync(path.join(assets, f), 'utf8'))),
+  );
+  if (found.includes(false)) {
+    console.error(
+      `e2e: compiled-in allow-list not found in dist/assets/*.js for ${DEPLOYED_ORIGINS.filter((_, i) => !found[i]).join(' ')}; the stub host could not be allow-listed.`,
+    );
+    process.exit(1);
+  }
+}
 const RULES = parseHeaders(headersSrc);
 const matches = (pattern, p) => (pattern.endsWith('*') ? p.startsWith(pattern.slice(0, -1)) : p === pattern);
 function headersFor(p) {
@@ -77,15 +105,16 @@ const TYPES = {
 let log = [];
 const t0 = Date.now();
 
-function serve(res, dir, urlPath, extraHeaders) {
+function serve(res, dir, urlPath, extraHeaders, transformJs) {
   const p = urlPath === '/' ? '/index.html' : urlPath;
   const file = path.join(dir, path.normalize(decodeURIComponent(p)).replace(/^(\.\.[/\\])+/, ''));
-  if (!file.startsWith(dir) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+  if (!file.startsWith(dir + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     return res.end('not found');
   }
   res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] ?? 'application/octet-stream', ...extraHeaders });
-  res.end(fs.readFileSync(file));
+  const body = fs.readFileSync(file);
+  res.end(transformJs && path.extname(file) === '.js' ? transformJs(body) : body);
 }
 
 function tool(req, res) {
@@ -96,7 +125,7 @@ function tool(req, res) {
     path: u.pathname + u.search,
     dest: req.headers['sec-fetch-dest'] ?? null,
   });
-  serve(res, DIST, u.pathname, headersFor(u.pathname));
+  serve(res, DIST, u.pathname, headersFor(u.pathname), rewriteAllowList);
 }
 
 const host = (req, res) => serve(res, HOST_DIR, new URL(req.url, 'http://x').pathname, { 'Cache-Control': 'no-store' });
