@@ -184,13 +184,12 @@ export class AppController {
         // Superseded or stale: a newer request owns the state. A restart re-seeds and asks again.
         if (reasonOf(e) === 'cancelled' || this.worker.restarts !== restarts || this.editor?.version !== version)
           return;
-        // Review F-005 m1: any other failure is retried once, then reported (COPY-error.failed)
-        // and the last result is shown again instead of "checking" forever (the next change
-        // validates again).
+        // Review F-005 m1 / round 3 (INV-05): any other failure is retried once, then reported
+        // with COPY-error.failed. The state stays "checking" with the previous result marked
+        // out of date — it never describes the current text — until the next change validates.
         if (retry) return this.requestValidation(false);
         clearTimeout(this.checkingTimer);
-        const cur = this.state.validation.value;
-        if (cur.result) this.state.validation.value = { ...cur, state: stateOf(cur.result) };
+        this.state.validation.value = { ...this.state.validation.value, state: 'checking', version };
         this.showFailure(reasonOf(e), false);
       },
     );

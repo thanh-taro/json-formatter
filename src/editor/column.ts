@@ -107,13 +107,23 @@ export class ColumnIndex {
     return true;
   }
 
+  /** True while a slice runs: `onProgress` may query again, which must not start a second chain. */
+  private running = false;
+
   private build(): void {
-    if (this.timer !== undefined) return;
+    if (this.timer !== undefined || this.running) return;
     const run = () => {
       this.timer = undefined;
-      const done = this.step();
-      this.onProgress();
-      if (!done && this.doc) this.timer = this.schedule(run);
+      this.running = true;
+      let done = true;
+      try {
+        done = this.step();
+        this.onProgress();
+      } finally {
+        this.running = false;
+      }
+      // One chain only: continue unless finished, reset to nothing, or already rescheduled.
+      if (!done && this.doc && this.timer === undefined) this.timer = this.schedule(run);
     };
     this.timer = this.schedule(run);
   }

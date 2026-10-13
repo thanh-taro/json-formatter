@@ -326,18 +326,44 @@ test.describe('F-005 CMP-IssuePanel and accessibility', () => {
     await expect(live).toContainText(COPY['hint.missing_comma']);
   });
 
-  test('F-005.R2 review F-005 m1 a failed validation is reported instead of "checking" forever', async ({ page }) => {
+  test('INV-05 F-005.R2 review F-005 round 3 after failed validations "[1,]" is never shown as valid', async ({
+    page,
+  }) => {
     await holdValidation(page);
     await start(page);
     await paste(page, '[1]');
     await expect(validity(page)).toHaveAttribute('data-validity', 'valid');
     await page.evaluate(() => ((window as unknown as { __failValidation?: boolean }).__failValidation = true));
-    await page.keyboard.type(' ');
-    await expect(page.locator('[data-notice-id="error.failed"]')).toBeVisible();
-    await expect(validity(page)).not.toHaveAttribute('data-validity', 'checking');
-    await page.evaluate(() => ((window as unknown as { __failValidation?: boolean }).__failValidation = false));
+    await page.keyboard.press('ArrowLeft');
     await page.keyboard.type(',');
+    expect(await docText(page)).toBe('[1,]');
+    // Both attempts fail: COPY-error.failed, and the state stays "checking" (out of date).
+    await expect(page.locator('[data-notice-id="error.failed"]')).toBeVisible();
+    await expect(validity(page)).toHaveAttribute('data-validity', 'checking');
+    await expect(validity(page)).toHaveText(COPY['status.checking']);
+    await page.waitForTimeout(500);
+    await expect(validity(page)).toHaveAttribute('data-validity', 'checking');
+    // The next change validates again.
+    await page.evaluate(() => ((window as unknown as { __failValidation?: boolean }).__failValidation = false));
+    await page.keyboard.type(' ');
     await expect(validity(page)).toHaveAttribute('data-validity', 'invalid');
+  });
+
+  test('INV-05 review F-005 round 3 after failed validations the previous issues stay marked out of date', async ({
+    page,
+  }) => {
+    await holdValidation(page);
+    await start(page);
+    await paste(page, '[1e999]');
+    await expect(validity(page)).toHaveAttribute('data-validity', 'valid');
+    await expect(panel(page)).toHaveAttribute('aria-busy', 'false');
+    await page.evaluate(() => ((window as unknown as { __failValidation?: boolean }).__failValidation = true));
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.type(',');
+    await expect(page.locator('[data-notice-id="error.failed"]')).toBeVisible();
+    await expect(validity(page)).toHaveAttribute('data-validity', 'checking');
+    await expect(panel(page)).toHaveAttribute('aria-busy', 'true');
+    await expect(panel(page)).toHaveClass(/tk-issues--stale/);
   });
 
   test('F-005.R5 review F-005 m3 jumping while re-checking uses the position after the edits', async ({ page }) => {

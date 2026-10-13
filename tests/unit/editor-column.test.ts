@@ -2,7 +2,7 @@
 // (NFR-02; review F-005 M1): short lines are counted directly, long lines through a per-block
 // index built in ≤ 8 ms slices and partly kept across edits.
 import { ChangeSet, Text } from '@codemirror/state';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ColumnIndex } from '../../src/editor/column';
 
 /** Brute-force code-point column (the oracle). */
@@ -77,6 +77,36 @@ describe('MOD-Editor cursor column', () => {
     buildAll(index);
     for (const offset of [0, block - 1, block + 1, 2 * block + 1, 2 * block + 3, 2 * block + 5, line.length]) {
       expect(index.column(doc, from, from + line.length, from + offset), String(offset)).toBe(oracle(line, offset));
+    }
+  });
+
+  it('NFR-02 review F-005 round 3 the background build runs as one timer chain and reset leaves none', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] }); // real clock: slices end
+    try {
+      const line = 'q'.repeat(40_000_000); // several 8 ms slices
+      const doc = Text.of([line]);
+      let progress = 0;
+      // Like the editor: every slice re-reports the cursor, which queries again.
+      const index: ColumnIndex = new ColumnIndex(() => {
+        progress++;
+        index.column(doc, 0, line.length, line.length);
+      });
+      expect(index.column(doc, 0, line.length, line.length)).toBeNull();
+      for (let i = 0; i < 3; i++) {
+        expect(vi.getTimerCount()).toBeLessThanOrEqual(1);
+        vi.advanceTimersToNextTimer();
+      }
+      expect(progress).toBeGreaterThan(0);
+      expect(vi.getTimerCount()).toBeLessThanOrEqual(1);
+      index.reset();
+      expect(vi.getTimerCount()).toBe(0);
+      // and a finished build leaves none either
+      index.column(doc, 0, line.length, line.length);
+      vi.runAllTimers();
+      expect(vi.getTimerCount()).toBe(0);
+      expect(index.column(doc, 0, line.length, line.length)).toBe(line.length + 1);
+    } finally {
+      vi.useRealTimers();
     }
   });
 
