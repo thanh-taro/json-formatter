@@ -32,8 +32,8 @@
     },
     "design": {
       "title": "2 Design",
-      "status": "in_progress",
-      "step": "2.4 D1 done; awaiting user review",
+      "status": "gate",
+      "step": "2.4 D2-D4 screens & flows: making (fork)",
       "gate": {
         "status": "pending",
         "at": null,
@@ -337,6 +337,51 @@
       "answer": "Yes",
       "asked": "2026-10-13T07:08:30+00:00",
       "answered": "2026-10-13T07:08:30+00:00"
+    },
+    {
+      "id": "D-017",
+      "question": "D1 component designs",
+      "options": [
+        "approve",
+        "changes"
+      ],
+      "recommendation": "approve",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Approved",
+      "asked": "2026-10-13T07:28:26+00:00",
+      "answered": "2026-10-13T07:28:26+00:00"
+    },
+    {
+      "id": "D-018",
+      "question": "Tree row actions placement",
+      "options": [
+        "selected-row bar",
+        "hover chips"
+      ],
+      "recommendation": "selected-row bar",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Selected-row bar in tree header (all widths)",
+      "asked": "2026-10-13T07:48:04+00:00",
+      "answered": "2026-10-13T07:48:04+00:00"
+    },
+    {
+      "id": "D-019",
+      "question": "Narrow editor line wrap",
+      "options": [
+        "soft-wrap <600px",
+        "never wrap"
+      ],
+      "recommendation": "soft-wrap <600px",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Soft-wrap under 600 px; jump scrolls column into view",
+      "asked": "2026-10-13T07:48:04+00:00",
+      "answered": "2026-10-13T07:48:04+00:00"
     }
   ],
   "loops": {
@@ -355,6 +400,14 @@
       "started": "2026-10-13T07:06:39+00:00",
       "outcome": "converged",
       "ended": "2026-10-13T07:27:17+00:00"
+    },
+    "design-D2": {
+      "round": 3,
+      "max": 3,
+      "active": false,
+      "started": "2026-10-13T07:28:26+00:00",
+      "outcome": "converged",
+      "ended": "2026-10-13T08:05:22+00:00"
     }
   },
   "log": [
@@ -677,9 +730,65 @@
     {
       "at": "2026-10-13T07:27:17+00:00",
       "event": "design step: 2.4 D1 done; awaiting user review"
+    },
+    {
+      "at": "2026-10-13T07:28:26+00:00",
+      "event": "decision D-017 opened: D1 component designs"
+    },
+    {
+      "at": "2026-10-13T07:28:26+00:00",
+      "event": "decision D-017 answered: Approved"
+    },
+    {
+      "at": "2026-10-13T07:28:26+00:00",
+      "event": "loop design-D2 started (max 3)"
+    },
+    {
+      "at": "2026-10-13T07:28:26+00:00",
+      "event": "design step: 2.4 D2-D4 screens & flows: making (fork)"
+    },
+    {
+      "at": "2026-10-13T07:48:04+00:00",
+      "event": "decision D-018 opened: Tree row actions placement"
+    },
+    {
+      "at": "2026-10-13T07:48:04+00:00",
+      "event": "decision D-018 answered: Selected-row bar in tree header (all widths)"
+    },
+    {
+      "at": "2026-10-13T07:48:04+00:00",
+      "event": "decision D-019 opened: Narrow editor line wrap"
+    },
+    {
+      "at": "2026-10-13T07:48:04+00:00",
+      "event": "decision D-019 answered: Soft-wrap under 600 px; jump scrolls column into view"
+    },
+    {
+      "at": "2026-10-13T07:48:11+00:00",
+      "event": "loop design-D2 round 2"
+    },
+    {
+      "at": "2026-10-13T07:56:19+00:00",
+      "event": "SP-iframe ADAPT: ADR-0008 accept; ADR-0009 accept+notes; ADR-0012 redesign (seed from HTTP cache); WebKit SW violates NFR-01 literal -> user decision; F-007 R5/AC6 untriggerable"
+    },
+    {
+      "at": "2026-10-13T07:59:48+00:00",
+      "event": "loop design-D2 round 3"
+    },
+    {
+      "at": "2026-10-13T07:59:56+00:00",
+      "event": "SP-editor ADAPT: CM6 kept (100MB open 0.35s, typing p95<=23ms, 914MB renderer); Monaco rejected; amendments: shadow root, own find, long-line input handler, highlight <=~2MB (RULE-02 decision), custom undo"
+    },
+    {
+      "at": "2026-10-13T08:05:22+00:00",
+      "event": "loop design-D2 ended: converged"
+    },
+    {
+      "at": "2026-10-13T08:05:22+00:00",
+      "event": "phase design -> gate"
     }
   ],
-  "updated": "2026-10-13T07:27:17+00:00",
+  "updated": "2026-10-13T08:05:22+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

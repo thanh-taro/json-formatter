@@ -31,6 +31,8 @@ body{margin:0}
 .sev.w{color:var(--accent2Fg);background:var(--warnBg)}
 .loc{font:400 12px 'JetBrains Mono',monospace;color:var(--muted);white-space:nowrap}
 .code{grid-column:2 / -1;font:400 12px 'JetBrains Mono',monospace;color:var(--muted)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2px solid var(--accent);outline-offset:2px}
+.row:focus-visible,.row.fv,.seg button:focus-visible,.seg button.fv,.r:focus-visible,.r.fv,.txt:focus-visible,.txt.fv,[role="textbox"].fv{outline-offset:-2px}
 </style>
 </helmet>
 <div style="width:1280px;box-sizing:border-box;padding:40px;display:flex;flex-direction:column;gap:48px;background:#0B0810">
@@ -50,7 +52,7 @@ body{margin:0}
       </div>
       <div role="tabpanel" id="ip-ap-{{t.id}}" aria-labelledby="ip-a1-{{t.id}}">
         <ul class="list">
-          <li><button type="button" class="row hover">
+          <li><button type="button" class="row fv hover">
             <span class="sev e" data-copy="COPY-issue.error">Error</span>
             <span data-copy="COPY-hint.trailing_comma">Remove the comma after the last item — JSON doesn't allow trailing commas.</span>
             <span class="loc" data-copy="COPY-issue.location">Line 8, column 50</span>

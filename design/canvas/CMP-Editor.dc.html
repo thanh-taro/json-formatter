@@ -37,6 +37,17 @@ body{margin:0}
 .ibtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:28px;padding:0 12px;box-sizing:border-box;border:1px solid var(--lineStrong);border-radius:7px;background:none;color:var(--fg);font:500 13px Manrope,system-ui,sans-serif}
 .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.ed.wrap{flex-direction:column}
+.wl{display:flex}
+.gn{flex:none;min-width:48px;box-sizing:border-box;padding:0 8px 0 12px;text-align:right;background:var(--surface);border-right:1px solid var(--line);color:var(--muted)}
+.gn.cur{color:var(--fg)}
+.gn.err{color:var(--danger);background:var(--dangerBg);font-weight:600}
+.wt{flex:1;min-width:0;padding:0 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.wl.errl .wt{background:var(--dangerBg)}
+.wl.curl .wt{background:var(--currentLine)}
+.ro .txt,.ro .txt span{color:var(--muted)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2px solid var(--accent);outline-offset:2px}
+.row:focus-visible,.row.fv,.seg button:focus-visible,.seg button.fv,.r:focus-visible,.r.fv,.txt:focus-visible,.txt.fv,[role="textbox"].fv{outline-offset:-2px}
 </style>
 </helmet>
 <div style="width:1280px;box-sizing:border-box;padding:40px;display:flex;flex-direction:column;gap:48px;background:#0B0810">
@@ -64,7 +75,7 @@ body{margin:0}
     <span class="lab">CMP-Editor / normal tier / {{t.id}}</span>
     <div class="ed" style="height:224px">
       <div class="gut" aria-hidden="true"><span class="gl">1</span><span class="gl">2</span><span class="gl cur">3</span><span class="gl">4</span><span class="gl">5</span><span class="gl">6</span><span class="gl">7</span><span class="gl">8</span><span class="gl">9</span><span class="gl">10</span></div>
-      <div class="txt" role="textbox" aria-multiline="true" aria-labelledby="ed-l-{{t.id}}" tabindex="0">
+      <div class="txt fv" role="textbox" aria-multiline="true" aria-labelledby="ed-l-{{t.id}}" tabindex="0">
 <span class="tl"><span class="p">{</span></span><span class="tl">  <span class="k">"order"</span><span class="p">: {</span></span><span class="tl" style="background:var(--currentLine)">    <span class="k">"status"</span><span class="p">: </span><span class="s">"shipped"</span><span class="p">,</span><span class="caret"></span></span><span class="tl">    <span class="k">"total"</span><span class="p">: </span><span class="n">1499.50</span><span class="p">,</span></span><span class="tl">    <span class="k">"gift"</span><span class="p">: </span><span class="l">false</span><span class="p">,</span></span><span class="tl">    <span class="k">"coupon"</span><span class="p">: </span><span class="l">null</span><span class="p">,</span></span><span class="tl">    <span class="k">"tags"</span><span class="p">: [</span><span class="s">"gift"</span><span class="p">, </span><span class="s">"express"</span><span class="p">]</span></span><span class="tl">  <span class="p">}</span></span><span class="tl"><span class="p">}</span></span><span class="tl"> </span>
       </div>
     </div>
@@ -124,11 +135,26 @@ body{margin:0}
     </div>
   </div>
 
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-Editor / narrow · soft wrap (390) / {{t.id}}</span>
+    <div style="width:390px;border:1px solid var(--line);display:flex">
+  <div class="ed wrap" style="padding:4px 0;height:auto" role="textbox" aria-multiline="true" aria-labelledby="ed-l-{{t.id}}" tabindex="0"><div class="wl"><span class="gn" aria-hidden="true">1</span><span class="wt"><span class="p">{</span></span></div><div class="wl"><span class="gn" aria-hidden="true">2</span><span class="wt">  <span class="k">"order"</span><span class="p">:</span> <span class="p">{</span></span></div><div class="wl"><span class="gn" aria-hidden="true">3</span><span class="wt">    <span class="k">"id"</span><span class="p">:</span> <span class="n">9007199254740993</span><span class="p">,</span></span></div><div class="wl"><span class="gn" aria-hidden="true">4</span><span class="wt">    <span class="k">"ref"</span><span class="p">:</span> <span class="n">12345678901234567890</span><span class="p">,</span></span></div><div class="wl"><span class="gn" aria-hidden="true">5</span><span class="wt">    <span class="k">"status"</span><span class="p">:</span> <span class="s">"shipped"</span><span class="p">,</span></span></div><div class="wl"><span class="gn" aria-hidden="true">6</span><span class="wt">    <span class="k">"total"</span><span class="p">:</span> <span class="n">1499.50</span><span class="p">,</span></span></div><div class="wl"><span class="gn" aria-hidden="true">7</span><span class="wt">    <span class="k">"items"</span><span class="p">:</span> <span class="p">[</span></span></div><div class="wl"><span class="gn" aria-hidden="true">8</span><span class="wt">      <span class="p">{</span> <span class="k">"sku"</span><span class="p">:</span> <span class="s">"TK-204"</span><span class="p">,</span> <span class="k">"qty"</span><span class="p">:</span> <span class="n">2</span><span class="p">,</span> <span class="k">"gift"</span><span class="p">:</span> <span class="l">false</span> <span class="p">}</span><span class="p">,</span></span></div><div class="wl errl"><span class="gn err cur" aria-hidden="true">9</span><span class="wt">      <span class="p">{</span> <span class="k">"sku"</span><span class="p">:</span> <span class="s">"TK-311"</span><span class="p">,</span> <span class="k">"qty"</span><span class="p">:</span> <span class="n">1</span><span class="p">,</span> <span class="k">"gift"</span><span class="p">:</span> <span class="l">true</span> <span class="p">}</span><span class="p squig">,</span><span class="caret"></span></span></div><div class="wl"><span class="gn" aria-hidden="true">10</span><span class="wt">    <span class="p">]</span><span class="p">,</span></span></div><div class="wl"><span class="gn" aria-hidden="true">11</span><span class="wt">    <span class="k">"coupon"</span><span class="p">:</span> <span class="l">null</span><span class="p">,</span></span></div><div class="wl"><span class="gn" aria-hidden="true">12</span><span class="wt">    <span class="k">"customer"</span><span class="p">:</span> <span class="p">{</span> <span class="k">"name"</span><span class="p">:</span> <span class="s">"Mai Tran"</span><span class="p">,</span> <span class="k">"email"</span><span class="p">:</span> <span class="s">"mai@example.com"</span> <span class="p">}</span></span></div><div class="wl"><span class="gn" aria-hidden="true">13</span><span class="wt">  <span class="p">}</span></span></div><div class="wl"><span class="gn" aria-hidden="true">14</span><span class="wt"><span class="p">}</span></span></div><div class="wl" style="flex:1"><span class="gn" aria-hidden="true"></span><span class="wt"></span></div></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-Editor / loading · read-only / {{t.id}}</span>
+  <div class="ed ro" style="height:184px">
+    <div class="gut" aria-hidden="true"><span class="gl">1</span><span class="gl">2</span><span class="gl">3</span><span class="gl">4</span><span class="gl">5</span><span class="gl">6</span><span class="gl">7</span><span class="gl">8</span></div>
+    <div class="txt" role="textbox" aria-multiline="true" aria-labelledby="ed-l-{{t.id}}" aria-readonly="true" tabindex="0"><span class="tl"><span class="p">{</span></span><span class="tl">  <span class="k">"order"</span><span class="p">:</span> <span class="p">{</span></span><span class="tl">    <span class="k">"id"</span><span class="p">:</span> <span class="n">9007199254740993</span><span class="p">,</span></span><span class="tl">    <span class="k">"ref"</span><span class="p">:</span> <span class="n">12345678901234567890</span><span class="p">,</span></span><span class="tl">    <span class="k">"status"</span><span class="p">:</span> <span class="s">"shipped"</span><span class="p">,</span></span><span class="tl">    <span class="k">"total"</span><span class="p">:</span> <span class="n">1499.50</span><span class="p">,</span></span><span class="tl">    <span class="k">"items"</span><span class="p">:</span> <span class="p">[</span></span><span class="tl">      <span class="p">{</span></span></div>
+  </div>
+  </div>
 </div>
 </sc-for>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2600}}'>
 class Component extends DCLogic {
   renderVals() {
     return { themes: [{ id: 'dark' }, { id: 'light' }] };

@@ -48,6 +48,7 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-status.checking** | Checking… | |
 | **COPY-status.empty** | Empty | |
 | **COPY-status.size_lines** | {size} · {lines} lines | size in B/KB/MB; numbers use the locale's grouping; singular line when lines is 1 |
+| **COPY-status.size_lines_short** | {size} · {lines} ln | narrow status bar (under 600 px) |
 | **COPY-status.valid_warnings** | Valid JSON · {count} warnings | when warnings exist; singular warning when count is 1 |
 | **COPY-status.cursor** | Ln {line}, Col {column} | |
 | **COPY-issue.error** | Error | severity badge |
@@ -70,6 +71,7 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-notice.large** | Large document ({size}): some highlighting is turned off to keep things fast. | |
 | **COPY-notice.multiple_files** | Only the first file was opened. | |
 | **COPY-notice.no_indent** | No indentation found to change. Try Beautify instead. | |
+| **COPY-confirm.title** | Large content | dialog title |
 | **COPY-confirm.very_large** | This content is {size}. Working with it may be slow or run out of memory. Continue anyway? | Buttons: COPY-action.continue, COPY-action.cancel |
 | **COPY-error.too_large** | This file is too large for this device's memory. Your previous document is unchanged. | |
 | **COPY-error.download** | Downloads aren't allowed here. Use Copy instead, or open the tool on its own. | |

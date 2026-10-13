@@ -13,3 +13,5 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - Spec review of post-G1 items: NFR-01 covers offline-cache registration/update check at page open; F-011.AC3 aligned; F-004.R7/AC8 confirmation for re-indent over 100 MB; F-010 ACs tightened (cursor, 100 MB, toolbar, case, overlap, recount).
 - User delegated status change: F-010, F-011, CMP-SearchPanel, CMP-Notice, CMP-ConfirmDialog set to `ready`.
 - D1 round 2: accessible-name copy (COPY-label.toolbar/view/issues/tree), singular-form notes, Clear disabled on empty document.
+- D2 design review: tree actions move to a selected-row header bar (D-018); editor soft-wraps under 600 px and jump scrolls horizontally (D-019); tree checking progress/cancel; too-large switch; confirm title; file-error recovery action.
+- D2 round 2: narrow status bar keeps size/lines via COPY-status.size_lines_short (F-005.R6).

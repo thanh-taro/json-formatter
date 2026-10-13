@@ -32,6 +32,9 @@ body{margin:0}
 .hit2{background:var(--selection);border-radius:2px}
 .coarse .field{height:44px;font-size:16px;width:100%}
 .coarse .tog,.coarse .ibtn{height:44px;min-width:44px;width:44px}
+.hit2{outline:1px dotted var(--accent)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2px solid var(--accent);outline-offset:2px}
+.row:focus-visible,.row.fv,.seg button:focus-visible,.seg button.fv,.r:focus-visible,.r.fv,.txt:focus-visible,.txt.fv,[role="textbox"].fv{outline-offset:-2px}
 </style>
 </helmet>
 <div style="width:1280px;box-sizing:border-box;padding:40px;display:flex;flex-direction:column;gap:48px;background:#0B0810">
@@ -56,7 +59,7 @@ body{margin:0}
     <div class="frame">
       <div class="sp" role="search">
         <input type="search" class="field focus" aria-labelledby="sp-l-{{t.id}}" placeholder="Find in document" data-copy="COPY-search.placeholder">
-        <button type="button" class="tog" aria-pressed="false" aria-labelledby="sp-m-{{t.id}}">Aa</button>
+        <button type="button" class="tog fv" aria-pressed="false" aria-labelledby="sp-m-{{t.id}}">Aa</button>
         <span class="cnt" role="status"></span>
         <div style="flex:1"></div>
         <button type="button" class="ibtn" disabled="disabled" aria-labelledby="sp-p-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg></button>

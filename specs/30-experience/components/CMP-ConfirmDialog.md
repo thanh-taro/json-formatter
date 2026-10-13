@@ -9,7 +9,7 @@ tokens: [radius.md, size.control, font.size.md, space.4]
 Ask before an action that may be slow or run out of memory (RULE-02): COPY-confirm.very_large.
 
 ## Anatomy
-Scrim · panel (message, size) · COPY-action.cancel (default focus) · COPY-action.continue.
+Scrim · panel (title COPY-confirm.title, message, size) · COPY-action.cancel (default focus) · COPY-action.continue.
 
 ## Variants & states
 | Variant / state | Description |

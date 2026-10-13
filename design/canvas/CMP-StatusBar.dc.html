@@ -26,6 +26,8 @@ body{margin:0}
 .coarse .badge{height:44px;min-width:44px;padding:0;justify-content:center}
 .coarse .sb{height:44px}
 .coarse .jump{height:44px}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2px solid var(--accent);outline-offset:2px}
+.row:focus-visible,.row.fv,.seg button:focus-visible,.seg button.fv,.r:focus-visible,.r.fv,.txt:focus-visible,.txt.fv,[role="textbox"].fv{outline-offset:-2px}
 </style>
 </helmet>
 <div style="width:1280px;box-sizing:border-box;padding:40px;display:flex;flex-direction:column;gap:48px;background:#0B0810">
@@ -39,7 +41,7 @@ body{margin:0}
       <span class="st" role="status"><span class="dot" aria-hidden="true" style="background:var(--success)"></span><span data-copy="COPY-status.valid">Valid JSON</span></span>
       <span data-copy="COPY-status.size_lines">412 B · 13 lines</span><span data-copy="COPY-status.cursor">Ln 3, Col 11</span>
       <div style="flex:1"></div>
-      <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <button type="button" class="badge fv" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
     </div>
   </div>
 
@@ -47,7 +49,7 @@ body{margin:0}
     <span class="lab">CMP-StatusBar / valid · with warnings / {{t.id}}</span>
     <div class="sb">
       <span class="st" role="status"><span class="dot" aria-hidden="true" style="background:var(--success)"></span><span data-copy="COPY-status.valid_warnings">Valid JSON · 2 warnings</span></span>
-      <span data-copy="COPY-status.size_lines">451 B · 14 lines</span><span data-copy="COPY-status.cursor">Ln 3, Col 11</span>
+      <span data-copy="COPY-status.size_lines">339 B · 14 lines</span><span data-copy="COPY-status.cursor">Ln 3, Col 11</span>
       <div style="flex:1"></div>
       <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
     </div>
@@ -106,7 +108,7 @@ body{margin:0}
     <span class="lab">CMP-StatusBar / narrow · 390 coarse / {{t.id}}</span>
     <div class="sb">
       <span class="st" role="status"><span class="dot" aria-hidden="true" style="background:var(--success)"></span><span data-copy="COPY-status.valid_warnings">Valid JSON · 2 warnings</span></span>
-      <span data-copy="COPY-status.size_lines">451 B · 14 lines</span>
+      <span data-copy="COPY-status.size_lines_short">339 B · 14 ln</span>
       <div style="flex:1"></div>
       <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></button>
     </div>

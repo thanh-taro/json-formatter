@@ -58,7 +58,7 @@ exact path or value needed for code, tests, or queries.
 - **AC13** Given the tree is shown, when the document is undone to a different text, then COPY-tree.checking is shown until the new tree is ready. (R10)
 
 ## UX notes
-CMP-Toolbar has the view switch (COPY-view.text, COPY-view.tree). CMP-TreeView rows offer
+CMP-Toolbar has the view switch (COPY-view.text, COPY-view.tree). CMP-TreeView header actions for the selected row:
 COPY-action.copy_path, COPY-action.copy_value, COPY-action.reveal; header offers
 COPY-action.collapse_all. Rows show kinds (COPY-tree.kind_object, COPY-tree.kind_array, COPY-tree.kind_string,
 COPY-tree.kind_number, COPY-tree.kind_boolean, COPY-tree.kind_null), child counts

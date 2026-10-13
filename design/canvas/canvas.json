@@ -8,7 +8,32 @@
   "launch": {
     "view": "canvas"
   },
-  "pages": [],
+  "pages": [
+    {
+      "id": "comp",
+      "name": "Components"
+    },
+    {
+      "id": "f01",
+      "name": "FLOW-01"
+    },
+    {
+      "id": "f02",
+      "name": "FLOW-02"
+    },
+    {
+      "id": "f03",
+      "name": "FLOW-03 + Find"
+    },
+    {
+      "id": "edge",
+      "name": "Edge states"
+    },
+    {
+      "id": "narrow",
+      "name": "Narrow (390)"
+    }
+  ],
   "boards": {
     "Main.dc.html": {
       "x": 0,
@@ -16,70 +41,352 @@
       "w": 1200,
       "h": 760,
       "title": "SCR-Formatter / default / embedded",
-      "is_interactive": true
+      "is_interactive": true,
+      "page": "comp"
     },
     "CMP-Toolbar.dc.html": {
       "x": 0,
       "y": 1240,
       "w": 1280,
       "h": 2640,
-      "title": "CMP-Toolbar"
+      "title": "CMP-Toolbar",
+      "page": "comp"
     },
     "CMP-Editor.dc.html": {
       "x": 1360,
       "y": 1240,
       "w": 1280,
-      "h": 2000,
-      "title": "CMP-Editor"
+      "h": 2600,
+      "title": "CMP-Editor",
+      "page": "comp"
     },
     "CMP-StatusBar.dc.html": {
       "x": 2720,
       "y": 1240,
       "w": 1280,
       "h": 1800,
-      "title": "CMP-StatusBar"
+      "title": "CMP-StatusBar",
+      "page": "comp"
     },
     "CMP-IssuePanel.dc.html": {
       "x": 0,
       "y": 4000,
       "w": 1280,
       "h": 1300,
-      "title": "CMP-IssuePanel"
+      "title": "CMP-IssuePanel",
+      "page": "comp"
     },
     "CMP-TreeView.dc.html": {
       "x": 1360,
       "y": 4000,
       "w": 1280,
       "h": 3400,
-      "title": "CMP-TreeView"
+      "title": "CMP-TreeView",
+      "page": "comp"
     },
     "CMP-DropOverlay.dc.html": {
       "x": 2720,
       "y": 4000,
       "w": 1280,
       "h": 800,
-      "title": "CMP-DropOverlay"
+      "title": "CMP-DropOverlay",
+      "page": "comp"
     },
     "CMP-Notice.dc.html": {
       "x": 0,
       "y": 7520,
       "w": 1280,
       "h": 2000,
-      "title": "CMP-Notice"
+      "title": "CMP-Notice",
+      "page": "comp"
     },
     "CMP-ConfirmDialog.dc.html": {
       "x": 1360,
       "y": 7520,
       "w": 1280,
       "h": 640,
-      "title": "CMP-ConfirmDialog"
+      "title": "CMP-ConfirmDialog",
+      "page": "comp"
     },
     "CMP-SearchPanel.dc.html": {
       "x": 2720,
       "y": 7520,
       "w": 1280,
       "h": 1800,
-      "title": "CMP-SearchPanel"
+      "title": "CMP-SearchPanel",
+      "page": "comp"
+    },
+    "FLOW-01_step1.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-01 / step 1",
+      "page": "f01"
+    },
+    "FLOW-01_step2.dc.html": {
+      "x": 1280,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-01 / step 2",
+      "page": "f01"
+    },
+    "FLOW-01_step3.dc.html": {
+      "x": 2560,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-01 / step 3",
+      "page": "f01"
+    },
+    "FLOW-01_step4.dc.html": {
+      "x": 3840,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-01 / step 4",
+      "page": "f01"
+    },
+    "FLOW-02_step1.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-02 / step 1",
+      "page": "f02"
+    },
+    "FLOW-02_step2.dc.html": {
+      "x": 1280,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-02 / step 2",
+      "page": "f02"
+    },
+    "FLOW-02_step3.dc.html": {
+      "x": 2560,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-02 / step 3",
+      "page": "f02"
+    },
+    "FLOW-03_step1.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-03 / step 1",
+      "page": "f03"
+    },
+    "FLOW-03_step2.dc.html": {
+      "x": 1280,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-03 / step 2",
+      "page": "f03"
+    },
+    "FLOW-03_step3.dc.html": {
+      "x": 2560,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-03 / step 3",
+      "page": "f03"
+    },
+    "FLOW-03_step4.dc.html": {
+      "x": 3840,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-03 / step 4",
+      "page": "f03"
+    },
+    "FLOW-03_exit-invalid.dc.html": {
+      "x": 5120,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "FLOW-03 / exit · invalid document",
+      "page": "f03"
+    },
+    "SCR-Formatter_find-open_embedded.dc.html": {
+      "x": 0,
+      "y": 1180,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / find open / embedded",
+      "page": "f03"
+    },
+    "SCR-Formatter_loading_embedded.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / loading / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_busy_embedded.dc.html": {
+      "x": 1280,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / busy formatting / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_confirm_embedded.dc.html": {
+      "x": 2560,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / confirm very large / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_large_embedded.dc.html": {
+      "x": 3840,
+      "y": 0,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / large notice / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_undo-trimmed_embedded.dc.html": {
+      "x": 0,
+      "y": 880,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / undo trimmed / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_error-encoding_embedded.dc.html": {
+      "x": 1280,
+      "y": 880,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / error · encoding / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_error-too-large_embedded.dc.html": {
+      "x": 2560,
+      "y": 880,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / error · too large / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_error-not-a-file_embedded.dc.html": {
+      "x": 3840,
+      "y": 880,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / error · not a file / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_error-clipboard_embedded.dc.html": {
+      "x": 0,
+      "y": 1760,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / error · clipboard blocked / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_tree-clipboard_embedded.dc.html": {
+      "x": 1280,
+      "y": 1760,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / tree · copy value blocked / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_error-download_embedded.dc.html": {
+      "x": 2560,
+      "y": 1760,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / error · download blocked / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_tree-too-large_embedded.dc.html": {
+      "x": 3840,
+      "y": 1760,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / tree too large / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_tree-checking_embedded.dc.html": {
+      "x": 0,
+      "y": 2640,
+      "w": 1200,
+      "h": 760,
+      "title": "SCR-Formatter / tree checking / embedded",
+      "page": "edge"
+    },
+    "SCR-Formatter_empty_narrow.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 760,
+      "title": "SCR-Formatter / empty / narrow",
+      "page": "narrow"
+    },
+    "SCR-Formatter_default_narrow.dc.html": {
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 760,
+      "title": "SCR-Formatter / default / narrow",
+      "page": "narrow"
+    },
+    "SCR-Formatter_error_narrow.dc.html": {
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 760,
+      "title": "SCR-Formatter / error / narrow",
+      "page": "narrow"
+    },
+    "SCR-Formatter_tree_narrow.dc.html": {
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 760,
+      "title": "SCR-Formatter / tree / narrow",
+      "page": "narrow"
+    },
+    "SCR-Formatter_find-open_narrow.dc.html": {
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 760,
+      "title": "SCR-Formatter / find open / narrow",
+      "page": "narrow"
+    },
+    "SCR-Formatter_confirm_narrow.dc.html": {
+      "x": 2350,
+      "y": 0,
+      "w": 390,
+      "h": 760,
+      "title": "SCR-Formatter / confirm very large / narrow",
+      "page": "narrow"
+    },
+    "SCR-Formatter_notice_narrow.dc.html": {
+      "x": 2820,
+      "y": 0,
+      "w": 390,
+      "h": 760,
+      "title": "SCR-Formatter / notice bar / narrow",
+      "page": "narrow"
+    },
+    "SCR-Formatter_toast_narrow.dc.html": {
+      "x": 3290,
+      "y": 0,
+      "w": 390,
+      "h": 760,
+      "title": "SCR-Formatter / copied toast (tree) / narrow",
+      "page": "narrow"
     }
   },
   "order": [
@@ -92,7 +399,41 @@
     "CMP-DropOverlay.dc.html",
     "CMP-Notice.dc.html",
     "CMP-ConfirmDialog.dc.html",
-    "CMP-SearchPanel.dc.html"
+    "CMP-SearchPanel.dc.html",
+    "FLOW-01_step1.dc.html",
+    "FLOW-01_step2.dc.html",
+    "FLOW-01_step3.dc.html",
+    "FLOW-01_step4.dc.html",
+    "FLOW-02_step1.dc.html",
+    "FLOW-02_step2.dc.html",
+    "FLOW-02_step3.dc.html",
+    "FLOW-03_step1.dc.html",
+    "FLOW-03_step2.dc.html",
+    "FLOW-03_step3.dc.html",
+    "FLOW-03_step4.dc.html",
+    "FLOW-03_exit-invalid.dc.html",
+    "SCR-Formatter_find-open_embedded.dc.html",
+    "SCR-Formatter_loading_embedded.dc.html",
+    "SCR-Formatter_busy_embedded.dc.html",
+    "SCR-Formatter_confirm_embedded.dc.html",
+    "SCR-Formatter_large_embedded.dc.html",
+    "SCR-Formatter_undo-trimmed_embedded.dc.html",
+    "SCR-Formatter_error-encoding_embedded.dc.html",
+    "SCR-Formatter_error-too-large_embedded.dc.html",
+    "SCR-Formatter_error-not-a-file_embedded.dc.html",
+    "SCR-Formatter_error-clipboard_embedded.dc.html",
+    "SCR-Formatter_tree-clipboard_embedded.dc.html",
+    "SCR-Formatter_error-download_embedded.dc.html",
+    "SCR-Formatter_tree-too-large_embedded.dc.html",
+    "SCR-Formatter_tree-checking_embedded.dc.html",
+    "SCR-Formatter_empty_narrow.dc.html",
+    "SCR-Formatter_default_narrow.dc.html",
+    "SCR-Formatter_error_narrow.dc.html",
+    "SCR-Formatter_tree_narrow.dc.html",
+    "SCR-Formatter_find-open_narrow.dc.html",
+    "SCR-Formatter_confirm_narrow.dc.html",
+    "SCR-Formatter_notice_narrow.dc.html",
+    "SCR-Formatter_toast_narrow.dc.html"
   ],
   "notes": {
     "screens": {
@@ -100,21 +441,72 @@
       "y": -300,
       "text": "Screens",
       "kind": "title1",
-      "maxW": 1200
+      "maxW": 1200,
+      "page": "comp"
     },
     "components": {
       "x": 0,
       "y": 940,
       "text": "Components (D1) — both themes",
       "kind": "title1",
-      "maxW": 4000
+      "maxW": 4000,
+      "page": "comp"
     },
     "about": {
       "x": 1280,
       "y": 0,
       "w": 420,
       "text": "JSON Formatter · Workbench style (D-010). Tokens mirror the taro-kit portal (Night Market) plus editor roles from specs/30-experience/tokens.json. Every UI string carries data-copy=COPY-ID; JSON in the editor and tree is SAMPLE data.",
-      "fill": "purple"
+      "fill": "purple",
+      "page": "comp"
+    },
+    "t01": {
+      "x": 0,
+      "y": -300,
+      "text": "FLOW-01 · Paste and beautify",
+      "kind": "title1",
+      "maxW": 5040,
+      "page": "f01"
+    },
+    "t02": {
+      "x": 0,
+      "y": -300,
+      "text": "FLOW-02 · Find and fix a syntax error",
+      "kind": "title1",
+      "maxW": 3760,
+      "page": "f02"
+    },
+    "t03": {
+      "x": 0,
+      "y": -300,
+      "text": "FLOW-03 · Find a value and grab its path",
+      "kind": "title1",
+      "maxW": 6320,
+      "page": "f03"
+    },
+    "t03b": {
+      "x": 0,
+      "y": 900,
+      "text": "Find in text (F-010)",
+      "kind": "title1",
+      "maxW": 1200,
+      "page": "f03"
+    },
+    "tedge": {
+      "x": 0,
+      "y": -300,
+      "text": "Edge states — notices, errors, dialogs, tree limits",
+      "kind": "title1",
+      "maxW": 5040,
+      "page": "edge"
+    },
+    "tnar": {
+      "x": 0,
+      "y": -300,
+      "text": "Narrow 390 · coarse pointer (44 px targets)",
+      "kind": "title1",
+      "maxW": 3760,
+      "page": "narrow"
     }
   },
   "designSystems": []

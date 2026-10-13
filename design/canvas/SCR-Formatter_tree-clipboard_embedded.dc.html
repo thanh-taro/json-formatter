@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SCR-Formatter — tree · copy value blocked — embedded</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--accent2Fg:#FFC48A;--selection:#2A1D47;--danger:#FF8595;--success:#5BD6A0;--dangerBg:#3A1622;--warnBg:#33240F;--currentLine:#1C1526;--scrim:#07050BB3;--syntaxKey:#8CCBFF;--syntaxString:#7FE3B8;--syntaxNumber:#FFC48A;--syntaxLiteral:#C4A6FF;--syntaxPunct:#9C92B0;color-scheme:dark}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--accent2Fg:#8F4705;--selection:#F0EAFE;--danger:#C0243B;--success:#13744C;--dangerBg:#FCE8EC;--warnBg:#FDEBD8;--currentLine:#F6F3FD;--scrim:#16111F66;--syntaxKey:#0B5A94;--syntaxString:#0B6B49;--syntaxNumber:#8F4705;--syntaxLiteral:#5B2FCC;--syntaxPunct:#5E566F;color-scheme:light}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.app{width:1200px;height:760px;box-sizing:border-box;display:flex;flex-direction:column;position:relative;background:var(--bg);color:var(--fg);font-family:Manrope,system-ui,sans-serif;overflow:hidden}
+.tbar{height:40px;box-sizing:border-box;display:flex;align-items:center;gap:4px;padding:0 8px;background:var(--surface);border-bottom:1px solid var(--line);flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:28px;min-width:28px;padding:0 8px;box-sizing:border-box;border:1px solid transparent;border-radius:7px;background:none;color:var(--fg);font:500 13px Manrope,system-ui,sans-serif;white-space:nowrap;cursor:pointer}
+.btn svg,.ibtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn.primary{background:var(--accent);color:var(--onAccent)}
+.btn[disabled]{color:var(--muted);cursor:default}
+.btn.primary[disabled]{background:var(--surface2);color:var(--muted)}
+.btn.ind{border-color:var(--lineStrong);font-size:12px}
+.btn.out{border-color:var(--lineStrong);padding:0 12px}
+.btn.focus{outline:2px solid var(--accent);outline-offset:2px}
+.btn.pressed{background:var(--selection)}
+.ibtn{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:7px;background:none;color:var(--muted);cursor:pointer}
+.sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.seg{display:inline-flex;border:1px solid var(--lineStrong);border-radius:7px;overflow:hidden}
+.seg button{height:26px;padding:0 12px;border:0;background:none;color:var(--muted);font:600 12px Manrope,system-ui,sans-serif;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface2);color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+.seg button[disabled]{color:var(--muted);box-shadow:none;cursor:default}
+.nbar{display:flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;padding:4px 4px 4px 12px;border-bottom:1px solid var(--line);font:500 13px/20px Manrope,system-ui,sans-serif;color:var(--fg);flex:none}
+.nbar.info,.nbar.progress{background:var(--surface2)}
+.nbar.error{background:var(--dangerBg)}
+.nbar > svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;flex:none}
+.nmsg{flex:1}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.track{width:160px;height:4px;border-radius:999px;background:var(--line);overflow:hidden;display:inline-block}
+.fill{display:block;height:4px;background:var(--accent)}
+.ed{flex:1;min-height:0;display:flex;font:400 13px/20px 'JetBrains Mono',ui-monospace,Menlo,monospace;overflow:hidden}
+.gut{padding:4px 0;min-width:48px;box-sizing:border-box;background:var(--surface);border-right:1px solid var(--line);color:var(--muted);text-align:right;flex:none}
+.gl{display:block;padding:0 8px 0 12px;white-space:pre}
+.gl.cur{color:var(--fg)}
+.gl.err{color:var(--danger);background:var(--dangerBg);font-weight:600}
+.gl.warn{color:var(--accent2Fg);background:var(--warnBg)}
+.txt{flex:1;min-width:0;padding:4px 0;white-space:pre;overflow:hidden;color:var(--fg)}
+.tl{display:block;padding:0 12px}
+.tl.selr{background:var(--selection)}
+.tl.errl{background:var(--dangerBg)}
+.k{color:var(--syntaxKey)}.s{color:var(--syntaxString)}.n{color:var(--syntaxNumber)}.l{color:var(--syntaxLiteral)}.p{color:var(--syntaxPunct)}
+.plain .k,.plain .s,.plain .n,.plain .l,.plain .p{color:var(--fg)}
+.squig{text-decoration:underline wavy var(--danger);text-underline-offset:4px}
+.warnmark{text-decoration:underline dotted var(--accent2Fg);text-underline-offset:4px}
+.caret{display:inline-block;width:2px;height:16px;background:var(--accent);vertical-align:-3px}
+.hit{background:var(--selection);outline:1px solid var(--accent);border-radius:2px}
+.hit2{background:var(--selection);border-radius:2px}
+.ip{border-top:1px solid var(--line);background:var(--surface);flex:none}
+.tabs{display:flex;align-items:center;gap:8px;height:32px;padding:0 4px;border-bottom:1px solid var(--line)}
+.tab{height:32px;padding:0 8px;display:inline-flex;align-items:center;border:0;background:none;color:var(--muted);font:600 12px Manrope,system-ui,sans-serif;cursor:pointer}
+.tab[aria-selected="true"]{color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+.ilist{list-style:none;margin:0;padding:0}
+.ilist li + li{border-top:1px solid var(--line)}
+.sev{justify-self:start;font:600 12px 'JetBrains Mono',monospace;padding:0 8px;border-radius:999px;line-height:20px}
+.sev.w{color:var(--accent2Fg);background:var(--warnBg)}
+.sev.e{color:var(--danger);background:var(--dangerBg)}
+.row{width:100%;display:grid;grid-template-columns:76px 1fr auto;gap:4px 12px;align-items:baseline;padding:8px 12px;box-sizing:border-box;border:0;background:none;color:var(--fg);text-align:left;font:500 13px/20px Manrope,system-ui,sans-serif;cursor:pointer}
+.loc{font:400 12px 'JetBrains Mono',monospace;color:var(--muted);white-space:nowrap}
+.code{grid-column:2 / -1;font:400 12px 'JetBrains Mono',monospace;color:var(--muted)}
+.sbar{height:28px;box-sizing:border-box;display:flex;align-items:center;gap:16px;padding:0 4px 0 12px;background:var(--surface);border-top:1px solid var(--line);font:500 12px 'JetBrains Mono',ui-monospace,monospace;color:var(--muted);flex:none}
+.st{display:inline-flex;align-items:center;gap:8px;color:var(--fg)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.badge{display:inline-flex;align-items:center;gap:8px;height:24px;min-width:24px;padding:0 8px;box-sizing:border-box;border:0;border-radius:7px;background:none;color:var(--success);font:500 12px 'JetBrains Mono',monospace;cursor:pointer}
+.badge svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5}
+.jump{display:inline-flex;align-items:center;gap:8px;height:24px;padding:0 8px;margin-left:-8px;border:0;border-radius:7px;background:var(--dangerBg);color:var(--danger);font:600 12px 'JetBrains Mono',monospace;cursor:pointer}
+.toast{position:absolute;right:12px;bottom:40px;z-index:2;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--lineStrong);border-radius:10px;background:var(--surface);font:500 13px Manrope,system-ui,sans-serif;color:var(--fg)}
+.toast svg{width:16px;height:16px;stroke:var(--success);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tv{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.th{display:flex;align-items:center;gap:8px;height:32px;padding:0 4px 0 12px;background:var(--surface);border-bottom:1px solid var(--line);font:500 12px 'JetBrains Mono',monospace;color:var(--muted);flex:none}
+.tb{display:inline-flex;align-items:center;height:24px;padding:0 8px;border:0;border-radius:7px;background:none;color:var(--fg);font:500 12px Manrope,system-ui,sans-serif;cursor:pointer}
+.rows{flex:1;padding:4px 0;margin:0;list-style:none;font:400 13px/24px 'JetBrains Mono',ui-monospace,monospace;overflow:hidden}
+.r{display:flex;align-items:center;gap:8px;height:24px;padding-right:4px;color:var(--fg)}
+.tw{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;background:none;color:var(--muted);font:inherit;flex:none}
+.kind{font-size:12px;line-height:16px;color:var(--muted);border:1px solid var(--line);border-radius:7px;padding:0 4px}
+.cnt{color:var(--muted)}
+.r.sel{background:var(--selection);box-shadow:inset 2px 0 0 var(--accent)}
+.ra{margin-left:auto;display:inline-flex;gap:4px}
+.ra button{height:24px;padding:0 8px;border:1px solid var(--lineStrong);border-radius:7px;background:var(--surface);color:var(--fg);font:500 12px Manrope,system-ui,sans-serif;cursor:pointer}
+.grp{color:var(--muted)}
+.stale .r,.stale .k,.stale .s,.stale .n,.stale .l,.stale .cnt{color:var(--muted)}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;text-align:center;font:500 13px/20px Manrope,system-ui,sans-serif;color:var(--fg)}
+.ov{position:absolute;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--scrim)}
+.dlg{width:400px;max-width:100%;box-sizing:border-box;padding:24px;display:flex;flex-direction:column;gap:24px;border:1px solid var(--lineStrong);border-radius:10px;background:var(--surface)}
+.sp{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-height:40px;box-sizing:border-box;padding:4px 4px 4px 8px;background:var(--surface);border-bottom:1px solid var(--line);flex:none}
+.field{width:280px;height:28px;box-sizing:border-box;padding:0 8px;border:1px solid var(--accent);outline:2px solid var(--accent);outline-offset:1px;border-radius:7px;background:var(--bg);color:var(--fg);font:400 13px 'JetBrains Mono',monospace}
+.tog{height:28px;min-width:28px;padding:0 8px;box-sizing:border-box;border:1px solid var(--lineStrong);border-radius:7px;background:none;color:var(--muted);font:600 12px 'JetBrains Mono',monospace;cursor:pointer}
+.tog[aria-pressed="true"]{background:var(--selection);color:var(--fg);border-color:var(--accent)}
+.scnt{min-width:96px;font:500 12px 'JetBrains Mono',monospace;color:var(--muted)}
+.app.narrow{width:390px}
+.coarse .tbar{height:auto;min-height:52px;padding:4px 8px}
+.coarse .btn,.coarse .seg button{height:44px;min-width:44px}
+.coarse .ibtn,.coarse .tw{width:44px;height:44px}
+.coarse .sbar{height:44px;gap:12px}
+.coarse .badge,.coarse .jump{height:44px;min-width:44px}
+.coarse .tabs,.coarse .tab,.coarse .th,.coarse .tb,.coarse .ra button,.coarse .tog{height:44px}
+.coarse .r{height:44px}
+.coarse .rows{line-height:44px}
+.coarse .field{height:44px;font-size:16px;width:100%}
+.coarse .tog{min-width:44px}
+.coarse .nbar{min-height:52px}
+.coarse .row{padding:12px}
+.row.sel{background:var(--surface2);box-shadow:inset 2px 0 0 var(--accent)}
+.sbar > *{white-space:nowrap}
+.narrow .sbar{gap:8px}
+.narrow .row{grid-template-columns:auto 1fr;grid-template-areas:"sev loc" "msg msg" "code code"}
+.narrow .row .sev{grid-area:sev}
+.narrow .row .msg{grid-area:msg}
+.narrow .row .loc{grid-area:loc;justify-self:end}
+.narrow .row .code{grid-area:code}
+.narrow .ip [role="tabpanel"]{max-height:240px;overflow:auto}
+.ro .txt,.ro .txt span{color:var(--muted)}
+.sp .ibtn{width:28px;height:28px;color:var(--fg)}
+.coarse .sp .ibtn{width:44px;height:44px}
+.th .path{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
+.th .acts{display:inline-flex;align-items:center;gap:4px}
+.th .btn{height:24px;font-size:12px}
+.coarse .th{height:auto;min-height:52px}
+.coarse .th .btn{height:44px;min-width:44px;padding:0}
+.coarse .th .al{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.plabel{white-space:nowrap}
+.ed.wrap{flex-direction:column;padding:0}
+.wl{display:flex}
+.gn{flex:none;min-width:48px;box-sizing:border-box;padding:0 8px 0 12px;text-align:right;background:var(--surface);border-right:1px solid var(--line);color:var(--muted)}
+.gn.cur{color:var(--fg)}
+.gn.err{color:var(--danger);background:var(--dangerBg);font-weight:600}
+.gn.warn{color:var(--accent2Fg);background:var(--warnBg)}
+.wt{flex:1;min-width:0;padding:0 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.wl.errl .wt{background:var(--dangerBg)}
+.wl.curl .wt{background:var(--currentLine)}
+.fbk{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
+.fbk input{flex:1;min-width:160px;height:28px;box-sizing:border-box;padding:0 8px;border:1px solid var(--accent);border-radius:7px;background:var(--selection);color:var(--fg);font:400 13px 'JetBrains Mono',monospace}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2px solid var(--accent);outline-offset:2px}
+.row:focus-visible,.row.fv,.seg button:focus-visible,.seg button.fv,.r:focus-visible,.r.fv,.txt:focus-visible,.txt.fv{outline-offset:-2px}
+.nbar.error .btn.out{border-color:var(--fg)}
+.hit2{outline:1px dotted var(--accent)}
+</style>
+</helmet>
+<div class="app tk-{{theme}}">
+  <span id="l-tb" class="vh" data-copy="COPY-label.toolbar">Document actions</span>
+  <span id="l-vw" class="vh" data-copy="COPY-label.view">View</span>
+  <span id="l-ed" class="vh" data-copy="COPY-label.editor">JSON document</span>
+  <span id="l-is" class="vh" data-copy="COPY-label.issues">Issues</span>
+  <span id="l-tr" class="vh" data-copy="COPY-label.tree">Document tree</span>
+  <span id="l-col" class="vh" data-copy="COPY-action.collapse_issues">Hide issues</span>
+  <span id="l-dis" class="vh" data-copy="COPY-action.dismiss">Dismiss</span>
+  <span id="l-more" class="vh" data-copy="COPY-action.more">More actions</span>
+  <span id="l-pv" class="vh" data-copy="COPY-privacy.badge_label">Your data stays in this browser</span>
+  <div class="tbar" role="toolbar" aria-labelledby="l-tb">
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg><span data-copy="COPY-action.open">Open file</span></button>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg><span data-copy="COPY-action.clear">Clear</span></button>
+    <div class="sep"></div>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span data-copy="COPY-action.find">Find</span></button>
+    <div class="sep"></div>
+    <button type="button" class="btn primary"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M8 10h12M8 14h12M4 18h16"/></svg><span data-copy="COPY-action.beautify">Beautify</span></button>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg><span data-copy="COPY-action.minify">Minify</span></button>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M10 12h10M10 18h10M4 10l3 2-3 2"/></svg><span data-copy="COPY-action.reindent">Re-indent</span></button>
+    <button type="button" class="btn ind" aria-haspopup="listbox" aria-expanded="false"><span style="color:var(--muted)" data-copy="COPY-label.indent">Indent</span><span data-copy="COPY-indent.spaces2">2 spaces</span><svg aria-hidden="true" viewBox="0 0 24 24" style="stroke:var(--muted)"><path d="M7 10l5 5 5-5"/></svg></button>
+    <div class="sep"></div>
+    <div class="seg" role="group" aria-labelledby="l-vw"><button type="button" aria-pressed="false" data-copy="COPY-view.text">Text</button><button type="button" aria-pressed="true" data-copy="COPY-view.tree">Tree</button></div>
+    <div style="flex:1"></div>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span data-copy="COPY-action.copy">Copy</span></button>
+    <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-copy="COPY-action.download">Download</span></button>
+  </div>
+  <div class="nbar error" role="alert"><svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span class="nmsg" data-copy="COPY-error.clipboard">Copying isn't allowed here. The text is selected — press your copy shortcut.</span><button type="button" class="ibtn" aria-labelledby="l-dis"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="tv">
+    <div class="th"><span class="path">$.events[1].amount</span><span class="acts"><button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg><span class="al" data-copy="COPY-action.copy_path">Copy path</span></button><button type="button" class="btn pressed"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span class="al" data-copy="COPY-action.copy_value">Copy value</span></button><button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13"/></svg><span class="al" data-copy="COPY-action.reveal">Show in text</span></button></span><span class="sep"></span><button type="button" class="tb" data-copy="COPY-action.collapse_all">Collapse all</button></div>
+    <div class="fbk"><label for="fb-v" class="mono" style="color:var(--muted)" data-copy="COPY-action.copy_value">Copy value</label><input id="fb-v" type="text" readonly="readonly" value="47.50"></div>
+    <ul class="rows" role="tree" aria-labelledby="l-tr"><li class="r" role="treeitem" aria-level="1" aria-expanded="true" aria-selected="false" tabindex="-1" style="padding-left:12px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▾</button><span>$</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">3 keys</span></li><li class="r" role="treeitem" aria-level="2" aria-selected="false" tabindex="-1" style="padding-left:30px"><span class="tw" aria-hidden="true"></span><span class="k">page</span><span class="kind" data-copy="COPY-tree.kind_number">number</span><span class="n">1</span></li><li class="r" role="treeitem" aria-level="2" aria-expanded="true" aria-selected="false" tabindex="-1" style="padding-left:30px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▾</button><span class="k">events</span><span class="kind" data-copy="COPY-tree.kind_array">array</span><span class="cnt" data-copy="COPY-tree.count_items">250 items</span></li><li class="r" role="treeitem" aria-level="3" aria-expanded="true" aria-selected="false" tabindex="-1" style="padding-left:48px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▾</button><span class="grp" data-copy="COPY-tree.group">[0 … 99]</span></li><li class="r" role="treeitem" aria-level="4" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:66px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="k">0</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">4 keys</span></li><li class="r" role="treeitem" aria-level="4" aria-expanded="true" aria-selected="false" tabindex="-1" style="padding-left:66px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▾</button><span class="k">1</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">4 keys</span></li><li class="r" role="treeitem" aria-level="5" aria-selected="false" tabindex="-1" style="padding-left:84px"><span class="tw" aria-hidden="true"></span><span class="k">id</span><span class="kind" data-copy="COPY-tree.kind_string">string</span><span class="s">"evt_0001"</span></li><li class="r" role="treeitem" aria-level="5" aria-selected="false" tabindex="-1" style="padding-left:84px"><span class="tw" aria-hidden="true"></span><span class="k">type</span><span class="kind" data-copy="COPY-tree.kind_string">string</span><span class="s">"order.paid"</span></li><li class="r" role="treeitem" aria-level="5" aria-selected="false" tabindex="-1" style="padding-left:84px"><span class="tw" aria-hidden="true"></span><span class="k">at</span><span class="kind" data-copy="COPY-tree.kind_string">string</span><span class="s">"2026-10-12T08:01:03Z"</span></li><li class="r sel" role="treeitem" aria-level="5" aria-selected="true" tabindex="0" style="padding-left:84px"><span class="tw" aria-hidden="true"></span><span class="k">amount</span><span class="kind" data-copy="COPY-tree.kind_number">number</span><span class="n">47.50</span></li><li class="r" role="treeitem" aria-level="4" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:66px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="k">2</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">4 keys</span></li><li class="r" role="treeitem" aria-level="4" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:66px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="k">3</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">4 keys</span></li><li class="r" role="treeitem" aria-level="4" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:66px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="k">4</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">4 keys</span></li><li class="r" role="treeitem" aria-level="4" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:66px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="k">5</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">4 keys</span></li><li class="r" role="treeitem" aria-level="4" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:66px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="k">6</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">4 keys</span></li><li class="r" role="treeitem" aria-level="4" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:66px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="k">7</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">4 keys</span></li><li class="r" role="treeitem" aria-level="4" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:66px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="k">8</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">4 keys</span></li><li class="r" role="treeitem" aria-level="4" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:66px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="k">9</span><span class="kind" data-copy="COPY-tree.kind_object">object</span><span class="cnt" data-copy="COPY-tree.count_keys">4 keys</span></li><li class="r" role="treeitem" aria-level="3" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:48px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="grp" data-copy="COPY-tree.group">[100 … 199]</span></li><li class="r" role="treeitem" aria-level="3" aria-expanded="false" aria-selected="false" tabindex="-1" style="padding-left:48px"><button type="button" class="tw" tabindex="-1" aria-hidden="true">▸</button><span class="grp" data-copy="COPY-tree.group">[200 … 249]</span></li><li class="r" role="treeitem" aria-level="2" aria-selected="false" tabindex="-1" style="padding-left:30px"><span class="tw" aria-hidden="true"></span><span class="k">next</span><span class="kind" data-copy="COPY-tree.kind_string">string</span><span class="s">"/v1/events?page=2"</span></li></ul>
+  </div>
+  <div class="sbar">
+    <span class="st" role="status"><span class="dot" aria-hidden="true" style="background:var(--success)"></span><span data-copy="COPY-status.valid">Valid JSON</span></span>
+    <span data-copy="COPY-status.size_lines">31.6 KB · 1,506 lines</span>
+    <div style="flex:1"></div>
+    <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="l-pv"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1200,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? 'dark' };
+  }
+}
+</script>
+</body>
+</html>

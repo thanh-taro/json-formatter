@@ -15,7 +15,7 @@ Validity indicator · size and line count · cursor position · privacy statemen
 | Variant / state | Description |
 |---|---|
 | valid / invalid / checking / empty | per F-005; valid with warnings uses COPY-status.valid_warnings |
-| narrow | cursor position hidden; privacy statement shortens to its icon with COPY-privacy.badge_label |
+| narrow | cursor position hidden; size and lines use COPY-status.size_lines_short; privacy statement shortens to its icon with COPY-privacy.badge_label |
 
 ## Behavior
 Activating the validity indicator when invalid jumps to the error. Activating the privacy
