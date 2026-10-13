@@ -1028,9 +1028,13 @@
     {
       "at": "2026-10-13T11:23:31+00:00",
       "event": "loop build-F-008 ended: converged"
+    },
+    {
+      "at": "2026-10-13T11:24:04+00:00",
+      "event": "F-008/F-009 merged (review converged); F-009 shipped, F-008 building pending AC6/AC7 re-run"
     }
   ],
-  "updated": "2026-10-13T11:23:31+00:00",
+  "updated": "2026-10-13T11:24:04+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
