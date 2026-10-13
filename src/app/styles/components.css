@@ -1,13 +1,8 @@
 /* F-001 components: icons, button variants, CMP-Editor host and empty variant, CMP-Notice bar,
    CMP-ConfirmDialog, CMP-DropOverlay. Tokens only (ADR-0011). */
 @layer components {
-  .tk-icon {
-    display: inline-flex;
-    flex: none;
-  }
+  /* .tk-icon and .tk-icon-button base styles live in statusbar.css (F-009). */
   .tk-icon svg {
-    inline-size: var(--tk-size-icon-sm);
-    block-size: var(--tk-size-icon-sm);
     stroke-width: 1.5;
   }
 
@@ -30,21 +25,9 @@
   .tk-button--primary:hover:not(:disabled) {
     background: var(--tk-color-accent);
   }
-  .tk-icon-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .tk-notice .tk-icon-button {
     inline-size: var(--tk-size-target-min);
     block-size: var(--tk-size-target-min);
-    padding: 0;
-    border: 0;
-    border-radius: var(--tk-radius-sm);
-    background: transparent;
-    color: var(--tk-color-muted);
-    cursor: pointer;
-  }
-  .tk-icon-button:hover {
-    color: var(--tk-color-fg);
   }
 
   /* CMP-Editor host: the engine lives in its shadow root (ADR-0004). */

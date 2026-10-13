@@ -11,7 +11,20 @@ const NETWORK_AND_STORAGE = [
   ['localStorage', 'PRN-01: nothing is persisted'],
   ['sessionStorage', 'PRN-01: nothing is persisted'],
   ['indexedDB', 'PRN-01: nothing is persisted'],
+  ['caches', 'PRN-01: nothing is persisted (Cache Storage belongs to /sw.js only, ADR-0012)'],
+  ['BroadcastChannel', 'PRN-01: nothing leaves this page'],
+  ['open', 'INV-02: no navigation that could carry content'],
 ].map(([name, message]) => ({ name, message }));
+
+// Windows outside the tool: only MOD-Host may reach them (ADR-0008 §3, INV-02).
+const OTHER_WINDOWS = ['parent', 'top', 'opener'];
+const OTHER_WINDOW_GLOBALS = OTHER_WINDOWS.map((name) => ({
+  name,
+  message: 'Only MOD-Host may reach other windows (ADR-0008).',
+}));
+const OTHER_WINDOW_PROPERTIES = ['window', 'self', 'globalThis'].flatMap((object) =>
+  OTHER_WINDOWS.map((property) => ({ object, property, message: 'Only MOD-Host may reach other windows (ADR-0008).' })),
+);
 
 const NETWORK_PROPERTIES = [
   { object: 'navigator', property: 'sendBeacon', message: 'INV-02: no network requests from the tool' },
@@ -21,7 +34,24 @@ const NETWORK_PROPERTIES = [
   { object: 'document', property: 'cookie', message: 'PRN-01: nothing is persisted' },
   { object: 'window', property: 'localStorage', message: 'PRN-01: nothing is persisted' },
   { object: 'self', property: 'importScripts', message: 'INV-02: no remote scripts' },
+  { object: 'navigator', property: 'storage', message: 'PRN-01: nothing is persisted' },
+  { object: 'window', property: 'open', message: 'INV-02: no navigation that could carry content' },
+  { object: 'location', property: 'assign', message: 'INV-02: no navigation that could carry content' },
+  { object: 'location', property: 'replace', message: 'INV-02: no navigation that could carry content' },
 ];
+
+// Navigation by assignment (CSP has no navigate-to), and postMessage to another window.
+const NAVIGATION_SYNTAX = [
+  "AssignmentExpression[left.type='Identifier'][left.name='location']",
+  "AssignmentExpression[left.property.name='location']",
+  "AssignmentExpression[left.object.name='location']",
+  "AssignmentExpression[left.object.property.name='location']",
+  "CallExpression[callee.object.property.name='location'][callee.property.name=/^(assign|replace)$/]",
+].map((selector) => ({ selector, message: 'INV-02: no navigation that could carry content.' }));
+const OTHER_WINDOW_POST = [
+  "CallExpression[callee.property.name='postMessage'][callee.object.name=/^(parent|top|opener)$/]",
+  "CallExpression[callee.property.name='postMessage'][callee.object.property.name=/^(parent|top|opener)$/]",
+].map((selector) => ({ selector, message: 'Only MOD-Host may post to another window (ADR-0008).' }));
 
 const DOM_MODULES = [
   'preact',
@@ -55,21 +85,19 @@ export default tseslint.config(
   {
     files: ['src/**/*.{ts,tsx,js}'],
     rules: {
-      'no-restricted-globals': ['error', ...NETWORK_AND_STORAGE],
-      'no-restricted-properties': ['error', ...NETWORK_PROPERTIES],
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: "CallExpression[callee.property.name='postMessage'][callee.object.property.name='parent']",
-          message: 'Only MOD-Host may post to the parent window (ADR-0008).',
-        },
-      ],
+      'no-restricted-globals': ['error', ...NETWORK_AND_STORAGE, ...OTHER_WINDOW_GLOBALS],
+      'no-restricted-properties': ['error', ...NETWORK_PROPERTIES, ...OTHER_WINDOW_PROPERTIES],
+      'no-restricted-syntax': ['error', ...NAVIGATION_SYNTAX, ...OTHER_WINDOW_POST],
     },
   },
   {
-    // MOD-Host owns the parent-window channel.
+    // MOD-Host owns the parent-window channel; every other ban still applies.
     files: ['src/host/**'],
-    rules: { 'no-restricted-syntax': 'off' },
+    rules: {
+      'no-restricted-globals': ['error', ...NETWORK_AND_STORAGE],
+      'no-restricted-properties': ['error', ...NETWORK_PROPERTIES],
+      'no-restricted-syntax': ['error', ...NAVIGATION_SYNTAX],
+    },
   },
   {
     // MOD-Core imports nothing.

@@ -1,7 +1,7 @@
 ---
 id: F-009
 title: Show the privacy guarantee
-status: ready
+status: shipped
 milestone: M-1
 priority: P1
 personas: [PER-01]

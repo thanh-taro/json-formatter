@@ -35,6 +35,9 @@ importers:
       '@preact/signals':
         specifier: 2.11.2
         version: 2.11.2(preact@10.29.8)
+      lucide-static:
+        specifier: 1.55.0
+        version: 1.55.0
       preact:
         specifier: 10.29.8
         version: 10.29.8
@@ -60,9 +63,6 @@ importers:
       fast-check:
         specifier: 4.10.2
         version: 4.10.2
-      lucide-static:
-        specifier: 1.55.0
-        version: 1.55.0
       prettier:
         specifier: 3.9.9
         version: 3.9.9

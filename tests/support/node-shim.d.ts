@@ -26,3 +26,5 @@ declare class Buffer extends Uint8Array {
   static concat(list: readonly Uint8Array[]): Buffer;
   static byteLength(s: string): number;
 }
+
+declare const process: { env: Record<string, string | undefined> };

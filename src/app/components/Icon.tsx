@@ -1,8 +1,10 @@
-// Lucide icons (DEP-11, ISC), inlined at build — only the used ones (ADR-0011).
+// Lucide icons (DEP-11, ISC), only the used SVGs, inlined at build (ADR-0011). Decorative:
+// every icon sits next to text or inside a control that carries the accessible name.
 import braces from 'lucide-static/icons/braces.svg?raw';
 import circleAlert from 'lucide-static/icons/circle-alert.svg?raw';
 import download from 'lucide-static/icons/download.svg?raw';
 import folderOpen from 'lucide-static/icons/folder-open.svg?raw';
+import shieldCheck from 'lucide-static/icons/shield-check.svg?raw';
 import trash from 'lucide-static/icons/trash-2.svg?raw';
 import x from 'lucide-static/icons/x.svg?raw';
 
@@ -13,18 +15,19 @@ const ICONS = {
   alert: strip(circleAlert),
   download: strip(download),
   open: strip(folderOpen),
+  'shield-check': strip(shieldCheck),
   trash: strip(trash),
-  close: strip(x),
+  x: strip(x),
 } as const;
 
 export type IconName = keyof typeof ICONS;
 
-/** A decorative icon (always `aria-hidden`; the control carries the accessible name). */
-export function Icon({ name, class: cls }: { name: IconName; class?: string }) {
+export function Icon({ name, class: className }: { name: IconName; class?: string }) {
   return (
     <span
-      class={cls ? `tk-icon ${cls}` : 'tk-icon'}
+      class={className ? `tk-icon ${className}` : 'tk-icon'}
       aria-hidden="true"
+      // Build-time constant from the package, never user content.
       dangerouslySetInnerHTML={{ __html: ICONS[name] }}
     />
   );

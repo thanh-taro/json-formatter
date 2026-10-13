@@ -68,6 +68,8 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-progress.formatting** | Formatting… {percent}% | |
 | **COPY-progress.tree** | Building tree… {percent}% | |
 | **COPY-progress.exporting** | Preparing… {percent}% | Copy and download |
+| **COPY-progress.inserting** | Adding pasted text… {percent}% | large paste |
+| **COPY-progress.restoring** | Restoring… {percent}% | undo of a large-tier operation |
 | **COPY-notice.large** | Large document ({size}): some highlighting is turned off to keep things fast. | |
 | **COPY-notice.multiple_files** | Only the first file was opened. | |
 | **COPY-notice.no_indent** | No indentation found to change. Try Beautify instead. | |

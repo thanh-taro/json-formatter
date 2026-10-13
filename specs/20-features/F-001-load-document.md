@@ -55,7 +55,8 @@ gesture, at any size (PRN-04), without it leaving the device (PRN-01).
 Entry points: CMP-Editor (type/paste), CMP-DropOverlay (drop anywhere on SCR-Formatter),
 CMP-Toolbar open and clear actions (COPY-action.open, COPY-action.clear). Empty state shows
 COPY-empty.title and COPY-empty.body. Loading shows COPY-progress.loading with cancel
-(COPY-action.cancel).
+(COPY-action.cancel); a large paste shows COPY-progress.inserting; undoing a large-tier
+operation shows COPY-progress.restoring.
 
 ## Edge cases
 - Dropping several files → only the first is loaded; COPY-notice.multiple_files shown.

@@ -57,7 +57,7 @@ export function NoticeBar({ app }: { app: AppController }) {
           </button>
         )}
         <button type="button" class="tk-icon-button" aria-label={t('action.dismiss')} onClick={() => app.dismissBar()}>
-          <Icon name="close" />
+          <Icon name="x" />
         </button>
       </div>
     </div>
