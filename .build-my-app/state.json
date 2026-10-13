@@ -1,0 +1,408 @@
+{
+  "version": 1,
+  "created": "2026-10-13T06:15:28+00:00",
+  "autonomy": "balanced",
+  "profile": {
+    "goal": "personal",
+    "experience": "experienced",
+    "budget": "none"
+  },
+  "stack": null,
+  "design_tool": null,
+  "phases": {
+    "setup": {
+      "title": "0 Setup & discovery",
+      "status": "done",
+      "step": null,
+      "gate": {
+        "status": "passed",
+        "at": "2026-10-13T06:18:53+00:00",
+        "note": "Greenfield web tool; personal/experienced/no budget; balanced autonomy"
+      }
+    },
+    "product-spec": {
+      "title": "1 Product & spec",
+      "status": "done",
+      "step": "1.3 spec review round 2 (re-review changes)",
+      "gate": {
+        "status": "passed",
+        "at": "2026-10-13T06:42:27+00:00",
+        "note": "M-1 spec: 9 features ready; lint 0/0; 2 review rounds; D-001..D-007"
+      }
+    },
+    "design": {
+      "title": "2 Design",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "architecture": {
+      "title": "3 Architecture & spikes",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "build": {
+      "title": "4 Implementation",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "qa": {
+      "title": "5 QA & hardening",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "release": {
+      "title": "6 Release",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "iterate": {
+      "title": "7 Iterate",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    }
+  },
+  "decisions": [
+    {
+      "id": "D-001",
+      "question": "Approve vision brief; tree view placement",
+      "options": [
+        "tree M-1",
+        "tree M-2",
+        "changes"
+      ],
+      "recommendation": "tree M-1",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Approved; basic read-only tree in M-1",
+      "asked": "2026-10-13T06:22:33+00:00",
+      "answered": "2026-10-13T06:22:38+00:00"
+    },
+    {
+      "id": "D-002",
+      "question": "Input/output layout",
+      "options": [
+        "single editor in place",
+        "input/output panes",
+        "editor+tree"
+      ],
+      "recommendation": "single editor in place",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Single editor, format in place with undo",
+      "asked": "2026-10-13T06:22:33+00:00",
+      "answered": "2026-10-13T06:22:38+00:00"
+    },
+    {
+      "id": "D-003",
+      "question": "Supported input size",
+      "options": [
+        "10MB smooth/50MB works",
+        "5MB",
+        "100MB+"
+      ],
+      "recommendation": "10MB smooth/50MB works",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "As large as possible (100MB+): smooth at 10MB, fully working at 100MB, best-effort above; spikes set the real ceiling",
+      "asked": "2026-10-13T06:22:33+00:00",
+      "answered": "2026-10-13T06:22:38+00:00"
+    },
+    {
+      "id": "D-004",
+      "question": "Can portal iframe attrs be changed",
+      "options": [
+        "yes",
+        "no"
+      ],
+      "recommendation": "yes",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Yes, user controls the portal",
+      "asked": "2026-10-13T06:22:33+00:00",
+      "answered": "2026-10-13T06:22:38+00:00"
+    },
+    {
+      "id": "D-005",
+      "question": "Busy-state behavior during long operations",
+      "options": [
+        "scroll+cancel only",
+        "editing cancels"
+      ],
+      "recommendation": "scroll+cancel only",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "scroll + cancel only",
+      "asked": "2026-10-13T06:31:49+00:00",
+      "answered": "2026-10-13T06:31:49+00:00"
+    },
+    {
+      "id": "D-006",
+      "question": "Line endings on beautify",
+      "options": [
+        "preserve input",
+        "always LF"
+      ],
+      "recommendation": "preserve input",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "preserve input line ending and final newline",
+      "asked": "2026-10-13T06:31:49+00:00",
+      "answered": "2026-10-13T06:31:49+00:00"
+    },
+    {
+      "id": "D-007",
+      "question": "Undo depth for huge documents",
+      "options": [
+        "cap by size",
+        "unlimited"
+      ],
+      "recommendation": "cap by size",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "100 steps normal; last 3 tool ops for >10MB",
+      "asked": "2026-10-13T06:31:49+00:00",
+      "answered": "2026-10-13T06:31:49+00:00"
+    }
+  ],
+  "loops": {
+    "spec-review": {
+      "round": 2,
+      "max": 3,
+      "active": false,
+      "started": "2026-10-13T06:27:18+00:00",
+      "outcome": "converged",
+      "ended": "2026-10-13T06:35:18+00:00"
+    }
+  },
+  "log": [
+    {
+      "at": "2026-10-13T06:15:28+00:00",
+      "event": "initialized (autonomy=balanced)"
+    },
+    {
+      "at": "2026-10-13T06:15:28+00:00",
+      "event": "phase setup -> in_progress"
+    },
+    {
+      "at": "2026-10-13T06:15:57+00:00",
+      "event": "set profile"
+    },
+    {
+      "at": "2026-10-13T06:15:58+00:00",
+      "event": "set autonomy"
+    },
+    {
+      "at": "2026-10-13T06:15:58+00:00",
+      "event": "set environment"
+    },
+    {
+      "at": "2026-10-13T06:16:05+00:00",
+      "event": "phase setup -> gate"
+    },
+    {
+      "at": "2026-10-13T06:18:53+00:00",
+      "event": "gate setup passed: Greenfield web tool; personal/experienced/no budget; balanced autonomy"
+    },
+    {
+      "at": "2026-10-13T06:18:53+00:00",
+      "event": "phase product-spec -> in_progress"
+    },
+    {
+      "at": "2026-10-13T06:18:58+00:00",
+      "event": "product-spec step: 1.1 brainstorm: market research + strategist challenge"
+    },
+    {
+      "at": "2026-10-13T06:18:58+00:00",
+      "event": "User input: iframe embed in React portal; M-1 wants format (beautify/minify/tabs<->spaces/indent), validate+precise errors, tree view. Transform/diff not selected for v1."
+    },
+    {
+      "at": "2026-10-13T06:19:58+00:00",
+      "event": "set spike_candidates"
+    },
+    {
+      "at": "2026-10-13T06:19:58+00:00",
+      "event": "Strategist done: lossless token-based formatting, client-only CSP, own tokenizer errors; suggests tree in M-2; 4 spike candidates recorded"
+    },
+    {
+      "at": "2026-10-13T06:20:47+00:00",
+      "event": "product-spec step: 1.1 vision brief drafted; awaiting user approval + product decisions"
+    },
+    {
+      "at": "2026-10-13T06:20:47+00:00",
+      "event": "Market research + vision brief written to .build-my-app/reports/"
+    },
+    {
+      "at": "2026-10-13T06:22:33+00:00",
+      "event": "decision D-001 opened: Approve vision brief; tree view placement"
+    },
+    {
+      "at": "2026-10-13T06:22:33+00:00",
+      "event": "decision D-002 opened: Input/output layout"
+    },
+    {
+      "at": "2026-10-13T06:22:33+00:00",
+      "event": "decision D-003 opened: Supported input size"
+    },
+    {
+      "at": "2026-10-13T06:22:33+00:00",
+      "event": "decision D-004 opened: Can portal iframe attrs be changed"
+    },
+    {
+      "at": "2026-10-13T06:22:38+00:00",
+      "event": "decision D-001 answered: Approved; basic read-only tree in M-1"
+    },
+    {
+      "at": "2026-10-13T06:22:38+00:00",
+      "event": "decision D-002 answered: Single editor, format in place with undo"
+    },
+    {
+      "at": "2026-10-13T06:22:38+00:00",
+      "event": "decision D-003 answered: As large as possible (100MB+): smooth at 10MB, fully working at 100MB, best-effort above; spikes set the real ceiling"
+    },
+    {
+      "at": "2026-10-13T06:22:38+00:00",
+      "event": "decision D-004 answered: Yes, user controls the portal"
+    },
+    {
+      "at": "2026-10-13T06:22:38+00:00",
+      "event": "Vision brief approved. Tree in M-1; single in-place editor; 100MB+ target; portal grants clipboard-write/allow-downloads"
+    },
+    {
+      "at": "2026-10-13T06:22:38+00:00",
+      "event": "product-spec step: 1.2 writing specs"
+    },
+    {
+      "at": "2026-10-13T06:27:14+00:00",
+      "event": "product-spec step: 1.3 spec review loop round 1"
+    },
+    {
+      "at": "2026-10-13T06:27:14+00:00",
+      "event": "M-1 specs drafted: F-001..F-009, 13 rules, 5 invariants, 9 NFRs, SCR-Formatter, 6 CMP, 3 flows, copy deck; lint clean"
+    },
+    {
+      "at": "2026-10-13T06:27:18+00:00",
+      "event": "loop spec-review started (max 3)"
+    },
+    {
+      "at": "2026-10-13T06:31:49+00:00",
+      "event": "decision D-005 opened: Busy-state behavior during long operations"
+    },
+    {
+      "at": "2026-10-13T06:31:49+00:00",
+      "event": "decision D-005 answered: scroll + cancel only"
+    },
+    {
+      "at": "2026-10-13T06:31:49+00:00",
+      "event": "decision D-006 opened: Line endings on beautify"
+    },
+    {
+      "at": "2026-10-13T06:31:49+00:00",
+      "event": "decision D-006 answered: preserve input line ending and final newline"
+    },
+    {
+      "at": "2026-10-13T06:31:49+00:00",
+      "event": "decision D-007 opened: Undo depth for huge documents"
+    },
+    {
+      "at": "2026-10-13T06:31:49+00:00",
+      "event": "decision D-007 answered: 100 steps normal; last 3 tool ops for >10MB"
+    },
+    {
+      "at": "2026-10-13T06:33:40+00:00",
+      "event": "loop spec-review round 2"
+    },
+    {
+      "at": "2026-10-13T06:33:40+00:00",
+      "event": "product-spec step: 1.3 spec review round 2 (re-review changes)"
+    },
+    {
+      "at": "2026-10-13T06:35:18+00:00",
+      "event": "loop spec-review ended: converged"
+    },
+    {
+      "at": "2026-10-13T06:35:18+00:00",
+      "event": "phase product-spec -> gate"
+    },
+    {
+      "at": "2026-10-13T06:42:27+00:00",
+      "event": "gate product-spec passed: M-1 spec: 9 features ready; lint 0/0; 2 review rounds; D-001..D-007"
+    }
+  ],
+  "updated": "2026-10-13T06:42:27+00:00",
+  "environment": {
+    "git": "2.54.0",
+    "node": "24.19.0",
+    "npm": "11.17.0",
+    "pnpm": "11.25.0",
+    "python": "3.14.7",
+    "platform": "web (embedded in existing portal)",
+    "connectors": [
+      "claude-in-chrome",
+      "figma",
+      "claude-docs"
+    ],
+    "ide_mcp_down": [
+      "webstorm",
+      "pycharm"
+    ]
+  },
+  "spike_candidates": [
+    {
+      "id": "SP-editor",
+      "q": "CodeMirror 6 vs Monaco on ~50MB formatted JSON in an iframe",
+      "success": "open <3s, smooth scroll, typing <50ms, <1GB memory; smaller bundle wins ties"
+    },
+    {
+      "id": "SP-formatter",
+      "q": "Token-level lossless formatter in a Web Worker",
+      "success": ">=50MB/s, numbers byte-identical, 100% JSONTestSuite"
+    },
+    {
+      "id": "SP-tree",
+      "q": "Tree built from token offsets, not JS objects",
+      "success": "expand root of 50MB <500ms, memory <3x input"
+    },
+    {
+      "id": "SP-iframe",
+      "q": "Iframe integration: clipboard, drop, download, theme sync, sizing",
+      "success": "works in Chrome/Firefox/Safari with the real sandbox/allow attributes"
+    }
+  ]
+}
