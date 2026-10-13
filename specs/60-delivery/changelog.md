@@ -22,3 +22,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - F-009 shipped; F-008 merged as building (AC6/AC7 re-run once all M-1 features land). ADR-0013 HSTS.
 - F-001 build: added COPY-progress.inserting and COPY-progress.restoring (spec gap from implementation).
 - NFR-01 clarified: browser may page large in-memory data (undo snapshots) to its own temporary files (D-028).
+- F-001 build: added COPY-error.unreadable and COPY-error.failed.

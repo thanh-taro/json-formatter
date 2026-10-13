@@ -62,6 +62,8 @@ operation shows COPY-progress.restoring.
 - Dropping several files → only the first is loaded; COPY-notice.multiple_files shown.
 - Dropping a folder, or non-file content outside the editor text → ignored with COPY-error.not_a_file. Dragging text within the editor behaves as normal text editing.
 - Empty file → document becomes empty (not an error).
+- File the browser cannot read → COPY-error.unreadable; previous document kept.
+- Unexpected internal failure during any operation → COPY-error.failed; document unchanged (INV-03).
 - File with CRLF line endings → kept as-is; the document's line ending is recorded (used by beautify).
 - File or paste with mixed LF and CRLF → normalised to the dominant line ending (RULE-17).
 
