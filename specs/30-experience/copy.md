@@ -55,7 +55,7 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-issue.warning** | Warning | severity badge |
 | **COPY-issue.tab_problems** | Problems ({count}) | |
 | **COPY-issue.tab_warnings** | Warnings ({count}) | |
-| **COPY-issue.location** | Line {line}, column {column} | |
+| **COPY-issue.location** | Line {line}, column {column} | numbers use the locale's grouping |
 | **COPY-issue.more** | …and {count} more warnings | singular warning when count is 1 |
 
 ## Empty, progress, notices, errors
