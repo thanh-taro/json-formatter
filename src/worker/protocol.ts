@@ -2,7 +2,16 @@
 // thread and the worker, a document version and/or job id on every message. Hand-written, no
 // RPC library. New operations (validate, format, re-indent, tree queries) plug in by adding a
 // `JobSpec` kind with its worker handler and, where needed, a result message.
-import type { BreakCounts, FormatMode, IndentStyle, LineEnding, SourceUnit, ValidationResult } from '../core';
+import type {
+  BreakCounts,
+  ContainerRef,
+  FormatMode,
+  IndentStyle,
+  LineEnding,
+  SourceUnit,
+  TreeItem,
+  ValidationResult,
+} from '../core';
 
 /** `ChangeSet.toJSON()` of @codemirror/state. */
 export type ChangeSetJSON = readonly (number | readonly [number, ...string[]])[];
@@ -17,8 +26,9 @@ export type JobSpec = { supersedes?: string } &
     | { kind: 'loadBlob'; blob: Blob }
     /** Large paste (ADR-0006 §2): replace [from, to) of the mirror with text streamed by `text` messages. */
     | { kind: 'insertText'; version: number; from: number; to: number }
-    /** UTF-8 Blob of the mirror at `version` (undo snapshots, later copy and download). */
-    | { kind: 'export'; version: number; eol: '\n' | '\r\n' }
+    /** UTF-8 Blob of the mirror at `version` (undo snapshots, copy and download); with `span`,
+     * only [from, to) of that version — a node's value (F-006.R5, ADR-0007 §5). */
+    | { kind: 'export'; version: number; eol: '\n' | '\r\n'; span?: readonly [number, number] }
     /** Validate the mirror at `version` (F-005.R1): dropped when the document changes first;
      * `lineEnding` is the document's, for ENT-Issue code-point offsets; `skipTable` in the
      * large tiers (RULE-02, measured in UTF-8 bytes by the main thread; ADR-0007 §1). */
@@ -33,6 +43,11 @@ export type JobSpec = { supersedes?: string } &
      * `lineEnding` is the document's (breaks are reported in it, RULE-07); `nonBreakBytes` is the
      * UTF-8 size of the document without its line breaks (for the result's facts). */
     | { kind: 'format'; version: number; mode: FormatMode; lineEnding: LineEnding; nonBreakBytes: number }
+    /** The tree's root node at `version` (F-006, ADR-0007 §2): uses the skip table built during
+     * validation, or runs the standalone structural pass (sliced, cancellable, with progress). */
+    | { kind: 'treeOpen'; version: number }
+    /** Children [from, from + count) of a container at `version` (count ≤ 100, ADR-0007 §2). */
+    | { kind: 'treeChildren'; version: number; container: ContainerRef; from: number; count: number }
   );
 
 export type JobKind = JobSpec['kind'];
@@ -75,6 +90,10 @@ export type FromWorker =
   | { type: 'blob'; jobId: number; blob: Blob }
   /** The result of a `validate` job for `version` (MOD-Worker `validation(version, result)`). */
   | { type: 'validation'; jobId: number; version: number; result: ValidationResult }
+  /** Result of a `treeOpen` job (MOD-Worker `treeRows`, ADR-0007 §2). */
+  | { type: 'treeRoot'; jobId: number; version: number; root: TreeItem }
+  /** Result of a `treeChildren` job. */
+  | { type: 'treeRows'; jobId: number; version: number; rows: TreeItem[] }
   /** Re-indent detection result: the unit, the change in length of the result (F-004.R7), and
    * whether the result would be identical to the document (`unchanged`). */
   | { type: 'reindentPlan'; jobId: number; version: number; unit: SourceUnit; delta: number; unchanged: boolean }

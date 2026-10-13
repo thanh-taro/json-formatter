@@ -4,7 +4,7 @@
 // must arrive at least every second; otherwise (or on an `error` event) the worker is
 // terminated and restarted, every running job fails with `internal`, and the owner re-seeds
 // the mirror (callers discard their pending documents, INV-03).
-import type { LineEnding, SourceUnit, ValidationResult } from '../core';
+import type { ContainerRef, LineEnding, SourceUnit, TreeItem, ValidationResult } from '../core';
 import type { ChangeSetJSON, FailReason, FromWorker, JobSpec, TextFacts, ToWorker } from './protocol';
 
 export class JobFailure extends Error {
@@ -27,6 +27,8 @@ export type JobResult =
   | { type: 'formatted'; facts: TextFacts }
   | { type: 'blob'; blob: Blob }
   | { type: 'validation'; version: number; result: ValidationResult }
+  | { type: 'treeRoot'; version: number; root: TreeItem }
+  | { type: 'treeRows'; version: number; rows: TreeItem[] }
   /** Re-indent detection (F-004): the unit and the change in length, or nothing indented. */
   | { type: 'reindentPlan'; version: number; unit: SourceUnit; delta: number; unchanged: boolean }
   | { type: 'notIndented' };
@@ -69,6 +71,10 @@ function resultOf(msg: Extract<FromWorker, { type: JobResult['type'] }>): JobRes
       return { type: 'blob', blob: msg.blob };
     case 'validation':
       return { type: 'validation', version: msg.version, result: msg.result };
+    case 'treeRoot':
+      return { type: 'treeRoot', version: msg.version, root: msg.root };
+    case 'treeRows':
+      return { type: 'treeRows', version: msg.version, rows: msg.rows };
     case 'reindentPlan':
       return { type: 'reindentPlan', version: msg.version, unit: msg.unit, delta: msg.delta, unchanged: msg.unchanged };
     case 'notIndented':
@@ -169,6 +175,8 @@ export class WorkerClient {
       case 'formatted':
       case 'blob':
       case 'validation':
+      case 'treeRoot':
+      case 'treeRows':
       case 'reindentPlan':
       case 'notIndented': {
         const r = this.running.get(msg.jobId);
@@ -248,9 +256,29 @@ export class WorkerClient {
     version: number,
     lineEnding: LineEnding,
     skipTable = false,
+    hooks: JobHooks = {},
   ): Promise<{ version: number; result: ValidationResult }> {
-    return this.run({ kind: 'validate', version, lineEnding, skipTable, supersedes: 'validate' }).result.then((r) =>
-      r.type === 'validation' ? r : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
+    return this.run({ kind: 'validate', version, lineEnding, skipTable, supersedes: 'validate' }, hooks).result.then(
+      (r) => (r.type === 'validation' ? r : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`))),
+    );
+  }
+
+  /** Implements: F-006.R1, F-006.R8 — the tree's root at `version` (progress while the
+   * standalone structural pass runs, ADR-0007 §1); `cancel` stops it within one slice. */
+  treeOpen(version: number, hooks: JobHooks = {}): { root: Promise<TreeItem>; cancel: () => void } {
+    const job = this.run({ kind: 'treeOpen', version }, hooks);
+    return {
+      root: job.result.then((r) =>
+        r.type === 'treeRoot' ? r.root : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
+      ),
+      cancel: () => job.cancel(),
+    };
+  }
+
+  /** Implements: F-006.R2, F-006.R3 — children [from, from + count) of a container at `version`. */
+  treeChildren(version: number, container: ContainerRef, from: number, count: number): Promise<TreeItem[]> {
+    return this.run({ kind: 'treeChildren', version, container, from, count }).result.then((r) =>
+      r.type === 'treeRows' ? r.rows : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
     );
   }
 

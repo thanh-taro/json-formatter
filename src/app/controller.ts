@@ -23,7 +23,8 @@ import {
   type PendingDocument,
   type ReplaceFacts,
 } from '../editor';
-import { copyBlob, download, downloadName, installDropTarget, pickFile, type DropKind } from '../io';
+import { copyBlob, download, downloadName, installDropTarget, pickFile, type CopyOutcome, type DropKind } from '../io';
+import type { TreeDeps } from '../tree';
 import { JobFailure, WorkerClient, type Job, type JobResult } from '../worker/client';
 import type { FailReason } from '../worker/protocol';
 import { needsVeryLargeConfirm } from './confirm';
@@ -168,11 +169,12 @@ export class AppController {
   }
 
   /**
-   * Shows the text view (F-010 edge case: find opens in the text view). F-006 extends this with
-   * whatever else switching views needs.
+   * Implements: F-006.R1 — shows the text view (F-010 edge case: find opens in the text view);
+   * the editor keeps its state while hidden (ADR-0004).
    */
   showTextView(): void {
     this.state.view.value = 'text';
+    this.editor?.setHidden(false);
   }
 
   /** True while an operation runs, the mirror is re-seeded, or a confirmation is open (review m2). */
@@ -217,26 +219,33 @@ export class AppController {
           this.state.validation.value = { ...cur, state: 'checking', version };
       }, CHECKING_DELAY_MS);
     const restarts = this.worker.restarts;
+    this.state.checkProgress.value = 0;
     // ADR-0007 §1: the skip table is built in the large tiers (RULE-02 bytes).
-    this.worker.validate(version, ed.lineEnding, large).then(
-      ({ version: v, result }) => {
-        if (this.editor?.version !== v) return;
-        clearTimeout(this.checkingTimer);
-        this.showValidation({ state: stateOf(result), result, version: v });
-      },
-      (e: unknown) => {
-        // Superseded or stale: a newer request owns the state. A restart re-seeds and asks again.
-        if (reasonOf(e) === 'cancelled' || this.worker.restarts !== restarts || this.editor?.version !== version)
-          return;
-        // Review F-005 m1 / round 3 (INV-05): any other failure is retried once, then reported
-        // with COPY-error.failed. The state stays "checking" with the previous result marked
-        // out of date — it never describes the current text — until the next change validates.
-        if (retry) return this.requestValidation(false);
-        clearTimeout(this.checkingTimer);
-        this.state.validation.value = { ...this.state.validation.value, state: 'checking', version };
-        this.showFailure(reasonOf(e), false);
-      },
-    );
+    this.worker
+      .validate(version, ed.lineEnding, large, {
+        onProgress: (f) => {
+          if (this.editor?.version === version) this.state.checkProgress.value = f;
+        },
+      })
+      .then(
+        ({ version: v, result }) => {
+          if (this.editor?.version !== v) return;
+          clearTimeout(this.checkingTimer);
+          this.showValidation({ state: stateOf(result), result, version: v });
+        },
+        (e: unknown) => {
+          // Superseded or stale: a newer request owns the state. A restart re-seeds and asks again.
+          if (reasonOf(e) === 'cancelled' || this.worker.restarts !== restarts || this.editor?.version !== version)
+            return;
+          // Review F-005 m1 / round 3 (INV-05): any other failure is retried once, then reported
+          // with COPY-error.failed. The state stays "checking" with the previous result marked
+          // out of date — it never describes the current text — until the next change validates.
+          if (retry) return this.requestValidation(false);
+          clearTimeout(this.checkingTimer);
+          this.state.validation.value = { ...this.state.validation.value, state: 'checking', version };
+          this.showFailure(reasonOf(e), false);
+        },
+      );
   }
 
   private showValidation(v: Validation): void {
@@ -283,6 +292,9 @@ export class AppController {
     if (!ed) return;
     const bytes = ed.bytes;
     const tier = tierOf(bytes);
+    this.state.version.value = ed.version;
+    // CMP-Toolbar "empty document": the view switch is off and the text view (empty variant) shows.
+    if (ed.isEmpty && this.state.view.value === 'tree') this.showTextView();
     this.state.doc.value = {
       empty: ed.isEmpty,
       bytes,
@@ -778,7 +790,7 @@ export class AppController {
 
   /** Implements: F-007.R3, F-007.AC7, CMP-Editor all-selected — the manual-copy fallback. */
   private copyRefused(): void {
-    this.state.view.value = 'text';
+    this.showTextView();
     this.editor?.selectAll();
     this.showBar({ kind: 'error', id: 'error.clipboard', text: t('error.clipboard') });
   }
@@ -798,6 +810,104 @@ export class AppController {
       });
       download(blob, name);
     });
+  }
+
+  // ---- views and the tree (F-006) -------------------------------------------------------------
+
+  /** Implements: F-006.R1 — shows the tree view of a non-empty document (CMP-Toolbar view switch). */
+  showTreeView(): void {
+    const ed = this.editor;
+    if (!ed || ed.isEmpty || this.blocked()) return;
+    this.state.view.value = 'tree';
+    ed.setHidden(true);
+  }
+
+  /** Implements: F-006.R6 — the text view with exactly [from, to) selected and scrolled into view. */
+  reveal(from: number, to: number): void {
+    this.showTextView();
+    this.editor?.select(from, to);
+  }
+
+  /** Implements: F-006.R7 — from the tree's invalid state to the first error in the text. */
+  goToError(): void {
+    this.showTextView();
+    this.jumpTo(0);
+  }
+
+  /** Copies a short text (a path, F-006.R4) without the busy policy; toast or COPY-error.clipboard. */
+  private async copyText(text: string): Promise<CopyOutcome | null> {
+    try {
+      const outcome = await copyBlob(Promise.resolve(new Blob([text], { type: 'text/plain' })));
+      this.copied(outcome);
+      return outcome;
+    } catch (e) {
+      this.showFailure(reasonOf(e), false);
+      return null;
+    }
+  }
+
+  private copied(outcome: CopyOutcome): void {
+    if (outcome === 'copied') this.showToast({ id: 'toast.copied', text: t('toast.copied') });
+    else this.showBar({ kind: 'error', id: 'error.clipboard', text: t('error.clipboard') });
+  }
+
+  /**
+   * Implements: F-006.R5, F-006.R9, RULE-11, ADR-0007 §5 — copies a node's exact source text from a
+   * worker-built Blob of its span (with the document's line ending). Called from the click
+   * handler: the export job and the clipboard item are created synchronously (MOD-IO), so the
+   * user activation holds across the worker round trip; busy policy with progress after 0.5 s
+   * and cancel (NFR-02). Blocked → COPY-error.clipboard; the tree shows the manual-copy field.
+   */
+  copyNodeValue(
+    version: number,
+    from: number,
+    to: number,
+  ): Promise<{ outcome: CopyOutcome; text: () => Promise<string> } | null> {
+    const ed = this.editor;
+    if (this.blocked() || !ed || ed.version !== version) return Promise.resolve(null);
+    let result: { outcome: CopyOutcome; text: () => Promise<string> } | null = null;
+    return this.run('progress.exporting', async (busy) => {
+      const job = this.worker.run(
+        { kind: 'export', version, eol: ed.lineEnding === 'crlf' ? '\r\n' : '\n', span: [from, to] },
+        { onProgress: (f) => busy.progress(f) },
+      );
+      busy.onCancel(() => job.cancel());
+      const blob = job.result.then((r) =>
+        r.type === 'blob' ? r.blob : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
+      );
+      blob.catch(() => undefined);
+      const cancelled = new Promise<never>((_, reject) => busy.onCancel(() => reject(new Cancelled())));
+      cancelled.catch(() => undefined);
+      let outcome: CopyOutcome;
+      try {
+        outcome = await Promise.race([copyBlob(blob), cancelled]);
+      } catch (e) {
+        if (e instanceof Cancelled || reasonOf(e) === 'cancelled') throw new Cancelled();
+        throw e;
+      }
+      result = { outcome, text: () => blob.then((b) => b.text()) };
+    }).then(() => {
+      if (result) this.copied(result.outcome);
+      return result;
+    });
+  }
+
+  /** What MOD-Tree needs from the app (worker queries, clipboard, editor, history). */
+  treeDeps(): TreeDeps {
+    return {
+      open: (version, onProgress) => this.worker.treeOpen(version, { onProgress }),
+      children: (version, c, from, count) => this.worker.treeChildren(version, c, from, count),
+      copyPath: (path) => this.copyText(path),
+      copyValue: (version, from, to) => this.copyNodeValue(version, from, to),
+      reveal: (from, to) => this.reveal(from, to),
+      goToError: () => this.goToError(),
+      showText: () => this.showTextView(),
+      history: (direction) => void this.history(direction),
+      failed: (reason) => {
+        this.showTextView();
+        this.showFailure(reason as FailReason, false);
+      },
+    };
   }
 
   /**

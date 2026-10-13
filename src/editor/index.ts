@@ -152,6 +152,8 @@ export interface EditorHandle {
   goTo(pos: number): void;
   /** Implements: F-007.R3, CMP-Editor all-selected — selects the whole document and focuses it. */
   selectAll(): void;
+  /** Implements: F-006.R6 — selects [from, to), scrolls it into view and focuses the editor. */
+  select(from: number, to: number): void;
   /** Where issue `index` of the marked result is now (mapped through later edits, INV-05). */
   issuePosition(index: number): number | null;
   /**
@@ -671,6 +673,17 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     },
     selectAll() {
       view.dispatch({ selection: { anchor: 0, head: view.state.doc.length } });
+      view.focus();
+    },
+    select(from, to) {
+      const len = view.state.doc.length;
+      const a = Math.min(Math.max(0, from), len);
+      const b = Math.min(Math.max(a, to), len);
+      // the start of the node is brought into view (centred), then the editor is focused
+      view.dispatch({
+        selection: { anchor: a, head: b },
+        effects: EditorView.scrollIntoView(a, { y: 'center', x: 'start' }),
+      });
       view.focus();
     },
     find(term, { matchCase }) {

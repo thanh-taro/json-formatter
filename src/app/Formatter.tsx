@@ -12,6 +12,7 @@ import { NoticeBar } from './components/NoticeBar';
 import { StatusBar } from './components/StatusBar';
 import { Toasts } from './components/Toasts';
 import { Toolbar } from './components/Toolbar';
+import { TreeArea } from './components/TreeArea';
 import { AppController } from './controller';
 import { createAppState } from './state';
 
@@ -44,6 +45,7 @@ export function Formatter() {
       <NoticeBar app={app} />
       <main class="tk-main">
         <EditorArea app={app} />
+        <TreeArea app={app} />
       </main>
       <IssuePanel app={app} />
       <StatusBar app={app} />

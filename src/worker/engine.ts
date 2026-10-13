@@ -16,7 +16,10 @@ import {
   PositionResolver,
   positionsOf,
   resultOf,
+  TreeIndex,
   Validator,
+  GROUP,
+  type ContainerRef,
   type FormatMode,
   type IndentStyle,
   type LineEnding,
@@ -38,6 +41,10 @@ const FORMAT_PIECE_MIN = 1 << 10;
 /** ADR-0005 §2: validation is immediate below ~1 MB, debounced by idle time above. */
 export const VALIDATE_IMMEDIATE_UNITS = 1 << 20;
 export const VALIDATE_DEBOUNCE_MS = 200;
+/** ADR-0007 §2: background checkpoint fill runs in slices of at most this long. */
+export const FILL_SLICE_MS = 8;
+/** Positions scanned per checkpoint-fill step (~1 ms of scanning; ADR-0007 §2). */
+const FILL_UNITS = 1 << 18;
 
 type Post = (msg: FromWorker, transfer?: Transferable[]) => void;
 
@@ -187,6 +194,11 @@ export class WorkerEngine {
   private validated: { mirror: Mirror; outcome: ValidationOutcome } | null = null;
   /** ADR-0007 §1: the skip table of the current mirror, built during validation (for the tree). */
   skipTable: { mirror: Mirror; table: SkipTable } | null = null;
+  /** ADR-0007 §2: tree queries of the current mirror (with its checkpoints). */
+  private tree: { mirror: Mirror; index: TreeIndex } | null = null;
+  /** Containers whose checkpoints are still being filled, most recently expanded last (LIFO). */
+  private fillStack: ContainerRef[] = [];
+  private fillTimer: ReturnType<typeof setTimeout> | null = null;
   /** A validation waiting out its debounce before it joins the queue (it holds no job slot). */
   private delayed: { jobId: number; timer: ReturnType<typeof setTimeout> } | null = null;
   private seedBuilder: MirrorBuilder | null = null;
@@ -298,6 +310,8 @@ export class WorkerEngine {
   private forgetDocument(): void {
     this.validated = null;
     this.skipTable = null;
+    this.tree = null;
+    this.fillStack = [];
   }
 
   private dropDelayed(detail?: string): void {
@@ -329,9 +343,21 @@ export class WorkerEngine {
       case 'export': {
         // Capture the mirror now: later edits must not change what is exported.
         const doc = this.mirror;
-        run = () => this.exportMirror(jobId, doc, job.eol);
+        const span = job.span;
+        // A span belongs to its version (F-006.R5): a newer mirror cannot serve it (INV-05).
+        const stale = span !== undefined && job.version !== this.version;
+        run = () =>
+          stale
+            ? Promise.resolve(this.fail(jobId, new Superseded('document changed')))
+            : this.exportMirror(jobId, doc, job.eol, span);
         break;
       }
+      case 'treeOpen':
+        run = () => this.treeOpen(jobId, job.version);
+        break;
+      case 'treeChildren':
+        run = () => this.treeChildren(jobId, job.version, job.container, job.from, job.count);
+        break;
       case 'validate':
         run = () => this.validate(jobId, job.version, job.lineEnding, job.skipTable ?? false);
         break;
@@ -683,21 +709,137 @@ export class WorkerEngine {
     }
   }
 
-  private async exportMirror(jobId: number, doc: Mirror, eol: '\n' | '\r\n'): Promise<void> {
+  /**
+   * Implements: F-007.R6 (whole document), F-006.R5 / RULE-11 (a node's span, ADR-0007 §5) — a
+   * UTF-8 Blob of the text with line breaks written as `eol` (ADR-0006 §3), built in slices.
+   */
+  private async exportMirror(
+    jobId: number,
+    doc: Mirror,
+    eol: '\n' | '\r\n',
+    span?: readonly [number, number],
+  ): Promise<void> {
     try {
       const enc = new TextEncoder();
       const parts: Uint8Array<ArrayBuffer>[] = [];
       let done = 0;
       const slicer = new Slicer(this, jobId, () => undefined);
-      for (const chunk of doc.iter(eol)) {
+      const [from, to] = span ?? [0, doc.length];
+      const total = to - from;
+      for (const piece of doc.range(from, to)) {
+        const chunk = eol === '\n' ? piece : piece.replace(/\n/g, eol);
         parts.push(enc.encode(chunk));
-        done += chunk.length;
-        await slicer.step(chunk.length, () => (doc.length ? done / doc.length : 1));
+        done += piece.length;
+        await slicer.step(piece.length, () => (total ? done / total : 1));
       }
       const blob = new Blob(parts, { type: 'application/json' });
       this.post({ type: 'blob', jobId, blob });
     } catch (e) {
       this.fail(jobId, e);
     }
+  }
+  // ---- tree queries (F-006, ADR-0007 §2) ---------------------------------------------------
+
+  /**
+   * The tree index of the mirror at `version`: built on the skip table from validation when
+   * there is one, otherwise after the standalone structural pass — sliced, cancellable, with
+   * progress (ADR-0007 §1, NFR-02). Refuses invalid documents (F-006.R7).
+   */
+  private async ensureTree(jobId: number, version: number): Promise<TreeIndex> {
+    const stale = () => this.version !== version;
+    if (stale()) throw new Superseded('document changed');
+    const doc = this.mirror;
+    if (this.tree?.mirror === doc) return this.tree.index;
+    if (this.validated?.mirror === doc && this.validated.outcome.validity !== 'valid')
+      throw new InvalidDocument(this.validated.outcome.error?.code ?? 'invalid');
+    let table = this.skipTable?.mirror === doc ? this.skipTable.table : null;
+    if (!table) {
+      const validator = new Validator({ skipTable: true, warnings: false, lengthHint: doc.length });
+      const slicer = new Slicer(this, jobId, () => undefined, stale);
+      const total = Math.max(1, doc.length);
+      let done = 0;
+      for (const piece of pieces(doc.chunks)) {
+        if (!validator.feed(piece)) break;
+        done += piece.length;
+        await slicer.step(piece.length, () => done / total);
+      }
+      const outcome = validator.end();
+      if (outcome.validity !== 'valid' || !outcome.skipTable)
+        throw new InvalidDocument(outcome.error?.code ?? 'invalid');
+      table = outcome.skipTable;
+      this.skipTable = { mirror: doc, table };
+    }
+    const index = new TreeIndex(doc.chunks, table);
+    this.tree = { mirror: doc, index };
+    return index;
+  }
+
+  /** Implements: F-006.R1, F-006.R8 — the root node; allocation failures become `too-large`. */
+  private async treeOpen(jobId: number, version: number): Promise<void> {
+    try {
+      const index = await this.ensureTree(jobId, version);
+      this.post({ type: 'treeRoot', jobId, version, root: index.root() });
+    } catch (e) {
+      this.fail(jobId, e);
+    }
+  }
+
+  /**
+   * Implements: F-006.R2, F-006.R3, F-006.R8 — one block of children. A cold scan deep into a
+   * huge container first extends its checkpoints in slices that yield (ADR-0007 §2), so edits
+   * and cancels interleave; afterwards the container joins the background fill (LIFO).
+   */
+  private async treeChildren(
+    jobId: number,
+    version: number,
+    c: ContainerRef,
+    from: number,
+    count: number,
+  ): Promise<void> {
+    try {
+      const index = await this.ensureTree(jobId, version);
+      const stale = () => this.version !== version;
+      const slicer = new Slicer(this, jobId, () => undefined, stale);
+      while (!index.ready(c, from)) {
+        index.fill(c, FILL_UNITS);
+        await slicer.step(FILL_UNITS, () => 0);
+      }
+      const rows = index.children(c, from, Math.min(count, GROUP));
+      this.post({ type: 'treeRows', jobId, version, rows });
+      if (!index.complete(c)) {
+        this.fillStack = this.fillStack.filter((x) => x.s !== c.s);
+        this.fillStack.push(c);
+        this.scheduleFill();
+      }
+    } catch (e) {
+      this.fail(jobId, e);
+    }
+  }
+
+  private scheduleFill(delay = 0): void {
+    if (this.fillTimer !== null || !this.fillStack.length) return;
+    this.fillTimer = setTimeout(() => {
+      this.fillTimer = null;
+      this.fillSlice();
+    }, delay);
+  }
+
+  /** ADR-0007 §2: background checkpoint fill in ≤ 8 ms slices, only while no job runs. */
+  private fillSlice(): void {
+    const tree = this.tree;
+    if (!tree || tree.mirror !== this.mirror) {
+      this.fillStack = [];
+      return;
+    }
+    if (this.running || this.queue.length) {
+      this.scheduleFill(FILL_SLICE_MS / 2);
+      return;
+    }
+    const t0 = performance.now();
+    while (this.fillStack.length && performance.now() - t0 < FILL_SLICE_MS) {
+      const c = this.fillStack[this.fillStack.length - 1]!;
+      if (tree.index.fill(c, FILL_UNITS)) this.fillStack.pop();
+    }
+    this.scheduleFill();
   }
 }
