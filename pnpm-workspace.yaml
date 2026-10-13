@@ -1,0 +1,4 @@
+# pnpm 11 settings (ADR-0001 supply chain, ADR-0003 tooling).
+# Dependency lifecycle scripts stay blocked (pnpm default); no dependency needs one.
+# New releases wait 3 days before they can be resolved (value in minutes).
+minimumReleaseAge: 4320

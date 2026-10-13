@@ -1,0 +1,8 @@
+/* Layer order (ADR-0011): reset → tokens → base → components. */
+@layer reset, tokens, base, components;
+
+@import './tokens.gen.css';
+@import './fonts.css';
+@import './reset.css';
+@import './base.css';
+@import './shell.css';

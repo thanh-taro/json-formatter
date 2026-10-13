@@ -1,0 +1,41 @@
+@layer base {
+  /* Implements: F-008.R3 — fill the host's area, scroll only inside regions. */
+  html,
+  body,
+  #app {
+    height: 100%;
+  }
+  html {
+    background: var(--tk-color-bg);
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-body);
+    font-size: var(--tk-font-size-md);
+    line-height: var(--tk-font-line-height-normal);
+  }
+  body {
+    overflow: hidden;
+    min-width: var(--tk-size-min-width);
+  }
+  :focus-visible {
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: 1px;
+  }
+  .tk-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-property: opacity !important;
+    }
+  }
+}

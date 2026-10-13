@@ -1,0 +1,3 @@
+# Not deployed (Cloudflare static assets): source maps and the build manifest (ADR-0003).
+*.map
+.vite

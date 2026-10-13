@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Stub portal host</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #203040;
+        color: #fff;
+        font: 13px system-ui;
+      }
+      iframe {
+        display: block;
+        border: 0;
+        width: 1200px;
+        height: 760px;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      // Embeds the tool with the portal's frame attributes (architecture.md A3, ADR-0008).
+      // Query: tool=<origin> (default http://localhost:4173), theme=light|dark, w, h.
+      const q = new URLSearchParams(location.search);
+      const TOOL = q.get('tool') || 'http://localhost:4173';
+      const theme = q.get('theme') || 'dark';
+      window.__host = { received: [] };
+      const f = document.createElement('iframe');
+      f.name = 'tool';
+      f.title = 'JSON Formatter';
+      f.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-downloads');
+      f.setAttribute('allow', 'clipboard-write');
+      f.setAttribute('referrerpolicy', 'strict-origin');
+      if (q.get('w')) f.style.width = q.get('w') + 'px';
+      if (q.get('h')) f.style.height = q.get('h') + 'px';
+      f.src = TOOL + '/?theme=' + encodeURIComponent(theme);
+      window.addEventListener('message', (e) => {
+        window.__host.received.push({ origin: e.origin, data: e.data, fromTool: e.source === f.contentWindow });
+      });
+      window.setTheme = (value) => f.contentWindow.postMessage({ type: 'taro:theme', value }, TOOL);
+      document.body.append(f);
+    </script>
+  </body>
+</html>
