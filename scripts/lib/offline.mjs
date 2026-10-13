@@ -42,7 +42,18 @@ export function offline() {
       handler(html, ctx) {
         if (!build || !ctx.bundle || kill) return html;
         const chunks = chunkList(Object.keys(ctx.bundle));
-        return html.replace('</head>', `  <meta name="${CHUNKS_META}" content="${chunks.join(' ')}" />\n  </head>`);
+        // NFR-01: every own chunk is fetched as part of the page load, including lazy ones (the
+        // tree view, MOD-Tree), so showing them later never makes a request — even on a first
+        // visit before the offline worker controls the page (WebKit).
+        const preloads = chunks
+          .filter((c) => !html.includes(c))
+          .map((c) =>
+            c.endsWith('.css')
+              ? `  <link rel="preload" as="style" href="${c}" />`
+              : `  <link rel="modulepreload" href="${c}" />`,
+          );
+        const tags = [...preloads, `  <meta name="${CHUNKS_META}" content="${chunks.join(' ')}" />`];
+        return html.replace('</head>', `${tags.join('\n')}\n  </head>`);
       },
     },
     generateBundle(_options, bundle) {

@@ -1,7 +1,7 @@
 ---
 id: F-006
 title: Explore the document as a tree
-status: building
+status: shipped
 milestone: M-1
 priority: P1
 personas: [PER-01]

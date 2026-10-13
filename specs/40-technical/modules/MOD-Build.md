@@ -33,3 +33,4 @@ unlisted origin refused).
 ## Implements
 F-008.R4 (embedding allow-list header), F-009 guarantee support; RULE-16 (deploy-time list);
 NFR-01 (CSP), NFR-05 (budget gate), NFR-09 (frame-ancestors).
+- Lazy chunks (e.g. MOD-Tree) are preloaded in index.html (`modulepreload` / `preload as=style`) so every own chunk is fetched during the page load and NFR-01 holds on a first visit before the offline worker controls the page (WebKit).

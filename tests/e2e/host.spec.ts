@@ -213,14 +213,7 @@ test.describe('NFR-01 a full M-1 session makes no requests after load', () => {
     await request.get(`${ADMIN}/reset`);
   });
 
-  // Known gap (WebKit, first visit only): the lazy MOD-Tree chunk (architecture.md) is fetched
-  // when the tree is first shown, after load, before the offline worker controls the page;
-  // Chromium serves it from the cache the worker's seeding filled. NFR-01 needs a spec decision.
-  const firstVisitGap = (browserName: string) =>
-    test.fail(browserName === 'webkit', 'lazy tree chunk fetched after load on a first WebKit visit (NFR-01 gap)');
-
-  test('NFR-01 F-008.AC6 embedded, first visit', async ({ page, request, browserName }) => {
-    firstVisitGap(browserName);
+  test('NFR-01 F-008.AC6 embedded, first visit', async ({ page, request }) => {
     const tool = await embed(page, 'theme=dark');
     await page.waitForLoadState('load');
     const mark = await logNow(request);
@@ -229,8 +222,7 @@ test.describe('NFR-01 a full M-1 session makes no requests after load', () => {
     await expectNoRequestsAfter(request, mark);
   });
 
-  test('NFR-01 F-008.AC7 standalone, first visit', async ({ page, request, browserName }) => {
-    firstVisitGap(browserName);
+  test('NFR-01 F-008.AC7 standalone, first visit', async ({ page, request }) => {
     await standalone(page);
     const mark = await logNow(request);
     await useEveryM1Feature(page, page);

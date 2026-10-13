@@ -34,3 +34,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - F-010 shipped. F-006 edge cases settled (cancel → text view, undo in tree focus, expansion kept by path across versions).
 - F-011 shipped (3 review rounds incl. security; single fixed cache, worker-side allow-list, kill switch SW_KILL=1).
  - F-007, F-008 shipped: F-007.AC3 runs a real minify; F-008.AC6/AC7 exercise a full M-1 session embedded and standalone. Open: NFR-01 vs lazy MOD-Tree chunk on a first WebKit visit (expected-fail test, needs a decision).
+- F-006 shipped. All M-1 features shipped. Lazy chunks preloaded during page load to keep NFR-01 on first WebKit visits.
