@@ -38,18 +38,18 @@ non-code file; **build** / **dev** / **ci** = never shipped. Status: `candidate`
 | **DEP-17** | @preact/preset-vite | ^2.10 | MIT | build | Preact JSX/HMR for Vite (pulls Babel, MIT) | candidate | ADR-0003 |
 | **DEP-18** | lightningcss (via vite) | transitive | MPL-2.0 (build-only exception) | build | CSS transforms in Vite 8 | candidate | ADR-0001 |
 | **DEP-19** | caniuse-lite (via browserslist) | transitive | CC-BY-4.0 (attribution in notices) | build | Browser target data | candidate | ADR-0001 |
-| **DEP-20** | style-dictionary | ^5.6 | Apache-2.0 | dev | Compile DTCG tokens to CSS variables (same as portal) | candidate | ADR-0011 |
+| **DEP-20** | style-dictionary | ~5.5.5 (5.6 too new on 2026-10-13; bump later) | Apache-2.0 | dev | Compile DTCG tokens to CSS variables (same as portal) | candidate | ADR-0011 |
 | **DEP-21** | vitest | ^5.0 | MIT | dev | Unit, integration and bench | candidate | ADR-0010 |
 | **DEP-22** | @vitest/browser-playwright | ^5.0 | MIT | dev | Worker/integration tests in real browsers | candidate | ADR-0010 |
 | **DEP-23** | fast-check | ^4.10 | MIT | dev | Property-based tests (INV-01, robustness) | candidate | ADR-0010 |
 | **DEP-24** | JSONTestSuite (nst/JSONTestSuite test files) | pinned commit, vendored | MIT | dev (fixtures) | Conformance corpus for NFR-08 | candidate | ADR-0010 |
-| **DEP-25** | @playwright/test | ^1.64 | Apache-2.0 | dev | E2E on three engines, perf and memory measurements | candidate | ADR-0010 |
+| **DEP-25** | @playwright/test | ~1.63.0 (1.64 too new on 2026-10-13; bump later) | Apache-2.0 | dev | E2E on three engines, perf and memory measurements | candidate | ADR-0010 |
 | **DEP-26** | Playwright browser binaries (Chromium, Firefox, WebKit) | via DEP-25 | Chromium BSD; Firefox MPL-2.0; WebKit LGPL-2.1 (test-only exception) | dev | E2E engines | candidate | ADR-0001, ADR-0010 |
 | **DEP-27** | @axe-core/playwright (pulls axe-core) | ^4.13 | MPL-2.0 (dev-only exception) | dev | Automated accessibility audit | candidate | ADR-0001, ADR-0010 |
 | **DEP-28** | @lhci/cli | ^0.15 | Apache-2.0 | dev | Startup budgets for NFR-05 | candidate | ADR-0010 |
 | **DEP-29** | eslint | ^10 | MIT | dev | Linting incl. network-API ban and module boundaries | candidate | ADR-0003 |
 | **DEP-30** | typescript-eslint | ^8.71 | MIT | dev | TypeScript lint rules | candidate | ADR-0003 |
-| **DEP-31** | eslint-plugin-jsx-a11y | ^6.10 | MIT | dev | Accessibility lint for TSX | candidate | ADR-0003 |
+| **DEP-31** | eslint-plugin-jsx-a11y | ^6.10 | MIT | dev | Accessibility lint for TSX (peer range lists eslint ≤ 9; works with 10, re-check on upgrade) | candidate | ADR-0003 |
 | **DEP-32** | prettier | ^3.9 | MIT | dev | Formatting | candidate | ADR-0003 |
 | **DEP-33** | wrangler | ^4 | MIT OR Apache-2.0 | ci | Deploy static assets | candidate | ADR-0009 |
 | **DEP-34** | GitHub Actions: actions/checkout, actions/setup-node, pnpm/action-setup, actions/cache | pinned by commit SHA | MIT | ci | CI and publish workflows | candidate | ADR-0009 |
@@ -58,7 +58,7 @@ non-code file; **build** / **dev** / **ci** = never shipped. Status: `candidate`
 ## Evaluated, not adopted
 | ID | Name | Version range | License | Kind | Purpose | Status | Decided by |
 |---|---|---|---|---|---|---|---|
-| **DEP-36** | monaco-editor | 0.57 | MIT | runtime (spike only) | SP-editor comparison only; rejected (ADR-0004), not a runtime fallback | candidate (spike only) | ADR-0004 |
+| **DEP-36** | monaco-editor | 0.57 | MIT | dev (spike only) | SP-editor comparison only; rejected (ADR-0004), never shipped | removed (rejected) | ADR-0004 |
 | **DEP-37** | @tanstack/virtual-core | ^3.19 | MIT | runtime | Alternative virtualizer for the tree | removed (not needed) | ADR-0007 |
 | **DEP-38** | comlink | ^4.4 | Apache-2.0 | runtime | Alternative worker RPC | removed (not needed) | ADR-0005 |
 

@@ -43,7 +43,7 @@
     "architecture": {
       "title": "3 Architecture & spikes",
       "status": "in_progress",
-      "step": null,
+      "step": "3.2/3.3 spikes pipeline+tree running; license audit + scaffold running",
       "gate": {
         "status": "pending",
         "at": null,
@@ -887,9 +887,13 @@
     {
       "at": "2026-10-13T08:23:16+00:00",
       "event": "SP-formatter ADAPT: 119-303 MB/s, JSONTestSuite 100%, depth ok, cancel<=34ms (1 GC outlier 55.7ms), flatten chunks"
+    },
+    {
+      "at": "2026-10-13T08:29:47+00:00",
+      "event": "architecture step: 3.2/3.3 spikes pipeline+tree running; license audit + scaffold running"
     }
   ],
-  "updated": "2026-10-13T08:23:16+00:00",
+  "updated": "2026-10-13T08:29:47+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
