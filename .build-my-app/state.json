@@ -52,7 +52,7 @@
     },
     "build": {
       "title": "4 Implementation",
-      "status": "in_progress",
+      "status": "gate",
       "step": "4 all features merged; integration follow-ups + full verification running; then G4",
       "gate": {
         "status": "pending",
@@ -1220,9 +1220,13 @@
     {
       "at": "2026-10-13T17:00:20+00:00",
       "event": "build step: 4 all features merged; integration follow-ups + full verification running; then G4"
+    },
+    {
+      "at": "2026-10-13T17:23:45+00:00",
+      "event": "phase build -> gate"
     }
   ],
-  "updated": "2026-10-13T17:00:20+00:00",
+  "updated": "2026-10-13T17:23:45+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
