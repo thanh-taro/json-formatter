@@ -17,6 +17,12 @@ declare module 'node:path' {
   export function dirname(p: string): string;
   export function join(...parts: string[]): string;
 }
+declare module 'node:v8' {
+  export function setFlagsFromString(flags: string): void;
+}
+declare module 'node:vm' {
+  export function runInNewContext(code: string): unknown;
+}
 declare module 'node:url' {
   export function fileURLToPath(url: string | URL): string;
 }

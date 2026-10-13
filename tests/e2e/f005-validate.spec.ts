@@ -27,7 +27,8 @@ const grouped = (n: number) => n.toLocaleString('en-US');
 const location = (line: number, column: number) =>
   copy('issue.location', { line: grouped(line), column: grouped(column) });
 
-/** Test-side seam: while `window.__holdValidation` is true, validation results are held back. */
+/** Test-side seam: while `window.__holdValidation` is true, validation results are held back;
+ * while `window.__failValidation` is true, they arrive as `failed(internal)`. */
 async function holdValidation(page: Page) {
   await page.addInitScript(() => {
     const Native = window.Worker;
@@ -42,9 +43,13 @@ async function holdValidation(page: Page) {
         return super.addEventListener(
           'message',
           (e: Event) => {
-            const data = (e as MessageEvent).data as { type?: string };
-            if (data.type === 'validation' && (window as unknown as { __holdValidation?: boolean }).__holdValidation)
-              return;
+            const data = (e as MessageEvent).data as { type?: string; jobId?: number };
+            const w = window as unknown as { __holdValidation?: boolean; __failValidation?: boolean };
+            if (data.type === 'validation' && w.__holdValidation) return;
+            if (data.type === 'validation' && w.__failValidation) {
+              const failed = { type: 'failed', jobId: data.jobId, reason: 'internal', detail: 'seam' };
+              return fn(new MessageEvent('message', { data: failed }));
+            }
             fn(e);
           },
           options,
@@ -300,6 +305,53 @@ test.describe('F-005 CMP-IssuePanel and accessibility', () => {
     await expect(live).toContainText(COPY['status.invalid']);
     await expect(live).toContainText(COPY['hint.trailing_comma']);
     await expect(live).toContainText(location(1, 3));
+  });
+
+  test('F-005.R3 SCR-Formatter review F-005 m2 the same error is not announced again on each keystroke', async ({
+    page,
+  }) => {
+    await start(page);
+    const live = statusBar(page).getByRole('status');
+    await paste(page, '{\n  "a": [1,\n2');
+    await expect(live).toContainText(copy('hint.unclosed_container', { bracket: '[', line: 2 }));
+    const first = await live.textContent();
+    // Typing on the last line moves the end-of-document error, but it is the same error.
+    for (const n of [3, 4, 5]) {
+      await page.keyboard.type(' ');
+      await expect(items(page).first()).toContainText(location(3, n));
+      expect(await live.textContent()).toBe(first);
+    }
+    // A different error is announced.
+    await page.keyboard.type('x');
+    await expect(live).toContainText(COPY['hint.missing_comma']);
+  });
+
+  test('F-005.R2 review F-005 m1 a failed validation is reported instead of "checking" forever', async ({ page }) => {
+    await holdValidation(page);
+    await start(page);
+    await paste(page, '[1]');
+    await expect(validity(page)).toHaveAttribute('data-validity', 'valid');
+    await page.evaluate(() => ((window as unknown as { __failValidation?: boolean }).__failValidation = true));
+    await page.keyboard.type(' ');
+    await expect(page.locator('[data-notice-id="error.failed"]')).toBeVisible();
+    await expect(validity(page)).not.toHaveAttribute('data-validity', 'checking');
+    await page.evaluate(() => ((window as unknown as { __failValidation?: boolean }).__failValidation = false));
+    await page.keyboard.type(',');
+    await expect(validity(page)).toHaveAttribute('data-validity', 'invalid');
+  });
+
+  test('F-005.R5 review F-005 m3 jumping while re-checking uses the position after the edits', async ({ page }) => {
+    await holdValidation(page);
+    await start(page);
+    await paste(page, '[1,]');
+    await expect(validity(page)).toHaveAttribute('data-validity', 'invalid');
+    await page.evaluate(() => ((window as unknown as { __holdValidation?: boolean }).__holdValidation = true));
+    await page.keyboard.press('ControlOrMeta+Home');
+    await page.keyboard.type('   ');
+    await expect(validity(page)).toHaveAttribute('data-validity', 'checking');
+    await items(page).first().click();
+    // The comma moved three columns to the right: column 6, not the listed column 3.
+    await expect(statusBar(page)).toContainText(copy('status.cursor', { line: 1, column: 6 }));
   });
 
   test('F-005.R5 CMP-IssuePanel tabs: arrow keys switch between problems and warnings; collapse hides the list', async ({

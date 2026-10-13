@@ -228,8 +228,12 @@ export class WorkerClient {
    * queued one, and the worker drops a running one when the document changes (both settle as
    * `cancelled`); the caller still ignores results for versions it no longer shows (INV-05).
    */
-  validate(version: number, lineEnding: LineEnding): Promise<{ version: number; result: ValidationResult }> {
-    return this.run({ kind: 'validate', version, lineEnding, supersedes: 'validate' }).result.then((r) =>
+  validate(
+    version: number,
+    lineEnding: LineEnding,
+    skipTable = false,
+  ): Promise<{ version: number; result: ValidationResult }> {
+    return this.run({ kind: 'validate', version, lineEnding, skipTable, supersedes: 'validate' }).result.then((r) =>
       r.type === 'validation' ? r : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
     );
   }

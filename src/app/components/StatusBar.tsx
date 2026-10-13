@@ -39,7 +39,7 @@ function Validity({ app }: { app: AppController }) {
   return (
     <span class="tk-statusbar__validity" data-validity={v.state}>
       {error ? (
-        <button type="button" class="tk-statusbar__jump" onClick={() => app.jumpTo(error)}>
+        <button type="button" class="tk-statusbar__jump" onClick={() => app.jumpTo(0)}>
           <span class="tk-statusbar__dot" aria-hidden="true" />
           {text}
         </button>

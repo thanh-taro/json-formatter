@@ -69,6 +69,9 @@ const IMPLEMENTATION: Record<string, Outcome> = {
   i_string_utf16LE_no_BOM: 'not-utf8',
 };
 
+// In CI the corpus is fetched first; a missing corpus there is a failure, not a skip.
+if (process.env['CI'] && !hasCorpus()) throw new Error('JSONTestSuite corpus missing: run pnpm fixtures:jsontestsuite');
+
 describe.skipIf(!hasCorpus())('NFR-08 JSONTestSuite conformance', () => {
   const cases = loadCorpus();
 

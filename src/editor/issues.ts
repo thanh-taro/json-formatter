@@ -24,6 +24,9 @@ interface MarkState {
   deco: DecorationSet;
   gutter: RangeSet<GutterMarker>;
   invalid: boolean;
+  /** Each issue's position, mapped through edits made since the result (jump targets while
+   * re-checking, and "is this the same error" for announcements). */
+  positions: readonly number[];
 }
 
 const setIssues = StateEffect.define<{ marks: readonly IssueMark[]; invalid: boolean }>();
@@ -89,15 +92,21 @@ function build(state: EditorState, marks: readonly IssueMark[], invalid: boolean
     deco: Decoration.set(deco, true),
     gutter: RangeSet.of(gutter, true),
     invalid,
+    positions: marks.map((m) => Math.min(Math.max(0, m.pos), len)),
   };
 }
 
 const marksField = StateField.define<MarkState>({
-  create: () => ({ deco: Decoration.none, gutter: RangeSet.empty, invalid: false }),
+  create: () => ({ deco: Decoration.none, gutter: RangeSet.empty, invalid: false, positions: [] }),
   update(value, tr) {
     for (const e of tr.effects) if (e.is(setIssues)) return build(tr.state, e.value.marks, e.value.invalid);
     if (!tr.docChanged) return value;
-    return { deco: value.deco.map(tr.changes), gutter: value.gutter.map(tr.changes), invalid: value.invalid };
+    return {
+      deco: value.deco.map(tr.changes),
+      gutter: value.gutter.map(tr.changes),
+      invalid: value.invalid,
+      positions: value.positions.map((p) => tr.changes.mapPos(p, 1)),
+    };
   },
   provide: (f) => [
     EditorView.decorations.from(f, (v) => v.deco),
@@ -109,6 +118,11 @@ const marksField = StateField.define<MarkState>({
 
 /** The issue-marks extension of CMP-Editor. */
 export const issueMarks = marksField;
+
+/** The current (mapped) position of the issue at `index` of the latest result, if any. */
+export function issuePosition(state: EditorState, index: number): number | null {
+  return state.field(marksField).positions[index] ?? null;
+}
 
 /** The transaction effect that replaces every mark (the latest validation result). */
 export function issuesEffect(marks: readonly IssueMark[], invalid: boolean): StateEffect<unknown> {

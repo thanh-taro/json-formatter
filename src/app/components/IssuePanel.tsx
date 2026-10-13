@@ -99,8 +99,8 @@ export function IssuePanel({ app }: { app: AppController }) {
         {ui.expanded && (
           <div class="tk-issues__body" role="tabpanel" id={PANEL_ID} aria-labelledby={TAB_ID[ui.tab]}>
             <ul class="tk-issues__list">
-              {shown.map((issue) => (
-                <IssueItem key={`${issue.code}:${issue.pos}`} issue={issue} onActivate={() => app.jumpTo(issue)} />
+              {shown.map((issue, index) => (
+                <IssueItem key={`${issue.code}:${issue.pos}`} issue={issue} onActivate={() => app.jumpTo(index)} />
               ))}
               {ui.tab === 'warnings' && overflow > 0 && (
                 <li class="tk-issues__more">{tCount('issue.more', overflow)}</li>

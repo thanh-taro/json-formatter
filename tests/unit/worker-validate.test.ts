@@ -75,20 +75,60 @@ describe('MOD-Worker validate', () => {
     expect(h.end(id)).toMatchObject({ type: 'failed', reason: 'cancelled' });
   });
 
-  it('INV-05 F-005.R7 a newer validation request supersedes a queued one', async () => {
+  it('INV-05 F-005.R7 a newer validation request supersedes a waiting or queued one', async () => {
     const h = harness();
-    // a long-running job first, so both validations queue behind it
-    const big = '[' + '1,'.repeat(600_000) + '1]';
+    const big = '[' + '1,'.repeat(600_000) + '1]'; // > 1 M units: waits out the debounce
     h.setText(big, 1);
     const first = h.validate(1);
+    const second = h.validate(1);
     h.setText('[2]', 2);
-    const second = h.validate(2);
     const third = h.validate(2);
     await h.engine.idle();
-    expect(h.end(first)).toMatchObject({ type: 'failed', reason: 'cancelled' });
+    expect(h.end(first)).toMatchObject({ type: 'failed', reason: 'cancelled', detail: 'superseded' });
     expect(h.end(second)).toMatchObject({ type: 'failed', reason: 'cancelled', detail: 'superseded' });
     expect(h.end(third)).toMatchObject({ type: 'validation', version: 2, result: { validity: 'valid' } });
   });
+
+  it('ADR-0005 review F-005 m4 the validation debounce does not hold the job slot', async () => {
+    const h = harness();
+    h.setText('[' + '1,'.repeat(600_000) + '1]', 1);
+    const validation = h.validate(1);
+    const exported = h.start({ kind: 'export', version: 1, eol: '\n' });
+    await h.engine.idle();
+    const order = h.out.filter((m) => m.type === 'blob' || m.type === 'validation').map((m) => m.type);
+    expect(order).toEqual(['blob', 'validation']);
+    expect(h.end(validation)?.type).toBe('validation');
+    expect(h.of(exported).some((m) => m.type === 'blob')).toBe(true);
+  });
+
+  it('NFR-04 review F-005 M2 a replaced document is not retained through validation results', async () => {
+    const v8 = await import('node:v8');
+    const vm = await import('node:vm');
+    v8.setFlagsFromString('--expose_gc');
+    const gc = vm.runInNewContext('gc') as () => void;
+    const h = harness();
+    // A large-tier valid document: validated while loading, skip table built.
+    const row = '{"id":12345,"name":"abcdefghijklmnopqrstuvwxyz"},';
+    const text = '[' + row.repeat(Math.ceil(10_500_000 / row.length)) + '{}]';
+    const load = h.start({ kind: 'loadFile', file: new Blob([text]) });
+    await h.engine.idle();
+    h.engine.handle({ type: 'adopt', jobId: load, version: 1 });
+    expect(h.engine.skipTable).not.toBeNull();
+    const old = new WeakRef(h.engine.mirror);
+    // Replace it with a small invalid document and validate that.
+    const next = h.start({ kind: 'loadFile', file: new Blob(['[1,']) });
+    await h.engine.idle();
+    h.engine.handle({ type: 'adopt', jobId: next, version: 2 });
+    h.validate(2);
+    await h.engine.idle();
+    expect(h.engine.skipTable).toBeNull();
+    h.out.length = 0; // the test's own message log holds forwarded text chunks
+    // (deref() keeps its target alive until the current job ends, so collect in a fresh task)
+    await new Promise((r) => setTimeout(r, 0));
+    gc();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(old.deref()).toBeUndefined();
+  }, 30_000);
 
   it('F-005.R7 INV-05 a running validation stops within a slice when the document changes', async () => {
     const h = harness();

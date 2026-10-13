@@ -27,7 +27,8 @@ import {
 import { t } from '../copy';
 import { textChunks } from './builder';
 import { UndoHistory, type DocFacts, type Entry, type Snapshot, type ToolKind } from './history';
-import { issueMarks, issuesEffect, type IssueMark } from './issues';
+import { ColumnIndex } from './column';
+import { issueMarks, issuePosition, issuesEffect, type IssueMark } from './issues';
 import { createPending, type Pending } from './pending';
 import { editorTheme, jsonHighlight } from './theme';
 
@@ -133,6 +134,8 @@ export interface EditorHandle {
   setIssues(marks: readonly IssueMark[], invalid: boolean): void;
   /** Implements: F-005.R5 — moves the cursor to `pos` and scrolls it into view, both ways. */
   goTo(pos: number): void;
+  /** Where issue `index` of the marked result is now (mapped through later edits, INV-05). */
+  issuePosition(index: number): number | null;
   destroy(): void;
 }
 
@@ -144,21 +147,6 @@ function rangeBytes(doc: Text, from: number, to: number): number {
   let n = 0;
   for (const it = doc.iterRange(from, to); !it.next().done;) if (!it.lineBreak) n += utf8Length(it.value);
   return n;
-}
-
-/** 1-based column in code points of `head` on the line starting at `from` (ENT-Issue columns). */
-function codePointColumn(doc: Text, from: number, head: number): number {
-  let pairs = 0;
-  let high = false;
-  for (const it = doc.iterRange(from, head); !it.next().done;) {
-    const s = it.value;
-    for (let i = 0; i < s.length; i++) {
-      const c = s.charCodeAt(i);
-      if (high && c >= 0xdc00 && c <= 0xdfff) pairs++;
-      high = c >= 0xd800 && c <= 0xdbff;
-    }
-  }
-  return head - from - pairs + 1;
 }
 
 function insertedUnits(changes: ChangeSet): number {
@@ -220,16 +208,15 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   let incomingEol: LineEnding | null = null;
   /** A drag that started inside the editor (moving text): left to the engine. */
   let internalDrag = false;
-  let cursorTimer: ReturnType<typeof setTimeout> | undefined;
+  // Implements: COPY-status.cursor in code points without long main-thread tasks (NFR-02).
+  const columns = new ColumnIndex(() => reportCursor(view.state));
 
-  /** Reports the cursor (status bar); on very long lines the code-point count waits for a pause. */
+  /** Reports the cursor (status bar); long lines use the sliced column index. */
   function reportCursor(state: EditorState): void {
     const head = state.selection.main.head;
     const line = state.doc.lineAt(head);
-    const send = () => options.onCursor?.(line.number, codePointColumn(state.doc, line.from, head));
-    clearTimeout(cursorTimer);
-    if (head - line.from <= LONG_LINE) send();
-    else cursorTimer = setTimeout(send, 150);
+    const column = columns.column(state.doc, line.from, line.to, head);
+    options.onCursor?.(line.number, column ?? head - line.from + 1);
   }
 
   const bytesOf = (doc: Text) => documentBytes(nonBreakBytes, doc.lines - 1, lineEnding);
@@ -324,6 +311,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
         busyConf.of([]),
         issueMarks,
         EditorView.updateListener.of((u) => {
+          if (u.docChanged) columns.update(u.changes, u.state.doc);
           if (u.docChanged || u.selectionSet) reportCursor(u.state);
         }),
       ],
@@ -633,6 +621,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     setIssues(marks, invalid) {
       view.dispatch({ effects: issuesEffect(marks, invalid) });
     },
+    issuePosition: (index) => issuePosition(view.state, index),
     goTo(pos) {
       const at = Math.min(Math.max(0, pos), view.state.doc.length);
       // CMP-Editor: scrolls vertically and horizontally (centred), soft-wrap aware.
@@ -643,7 +632,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
       view.focus();
     },
     destroy() {
-      clearTimeout(cursorTimer);
+      columns.reset();
       resize.disconnect();
       view.destroy();
     },

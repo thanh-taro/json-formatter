@@ -19,6 +19,8 @@ import type { AppState, Bar, Busy, Validation } from './state';
 
 /** Progress is shown once an operation has run this long (NFR-02). */
 const PROGRESS_DELAY_MS = 500;
+/** Normal tier: "checking" is shown only when a result takes longer than this (no flicker). */
+const CHECKING_DELAY_MS = 300;
 /** Main-thread slice when streaming text to the worker (architecture.md tunables). */
 const SLICE_MS = 8;
 
@@ -94,6 +96,7 @@ export class AppController {
   /** The last error and validity kind announced (SCR-Formatter: errors once per new error). */
   private announcedError = '';
   private announcedKind = 'empty';
+  private checkingTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(readonly state: AppState) {
     this.worker = new WorkerClient({ onRestart: () => void this.reseed() });
@@ -147,39 +150,68 @@ export class AppController {
    * Implements: F-005.R1, F-005.R7, INV-05 — after every change the document is re-validated in
    * the worker without blocking input; meanwhile the state is `checking` and the previous result
    * stays, marked out of date. Results for a version that is no longer shown are dropped.
+   * In the normal tier, where results arrive within milliseconds, `checking` is shown only once
+   * the wait exceeds CHECKING_DELAY_MS (no flicker per keystroke); in the large tiers at once.
    */
-  requestValidation(): void {
+  requestValidation(retry = true): void {
     const ed = this.editor;
     if (!ed) return;
     const version = ed.version;
+    clearTimeout(this.checkingTimer);
     if (ed.isEmpty) {
       // RULE-03 / F-005.AC9: zero characters is empty — no issue, nothing to compute.
       this.showValidation({ state: 'empty', result: null, version });
       return;
     }
-    this.state.validation.value = { ...this.state.validation.value, state: 'checking', version };
-    this.worker.validate(version, ed.lineEnding).then(
+    const large = isLargeTier(tierOf(ed.bytes));
+    const prev = this.state.validation.value;
+    if (large || !prev.result) this.state.validation.value = { ...prev, state: 'checking', version };
+    else
+      this.checkingTimer = setTimeout(() => {
+        const cur = this.state.validation.value;
+        if (this.editor?.version === version && cur.version !== version)
+          this.state.validation.value = { ...cur, state: 'checking', version };
+      }, CHECKING_DELAY_MS);
+    const restarts = this.worker.restarts;
+    // ADR-0007 §1: the skip table is built in the large tiers (RULE-02 bytes).
+    this.worker.validate(version, ed.lineEnding, large).then(
       ({ version: v, result }) => {
-        if (this.editor?.version === v) this.showValidation({ state: stateOf(result), result, version: v });
+        if (this.editor?.version !== v) return;
+        clearTimeout(this.checkingTimer);
+        this.showValidation({ state: stateOf(result), result, version: v });
       },
-      () => undefined, // superseded or dropped (stale), or a restart, which re-seeds and asks again
+      (e: unknown) => {
+        // Superseded or stale: a newer request owns the state. A restart re-seeds and asks again.
+        if (reasonOf(e) === 'cancelled' || this.worker.restarts !== restarts || this.editor?.version !== version)
+          return;
+        // Review F-005 m1: any other failure is retried once, then reported (COPY-error.failed)
+        // and the last result is shown again instead of "checking" forever (the next change
+        // validates again).
+        if (retry) return this.requestValidation(false);
+        clearTimeout(this.checkingTimer);
+        const cur = this.state.validation.value;
+        if (cur.result) this.state.validation.value = { ...cur, state: stateOf(cur.result) };
+        this.showFailure(reasonOf(e), false);
+      },
     );
   }
 
   private showValidation(v: Validation): void {
+    const error = v.state === 'invalid' ? v.result?.issues[0] : undefined;
+    // Same error as before (its marked position followed the edits)? Then it is not new.
+    const prevPos = this.announcedKind === 'invalid' ? this.editor?.issuePosition(0) : null;
+    const sameError = !!error && error.code === this.announcedError && prevPos === error.pos;
     this.state.validation.value = v;
-    const issues = v.result?.issues ?? [];
-    this.editor?.setIssues(issues, v.state === 'invalid');
-    this.announce(v);
+    this.editor?.setIssues(v.result?.issues ?? [], v.state === 'invalid');
+    this.announce(v, sameError);
   }
 
-  /** SCR-Formatter accessibility: validity changes are announced politely; an error once. */
-  private announce(v: Validation): void {
+  /** SCR-Formatter accessibility: validity changes are announced politely; each new error once. */
+  private announce(v: Validation, sameError: boolean): void {
     const error = v.state === 'invalid' ? v.result?.issues[0] : undefined;
     if (error) {
-      const key = `${error.code}@${error.line}:${error.column}`;
-      if (key === this.announcedError && this.announcedKind === 'invalid') return;
-      this.announcedError = key;
+      if (sameError) return;
+      this.announcedError = error.code;
       this.announcedKind = 'invalid';
       this.state.announcement.value = [t('status.invalid'), locationOf(error), hintFor(error)].join('. ');
       return;
@@ -190,9 +222,15 @@ export class AppController {
     this.state.announcement.value = validityText(v);
   }
 
-  /** Implements: F-005.R5 — moves the cursor to an issue and scrolls it into view. */
-  jumpTo(issue: Pick<Issue, 'pos'>): void {
-    this.editor?.goTo(issue.pos);
+  /**
+   * Implements: F-005.R5 — moves the cursor to issue `index` of the shown result and scrolls it
+   * into view; while re-checking, the position follows the edits made since (review F-005 m3).
+   */
+  jumpTo(index: number): void {
+    const ed = this.editor;
+    const issue = this.state.validation.value.result?.issues[index];
+    if (!ed || !issue) return;
+    ed.goTo(ed.issuePosition(index) ?? issue.pos);
   }
 
   // ---- facts, tiers, notices --------------------------------------------------------------

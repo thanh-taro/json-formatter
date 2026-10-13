@@ -20,8 +20,9 @@ export type JobSpec = { supersedes?: string } &
     /** UTF-8 Blob of the mirror at `version` (undo snapshots, later copy and download). */
     | { kind: 'export'; version: number; eol: '\n' | '\r\n' }
     /** Validate the mirror at `version` (F-005.R1): dropped when the document changes first;
-     * `lineEnding` is the document's, for ENT-Issue code-point offsets. */
-    | { kind: 'validate'; version: number; lineEnding: LineEnding }
+     * `lineEnding` is the document's, for ENT-Issue code-point offsets; `skipTable` in the
+     * large tiers (RULE-02, measured in UTF-8 bytes by the main thread; ADR-0007 §1). */
+    | { kind: 'validate'; version: number; lineEnding: LineEnding; skipTable?: boolean }
   );
 
 export type JobKind = JobSpec['kind'];

@@ -53,21 +53,84 @@ const { tree } = fc.letrec<{ tree: Tree }>((tie) => ({
   ),
 }));
 
-/** Renders a tree with whitespace drawn (cyclically) from `wsl`. */
-function render(t: Tree, wsl: string[]): string {
-  let i = 0;
-  const w = () => wsl[i++ % wsl.length] ?? '';
-  const go = (t: Tree): string => {
-    if (t.k === 'lit') return t.v;
-    if (t.k === 'arr') return '[' + w() + t.v.map((x) => go(x) + w()).join(',' + w()) + ']';
-    return '{' + w() + t.v.map(([k, v]) => k + w() + ':' + w() + go(v) + w()).join(',' + w()) + '}';
-  };
-  return w() + go(t) + w();
+/** Expected RULE-05 warnings of a rendered document, as `[code, position]`. */
+type Expected = [string, number][];
+
+/**
+ * Independent RULE-05 unsafe-number oracle (BigInt for integers, a separate digit count):
+ * integer literal beyond 2^53−1, more than 17 significant digits, overflow, or rounding to zero.
+ */
+function unsafeOracle(spelling: string): boolean {
+  const m = /^-?(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(spelling)!;
+  const [, int, frac, exp] = m;
+  const value = Number(spelling);
+  if (value === Infinity || value === -Infinity) return true;
+  const all = (int! + (frac ?? '')).replace(/^0+/, '');
+  if (value === 0 && all.length > 0) return true;
+  if (frac === undefined && exp === undefined && BigInt(int!) > 9007199254740991n) return true;
+  return all.replace(/0+$/, '').length > 17;
 }
 
-const doc = fc
-  .tuple(tree, fc.array(ws, { minLength: 1, maxLength: 8 }), fc.boolean())
-  .map(([t, wsl, bom]) => (bom ? '\uFEFF' : '') + render(t, wsl));
+/**
+ * Renders a tree with whitespace drawn (cyclically) from `wsl`, recording the expected warnings:
+ * every repeated member name (decoded with JSON.parse of the key string alone) and every unsafe
+ * number, at the position of the item's first character.
+ */
+function render(t: Tree, wsl: string[], base = 0): { text: string; expected: Expected } {
+  let i = 0;
+  let out = '';
+  const expected: Expected = [];
+  const w = () => (out += wsl[i++ % wsl.length] ?? '');
+  const go = (t: Tree): void => {
+    if (t.k === 'lit') {
+      if (/^-?\d/.test(t.v) && unsafeOracle(t.v)) expected.push(['unsafe-number', base + out.length]);
+      out += t.v;
+    } else if (t.k === 'arr') {
+      out += '[';
+      w();
+      t.v.forEach((x, n) => {
+        if (n) {
+          out += ',';
+          w();
+        }
+        go(x);
+        w();
+      });
+      out += ']';
+    } else {
+      out += '{';
+      w();
+      const seen = new Set<string>();
+      t.v.forEach(([k, v], n) => {
+        if (n) {
+          out += ',';
+          w();
+        }
+        const name = JSON.parse(k) as string;
+        if (seen.has(name)) expected.push(['duplicate-key', base + out.length]);
+        seen.add(name);
+        out += k;
+        w();
+        out += ':';
+        w();
+        go(v);
+        w();
+      });
+      out += '}';
+    }
+  };
+  w();
+  go(t);
+  w();
+  return { text: out, expected };
+}
+
+const rendered = fc.tuple(tree, fc.array(ws, { minLength: 1, maxLength: 8 }), fc.boolean()).map(([t, wsl, bom]) => {
+  const r = render(t, wsl, bom ? 1 : 0);
+  const expected: Expected = bom ? [['byte-order-mark', 0], ...r.expected] : r.expected;
+  return { text: (bom ? '﻿' : '') + r.text, expected };
+});
+const doc = rendered.map((r) => r.text);
 const chunkSizes = fc.array(fc.integer({ min: 1, max: 9 }), { minLength: 1, maxLength: 6 });
 
 function split(text: string, sizes: number[]): string[] {
@@ -137,6 +200,40 @@ describe('property: MOD-Core validator', () => {
         }
       }),
       { numRuns: NUM_RUNS, seed: Number(process.env['SEED'] ?? 7) },
+    );
+  });
+
+  it('RULE-05 warnings match an independent oracle: decoded duplicate keys and unsafe numbers, in order', () => {
+    fc.assert(
+      fc.property(rendered, chunkSizes, ({ text, expected }, sizes) => {
+        const r = validateText(split(text, sizes));
+        expect(r.validity).toBe('valid');
+        const want = expected.slice(0, 1000);
+        expect(r.issues.map((i) => [i.code, i.pos])).toEqual(want);
+        expect(r.warningOverflow).toBe(expected.length - want.length);
+      }),
+      { numRuns: NUM_RUNS, seed: Number(process.env['SEED'] ?? 4242) },
+    );
+  });
+
+  it('RULE-04 known mutations: a comma before the last closing bracket is a trailing comma; a second value is extra content', () => {
+    fc.assert(
+      fc.property(doc, chunkSizes, (text, sizes) => {
+        // extra content: one more value after the document
+        const extra = validateText(split(text + ' 1', sizes));
+        expect(extra.issues[0]).toMatchObject({ code: 'extra-content', pos: text.length + 1 });
+        // trailing comma: only when the top-level value is a non-empty container
+        const close = text.trimEnd().length - 1;
+        const last = text[close];
+        if (last !== ']' && last !== '}') return;
+        const before = text.slice(0, close).trimEnd();
+        if (before.endsWith('[') || before.endsWith('{')) return;
+        const at = before.length;
+        const mutated = text.slice(0, at) + ',' + text.slice(at);
+        const r = validateText(split(mutated, sizes));
+        expect(r.issues[0]).toMatchObject({ code: 'trailing-comma', pos: at });
+      }),
+      { numRuns: NUM_RUNS, seed: Number(process.env['SEED'] ?? 31) },
     );
   });
 
