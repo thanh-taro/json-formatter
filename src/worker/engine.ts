@@ -71,25 +71,27 @@ function yieldTick(): Promise<void> {
 
 /** Time-slice bookkeeping for one job. */
 class Slicer {
-  private start = performance.now();
+  private start: number;
   private units = 0;
   constructor(
     private readonly engine: WorkerEngine,
     private readonly jobId: number,
     private readonly onSliceEnd: () => void,
     private readonly stale: () => boolean = () => false,
-  ) {}
+  ) {
+    this.start = engine.now();
+  }
 
   /** Call after each unit of work; yields at the end of a slice (≤ 16 ms or ≤ 1 MB of input). */
   async step(units: number, fraction: () => number): Promise<void> {
     this.units += units;
-    if (performance.now() - this.start < SLICE_MS && this.units < SLICE_UNITS) return;
+    if (this.engine.now() - this.start < SLICE_MS && this.units < SLICE_UNITS) return;
     this.onSliceEnd();
     this.engine.post({ type: 'progress', jobId: this.jobId, fraction: fraction() });
     await yieldTick();
     this.engine.throwIfCancelled(this.jobId);
     if (this.stale()) throw new Superseded('document changed');
-    this.start = performance.now();
+    this.start = this.engine.now();
     this.units = 0;
   }
 }
@@ -196,7 +198,14 @@ export class WorkerEngine {
   /** Messages that arrive while a re-seed is in flight, applied after its `end` (review M1). */
   private deferred: ToWorker[] = [];
 
-  constructor(readonly post: Post) {}
+  /**
+   * @param now the clock that time slices and format piece sizes are measured with; injectable so
+   *   tests can make slicing deterministic regardless of machine speed.
+   */
+  constructor(
+    readonly post: Post,
+    readonly now: () => number = () => performance.now(),
+  ) {}
 
   throwIfCancelled(jobId: number): void {
     if (this.cancelled.has(jobId)) throw new Cancelled();
@@ -611,9 +620,9 @@ export class WorkerEngine {
       outer: for (const chunk of doc.chunks) {
         for (let at = 0; at < chunk.length;) {
           const part = at === 0 && piece >= chunk.length ? chunk : chunk.slice(at, at + piece);
-          const t0 = performance.now();
+          const t0 = this.now();
           if (!validator.feed(part)) break outer;
-          const ms = performance.now() - t0;
+          const ms = this.now() - t0;
           // ~1–4 ms of work per piece: expansion-heavy input gets small pieces
           if (ms > 4) piece = Math.max(1, piece >> 1);
           else if (ms < 1 && piece < SLICE_UNITS) piece <<= 1;

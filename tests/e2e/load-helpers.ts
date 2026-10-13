@@ -17,8 +17,11 @@ export function copy(id: keyof typeof MESSAGES, params: Record<string, string | 
 
 /** Writes a small fixture file and returns its path. */
 export function smallFixture(name: string, content: string | Buffer): string {
-  fs.mkdirSync(GEN, { recursive: true });
-  const p = path.join(GEN, name);
+  // One directory per Playwright worker: a browser reads a chosen file lazily and refuses it
+  // when another worker (or --repeat-each run) rewrites the same path in the meantime.
+  const dir = path.join(GEN, `w${process.env['TEST_PARALLEL_INDEX'] ?? '0'}`);
+  fs.mkdirSync(dir, { recursive: true });
+  const p = path.join(dir, name);
   fs.writeFileSync(p, content);
   return p;
 }

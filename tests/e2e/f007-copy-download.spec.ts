@@ -270,7 +270,10 @@ test.describe('F-007 download', () => {
     // Beautify (F-002); until it lands the button leaves the document as it is.
     await toolbar(page).getByRole('button', { name: COPY['action.beautify'] }).click();
     await waitIdle(page);
+    // The beautified text is shown (not the loaded one) before it is compared with the file.
+    await expect(app(page)).toHaveAttribute('data-lines', '8');
     const shown = await docText(page);
+    expect(shown).toContain('\n  "orders": [');
     const downloading = page.waitForEvent('download');
     await downloadButton(page).click();
     const file = await downloading;
