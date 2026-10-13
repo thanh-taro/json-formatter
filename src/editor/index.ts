@@ -674,7 +674,10 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
       view.focus();
     },
     find(term, { matchCase }) {
-      findSession?.close();
+      // the new session redraws the highlights once it knows its first match (review F-010 m2)
+      const previous = findSession;
+      findSession = null;
+      previous?.close(true);
       const host: FindHost = {
         doc: () => view.state.doc,
         cursor: () => view.state.selection.main.from,

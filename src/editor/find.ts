@@ -11,6 +11,8 @@
 export const FIND_WINDOW = 1 << 20;
 /** Main-thread time slice (architecture.md tunables: find slice 8 ms). */
 export const FIND_SLICE_MS = 8;
+/** Units lower-cased and scanned per step inside a window (bounds one piece of work). */
+export const FIND_STEP = 1 << 18;
 /** Windows whose match positions stay cached (the visible range and the current match). */
 const CACHED_WINDOWS = 4;
 
@@ -21,18 +23,25 @@ export interface FindSource {
 }
 
 /**
- * Implements: RULE-18 (case-insensitive) — a length-preserving per-character case fold, so a
- * position in the folded text is the same position in the document (ADR-0004). Characters whose
- * lower case is longer (e.g. "İ") are kept as they are; final sigma folds like sigma.
+ * Implements: RULE-18 (case-insensitive) — a length-preserving case fold, so a position in the
+ * folded text is the same position in the document (ADR-0004). Only "İ" (U+0130) grows under
+ * lower-casing; it is kept as it is and the parts between are lower-cased natively (fast, and
+ * astral letters fold too). Final sigma folds like sigma.
  */
 export function fold(s: string): string {
-  let lower = s.toLowerCase();
+  let lower = s.includes('İ')
+    ? s
+        .split('İ')
+        .map((part) => part.toLowerCase())
+        .join('İ')
+    : s.toLowerCase();
   if (lower.length !== s.length) {
+    // Defensive (no other expanding lower case exists today): fold per code point, keeping any
+    // character whose lower case would change the length.
     let out = '';
-    for (let i = 0; i < s.length; i++) {
-      const c = s.charAt(i);
+    for (const c of s) {
       const l = c.toLowerCase();
-      out += l.length === 1 ? l : c;
+      out += l.length === c.length ? l : c;
     }
     lower = out;
   }
@@ -72,6 +81,7 @@ export class FindIndex {
     term: string,
     readonly matchCase: boolean,
     readonly window = FIND_WINDOW,
+    readonly step = FIND_STEP,
   ) {
     this.needle = matchCase ? term : fold(term);
     this.termLength = term.length;
@@ -90,30 +100,61 @@ export class FindIndex {
     return this.prefix[this.scanned]!;
   }
 
-  /** Scans the next window (at most ~1 window of text plus the term) and returns its index. */
+  /** The window being scanned in steps (a window's matches count only once it is complete). */
+  private partial: { k: number; pos: number; positions: number[] } | null = null;
+
+  /** Scans the next window completely and returns its index. */
   scanNext(): number {
     const k = this.scanned;
-    const { positions, next } = this.scanWindow(k, this.resume[k]!);
-    this.prefix.push(this.total + positions.length);
-    this.resume.push(next);
-    this.remember(k, positions);
+    while (!this.scanStep());
     return k;
   }
 
-  private scanWindow(k: number, from: number): { positions: number[]; next: number } {
-    const len = this.src.length;
+  /**
+   * Scans one step (≤ FIND_STEP units) of the next window; returns true when the window is
+   * complete. Steps keep each piece of main-thread work small even where lower-casing is slow
+   * (non-ASCII text), so a slice never overruns by a whole window (review F-010 M1).
+   */
+  scanStep(): boolean {
+    const k = this.scanned;
+    const part = (this.partial ??= { k, pos: this.resume[k]!, positions: [] });
+    const end = this.windowEnd(k);
+    if (part.pos < end) part.pos = this.scanRange(part.pos, Math.min(end, part.pos + this.step), part.positions);
+    if (part.pos < end) return false;
+    this.partial = null;
+    this.prefix.push(this.total + part.positions.length);
+    this.resume.push(part.pos);
+    this.remember(k, part.positions);
+    return true;
+  }
+
+  private windowEnd(k: number): number {
+    return Math.min(this.src.length, (k + 1) * this.window);
+  }
+
+  /**
+   * Leftmost-first matches starting in [from, end), appended to `out`; returns where the scan
+   * continues (after the last match, or `end`).
+   */
+  private scanRange(from: number, end: number, out: number[]): number {
     const L = this.termLength;
-    const end = Math.min(len, (k + 1) * this.window); // matches start before `end`
-    const positions: number[] = [];
-    if (L === 0 || from >= end) return { positions, next: Math.max(from, end) };
-    let text = this.src.sliceString(from, Math.min(len, end + L - 1));
+    if (L === 0 || from >= end) return Math.max(from, end);
+    let text = this.src.sliceString(from, Math.min(this.src.length, end + L - 1));
     if (!this.matchCase) text = fold(text);
     let after = from;
     for (let i = text.indexOf(this.needle); i >= 0 && from + i < end; i = text.indexOf(this.needle, i + L)) {
-      positions.push(from + i);
+      out.push(from + i);
       after = from + i + L;
     }
-    return { positions, next: Math.max(after, end) };
+    return Math.max(after, end);
+  }
+
+  /** All matches of scanned window `k`, recomputed from its resume position. */
+  private scanWindow(k: number): number[] {
+    const positions: number[] = [];
+    const end = this.windowEnd(k);
+    for (let pos = this.resume[k]!; pos < end;) pos = this.scanRange(pos, Math.min(end, pos + this.step), positions);
+    return positions;
   }
 
   private remember(k: number, positions: number[]): void {
@@ -133,7 +174,7 @@ export class FindIndex {
       this.remember(k, hit);
       return hit;
     }
-    const { positions } = this.scanWindow(k, this.resume[k]!);
+    const positions = this.scanWindow(k);
     this.remember(k, positions);
     return positions;
   }
@@ -233,6 +274,9 @@ export class FindSession {
   private want: Want | null = null;
   private cancelTick: (() => void) | null = null;
   private closed = false;
+  /** Since the last (re)start the first match is not known yet: the previous count and
+   * highlights stay shown (no blanking per keystroke, review F-010 m2). */
+  private firstPending = false;
   private readonly firstListeners: ((pos: number | null) => void)[] = [];
   private readonly countListeners: ((status: FindStatus) => void)[] = [];
   private readonly window: number;
@@ -272,6 +316,7 @@ export class FindSession {
     this.selected = false;
     this.origin = this.host.cursor();
     this.want = { kind: 'first', select };
+    this.firstPending = true;
     if (defer) this.cancelTick = this.host.schedule(this.tick);
     else this.tick();
   }
@@ -308,7 +353,8 @@ export class FindSession {
     this.host.refresh();
   }
 
-  close(): void {
+  /** Ends the session; `quiet` keeps the highlights until the next session draws its own. */
+  close(quiet = false): void {
     this.closed = true;
     this.cancelTick?.();
     this.cancelTick = null;
@@ -316,13 +362,17 @@ export class FindSession {
     this.cur = null;
     this.want = null;
     this.host.closed?.();
-    this.host.refresh();
+    if (!quiet) this.host.refresh();
   }
 
-  /** Implements: F-010.R2 — matches overlapping the visible range [from, to) and the current one. */
-  visible(from: number, to: number): { matches: number[]; current: number | null; length: number } {
+  /**
+   * Implements: F-010.R2 — matches overlapping the visible range [from, to) and the current one;
+   * null while the first match after a (re)start is not known (keep what is drawn).
+   */
+  visible(from: number, to: number): { matches: number[]; current: number | null; length: number } | null {
     const length = this.term.length;
     if (!this.index) return { matches: [], current: null, length };
+    if (this.firstPending && !this.index.done) return null;
     return { matches: this.index.between(from, to), current: this.cur, length };
   }
 
@@ -332,8 +382,7 @@ export class FindSession {
     if (!index || this.closed) return;
     const t0 = this.host.now();
     do {
-      index.scanNext();
-      this.resolve();
+      if (index.scanStep()) this.resolve();
     } while (!index.done && this.host.now() - t0 < FIND_SLICE_MS);
     if (index.done) this.resolve();
     this.emit();
@@ -351,6 +400,7 @@ export class FindSession {
       if (p === undefined) return;
       if (p === null) p = index.firstAtOrAfter(0) ?? null; // RULE-18: wraps to the start
       this.want = null;
+      this.firstPending = false;
       if (p !== null) this.setCurrent(p, want.select);
       for (const cb of this.firstListeners) cb(p);
       return;
@@ -373,6 +423,7 @@ export class FindSession {
   }
 
   private emit(): void {
+    if (this.firstPending && !this.index?.done) return;
     const status = this.status;
     for (const cb of this.countListeners) cb(status);
   }

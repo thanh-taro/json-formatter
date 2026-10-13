@@ -29,7 +29,10 @@ async function load(page: Page, text: string) {
 
 const panel = (page: Page) => page.getByRole('search');
 const field = (page: Page) => panel(page).getByRole('searchbox', { name: COPY['search.placeholder'] });
-const count = (page: Page) => panel(page).getByRole('status');
+/** The visible count (COPY-search.count / counting / none). */
+const count = (page: Page) => panel(page).locator('.tk-search__count');
+/** The polite live region: the final count only (NFR-06). */
+const live = (page: Page) => panel(page).getByRole('status');
 const button = (page: Page, id: 'action.find_next' | 'action.find_prev' | 'action.close') =>
   panel(page).getByRole('button', { name: COPY[id] });
 const matchCase = (page: Page) => panel(page).getByRole('button', { name: COPY['search.match_case'] });
@@ -108,6 +111,18 @@ test.describe('F-010 find in the text view', () => {
     await field(page).press('Escape');
     await page.keyboard.type('Y');
     await expect.poll(() => docText(page)).toBe(THREE.replace('previous_status', 'previous_Y'));
+  });
+
+  test('NFR-06 F-010.R3 the live region announces the final count and navigation, not every slice', async ({
+    page,
+  }) => {
+    await load(page, THREE);
+    await find(page, 'status');
+    await expect(live(page)).toHaveText(of(1, 3));
+    await page.keyboard.press('Enter');
+    await expect(live(page)).toHaveText(of(2, 3));
+    await field(page).fill('xyz');
+    await expect(live(page)).toHaveText(COPY['search.none']);
   });
 
   test('F-010.AC4 F-010.R4 a term the document does not contain shows COPY-search.none', async ({ page }) => {
@@ -291,7 +306,7 @@ test('F-010.R1 NFR-06 CMP-SearchPanel coarse pointer: every control is at least 
   await context.close();
 });
 
-test('F-010.AC6 F-010.R6 NFR-02 in a 100 MB document typing a term stays responsive and the first match appears before the count is final', async ({
+test('F-010.AC6 F-010.R6 NFR-02 in a 100 MB document typing a term stays responsive and the first match appears before the count is final; editing with find open recounts without blanking', async ({
   page,
   browserName,
 }) => {
@@ -311,7 +326,7 @@ test('F-010.AC6 F-010.R6 NFR-02 in a 100 MB document typing a term stays respons
     w.__counts = [];
     w.__lat = [];
     const root = document.querySelector('[role="search"]')!;
-    const status = root.querySelector('[role="status"]')!;
+    const status = root.querySelector('.tk-search__count')!;
     new MutationObserver(() => w.__counts.push(status.textContent ?? '')).observe(status, {
       childList: true,
       characterData: true,
@@ -347,6 +362,40 @@ test('F-010.AC6 F-010.R6 NFR-02 in a 100 MB document typing a term stays respons
   expect(counts[finalAt]).toMatch(/^1 of [\d,.\s]+$/);
   const countingAt = counts.findLastIndex((c, i) => i < finalAt && /^1 of [\d,.\s]+\+$/.test(c));
   expect(countingAt).toBeGreaterThanOrEqual(0);
+  // review F-010 m2: once shown, the count never blanks while a new term is counted
+  const firstShown = counts.findIndex((c) => c !== '');
+  expect(counts.slice(firstShown).filter((c) => c === '')).toEqual([]);
   await expect(current(page)).toHaveText('item');
   await reportShot(page, 'F-010/counting-100mb.png');
+  const total = Number((await count(page).textContent())!.replace(/^1 of /, '').replace(/\D/g, ''));
+
+  // Typing in the editor with find open (the selected first match is replaced): the keystroke
+  // shows within NFR-02, the count and highlights stay while recounting, then "of N-1".
+  await page.evaluate(() => {
+    const w = window as unknown as { __counts: string[]; __typed?: number };
+    w.__counts = [];
+    const down = { at: 0 };
+    window.addEventListener('keydown', () => (down.at = performance.now()), { capture: true, once: true });
+    const tick = () => {
+      const lines = document.querySelector('.tk-editor-host')?.shadowRoot?.querySelectorAll('.cm-line') ?? [];
+      if (down.at && [...lines].some((l) => l.textContent?.includes('"X-f010')))
+        w.__typed = performance.now() - down.at;
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  await content(page).focus();
+  await page.keyboard.type('X');
+  const typed = () => page.evaluate(() => (window as unknown as { __typed?: number }).__typed ?? null);
+  await expect.poll(typed).not.toBeNull();
+  expect(await typed()).toBeLessThan(100);
+  await expect(count(page)).toHaveText(
+    copy('search.count', { current: 1, total: (total - 1).toLocaleString('en-US') }),
+    {
+      timeout: 60_000,
+    },
+  );
+  const recounts = await page.evaluate(() => (window as unknown as { __counts: string[] }).__counts);
+  expect(recounts.filter((c) => c === '')).toEqual([]);
+  await expect(current(page)).toHaveCount(1);
 });

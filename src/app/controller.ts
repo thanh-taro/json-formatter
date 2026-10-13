@@ -103,7 +103,10 @@ export class AppController {
   editor: EditorHandle | null = null;
   readonly worker: WorkerClient;
   /** CMP-SearchPanel state (F-010). */
-  readonly find = new FindController(() => this.editor);
+  readonly find = new FindController(
+    () => this.editor,
+    () => this.showTextView(),
+  );
   private tier: Tier = 'normal';
   private barSeq = 0;
   private trimmedNoticeShown = false;
@@ -151,6 +154,14 @@ export class AppController {
     this.editor?.destroy();
     this.editor = null;
     this.worker.dispose();
+  }
+
+  /**
+   * Shows the text view (F-010 edge case: find opens in the text view). F-006 extends this with
+   * whatever else switching views needs.
+   */
+  showTextView(): void {
+    this.state.view.value = 'text';
   }
 
   /** True while an operation runs, the mirror is re-seeded, or a confirmation is open (review m2). */

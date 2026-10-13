@@ -1,23 +1,17 @@
 // Implements: CMP-SearchPanel (F-010) — docked at the top of CMP-Editor: field
 // (COPY-search.placeholder), match case toggle (COPY-search.match_case, a pressed button), count
-// (COPY-search.count / COPY-search.counting / COPY-search.none, a polite live region), previous
+// (COPY-search.count / COPY-search.counting / COPY-search.none; the final count goes to a
+// polite live region), previous
 // (COPY-action.find_prev), next (COPY-action.find_next), close (COPY-action.close). Enter moves to
 // the next match, Shift+Enter to the previous, Escape closes and returns focus to the editor.
 // Narrow: match case and count move under the field (container width < 600 px).
 import { useEffect, useRef } from 'preact/hooks';
-import { formatCount, t } from '../../copy';
-import type { FindStatus } from '../../editor';
-import type { FindController } from '../find';
+import { t } from '../../copy';
+import { countText, type FindController } from '../find';
 import { Icon } from './Icon';
 
-/** The count text for a status; empty while the first match is not known yet. */
-export function countText(status: FindStatus | null): string {
-  if (!status) return '';
-  if (status.done && status.total === 0) return t('search.none');
-  if (status.current === null) return '';
-  const params = { current: formatCount(status.current), total: formatCount(status.total) };
-  return status.done ? t('search.count', params) : t('search.counting', params);
-}
+/** The platform find shortcut is Cmd+F on Apple platforms, Ctrl+F elsewhere (platform-mapping). */
+const MAC = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
 export function SearchPanel({ find }: { find: FindController }) {
   const field = useRef<HTMLInputElement>(null);
@@ -38,7 +32,7 @@ export function SearchPanel({ find }: { find: FindController }) {
       if (e.key === 'Escape') {
         e.preventDefault();
         find.close();
-      } else if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'f') {
+      } else if ((MAC ? e.metaKey : e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         find.show();
       }
@@ -84,8 +78,10 @@ export function SearchPanel({ find }: { find: FindController }) {
         >
           <Icon name="case-sensitive" />
         </button>
-        <span class={none ? 'tk-search__count tk-search__count--none' : 'tk-search__count'} role="status">
-          {countText(status)}
+        <span class={none ? 'tk-search__count tk-search__count--none' : 'tk-search__count'}>{countText(status)}</span>
+        {/* Polite live region: the final count and navigation, not every counting slice (NFR-06). */}
+        <span class="tk-visually-hidden" role="status">
+          {find.announcement.value}
         </span>
         <button
           type="button"

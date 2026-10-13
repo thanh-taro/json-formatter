@@ -8,13 +8,20 @@ import { FindIndex, FindSession, fold, type FindHost, type FindStatus } from '..
 
 const doc = (s: string) => Text.of(s.split('\n'));
 
+/**
+ * Reference case fold, independent of `fold`: per code point, the platform lower case, except
+ * that "İ" (whose lower case is two units) stays itself and final sigma counts as sigma.
+ */
+const refFold = (s: string) =>
+  [...s].map((c) => (c === 'İ' ? c : c.toLocaleLowerCase('und').replace('ς', 'σ'))).join('');
+
 /** All matches of `term` in `text` per RULE-18, computed naively (the oracle). */
 function oracle(text: string, term: string, matchCase: boolean): number[] {
   const out: number[] = [];
   if (!term) return out;
   for (let i = 0; i + term.length <= text.length;) {
     const a = text.slice(i, i + term.length);
-    const same = matchCase ? a === term : fold(a) === fold(term);
+    const same = matchCase ? a === term : refFold(a) === refFold(term);
     if (same) {
       out.push(i);
       i += term.length;
@@ -128,20 +135,55 @@ describe('RULE-18 matching', () => {
     expect(all(new FindIndex(doc(text), 'οδοσ', false))).toEqual([5, 10]);
   });
 
+  it('RULE-18 astral capitals fold in a window that also contains "İ" (review F-010 M1)', () => {
+    const text = 'İ 𐐀BC 𐐨bc';
+    expect(fold(text).length).toBe(text.length);
+    expect(all(new FindIndex(doc(text), '𐐨bc', false))).toEqual([2, 7]);
+    expect(all(new FindIndex(doc(text), '𐐀BC', true))).toEqual([2]);
+  });
+
+  /** Fastest of 5 runs (other processes may preempt any single run). */
+  const fastest = (fn: () => void) => {
+    const times: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const t0 = performance.now();
+      fn();
+      times.push(performance.now() - t0);
+    }
+    return Math.min(...times);
+  };
+  const MB = 1 << 20;
+  const windowOf = (unit: string) => unit.repeat(Math.ceil(MB / unit.length)).slice(0, MB);
+  // The absolute 8 ms slice check runs in `pnpm bench` (tests/bench/find.bench.test.ts): timing
+  // assertions are unreliable while the unit suite runs files in parallel.
+
+  it('RULE-18 ADR-0004 review F-010 M1 folding a 1 MB window full of "İ", astral and accented letters costs no more than the native lower case', () => {
+    const w = windowOf('İstanbul 𐐀Ölçü Σ ');
+    fold(w); // warm up
+    const native = fastest(() => w.toLowerCase());
+    const ours = fastest(() => fold(w));
+    // the per-character fallback cost ≈ 24 ms here; splitting on "İ" stays near the native cost
+    expect(ours).toBeLessThan(native * 2 + 1);
+  });
+
   it('RULE-18 line breaks are part of the text (a term spanning lines matches)', () => {
     expect(all(new FindIndex(doc('{\n  "a": 1\n}'), '1\n}', false, 2))).toEqual([9]);
   });
 
-  it('RULE-18 the windowed index equals a naive scan for any text, term, case and window', () => {
-    const alpha = fc.constantFrom('a', 'A', 'b', 'é', 'É', '\n', 'ab', 'Ab', '😀');
+  it('RULE-18 the windowed index equals a naive scan for any text, term, case, window and step', () => {
+    const alpha = fc.constantFrom('a', 'A', 'b', 'é', 'É', '\n', 'ab', 'Ab', '😀', 'İ', 'i', '𐐀', '𐐨', 'Σ', 'σ', 'ς');
     fc.assert(
       fc.property(
         fc.array(alpha, { maxLength: 60 }).map((a) => a.join('')),
-        fc.array(fc.constantFrom('a', 'A', 'b', 'é', '\n'), { minLength: 1, maxLength: 4 }).map((a) => a.join('')),
+        fc
+          .array(fc.constantFrom('a', 'A', 'b', 'é', '\n', 'İ', '𐐀', '𐐨', 'σ', 'Σ'), { minLength: 1, maxLength: 4 })
+          .map((a) => a.join('')),
         fc.boolean(),
         fc.integer({ min: 1, max: 9 }),
-        (text, term, matchCase, w) => {
-          const index = new FindIndex(doc(text), term, matchCase, w);
+        fc.integer({ min: 1, max: 5 }),
+        (text, term, matchCase, w, step) => {
+          // windows and steps inside a window both split the text at arbitrary points
+          const index = new FindIndex(doc(text), term, matchCase, w, step);
           expect(all(index)).toEqual(oracle(text, term, matchCase));
           expect(index.total).toBe(oracle(text, term, matchCase).length);
         },
@@ -271,6 +313,22 @@ describe('find session', () => {
     host.run();
     expect(host.selections.at(-1)).toEqual([204, 206]);
     expect(statuses.at(-1)).toEqual({ current: 3, total: 3, done: true });
+  });
+
+  it('F-010.R3 review F-010 m2 a recount keeps the previous count and highlights until its first match is known', () => {
+    const text = 'x'.repeat(200) + 'ab' + 'x'.repeat(10) + 'ab';
+    const host = fakeHost(text, 205);
+    const { s, statuses } = session(host, 'ab');
+    host.run();
+    expect(statuses.at(-1)).toEqual({ current: 2, total: 2, done: true });
+    const n = statuses.length;
+    s.restart();
+    host.run(1); // scanned only the first windows: the first match after the cursor is not known yet
+    expect(statuses.length).toBe(n);
+    expect(s.visible(200, 216)).toBeNull();
+    host.run();
+    expect(statuses.at(-1)).toEqual({ current: 2, total: 2, done: true });
+    expect(s.visible(200, 216)).toEqual({ matches: [200, 212], current: 212, length: 2 });
   });
 
   it('F-010.R1 closing stops the scan and clears the matches', () => {
