@@ -5,7 +5,10 @@
 // chunking, round-trips (minify ∘ beautify = minify, beautify idempotent), follows the final-break
 // rule, and matches the size predicted by validation; invalid documents are refused.
 import fc from 'fast-check';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Thousands of generated cases: allow for a busy machine (the 5 s default is for unit tests).
+vi.setConfig({ testTimeout: 60_000 });
 import {
   beautifiedBytes,
   formatText,

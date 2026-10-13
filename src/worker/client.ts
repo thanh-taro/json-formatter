@@ -4,7 +4,7 @@
 // must arrive at least every second; otherwise (or on an `error` event) the worker is
 // terminated and restarted, every running job fails with `internal`, and the owner re-seeds
 // the mirror (callers discard their pending documents, INV-03).
-import type { LineEnding, ValidationResult } from '../core';
+import type { LineEnding, SourceUnit, ValidationResult } from '../core';
 import type { ChangeSetJSON, FailReason, FromWorker, JobSpec, TextFacts, ToWorker } from './protocol';
 
 export class JobFailure extends Error {
@@ -26,7 +26,10 @@ export type JobResult =
   | { type: 'loaded'; facts: TextFacts }
   | { type: 'formatted'; facts: TextFacts }
   | { type: 'blob'; blob: Blob }
-  | { type: 'validation'; version: number; result: ValidationResult };
+  | { type: 'validation'; version: number; result: ValidationResult }
+  /** Re-indent detection (F-004): the unit and the change in length, or nothing indented. */
+  | { type: 'reindentPlan'; version: number; unit: SourceUnit; delta: number; unchanged: boolean }
+  | { type: 'notIndented' };
 
 export interface Job {
   readonly jobId: number;
@@ -54,6 +57,23 @@ interface Running {
   settled: boolean;
   resolve: (r: JobResult) => void;
   reject: (e: JobFailure) => void;
+}
+
+/** The job result carried by a final worker message. */
+function resultOf(msg: Extract<FromWorker, { type: JobResult['type'] }>): JobResult {
+  switch (msg.type) {
+    case 'loaded':
+    case 'formatted':
+      return { type: msg.type, facts: msg.facts };
+    case 'blob':
+      return { type: 'blob', blob: msg.blob };
+    case 'validation':
+      return { type: 'validation', version: msg.version, result: msg.result };
+    case 'reindentPlan':
+      return { type: 'reindentPlan', version: msg.version, unit: msg.unit, delta: msg.delta, unchanged: msg.unchanged };
+    case 'notIndented':
+      return { type: 'notIndented' };
+  }
 }
 
 function defaultWorker(): WorkerLike {
@@ -148,18 +168,12 @@ export class WorkerClient {
       case 'loaded':
       case 'formatted':
       case 'blob':
-      case 'validation': {
+      case 'validation':
+      case 'reindentPlan':
+      case 'notIndented': {
         const r = this.running.get(msg.jobId);
         this.running.delete(msg.jobId);
-        if (r)
-          this.settle(
-            r,
-            msg.type === 'loaded' || msg.type === 'formatted'
-              ? { type: msg.type, facts: msg.facts }
-              : msg.type === 'blob'
-                ? { type: 'blob', blob: msg.blob }
-                : { type: 'validation', version: msg.version, result: msg.result },
-          );
+        if (r) this.settle(r, resultOf(msg));
         return;
       }
       case 'failed': {

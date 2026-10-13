@@ -30,3 +30,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - RULE-02 clarified: no second very-large confirmation when the document is already over 100 MB (F-002 build).
 - F-002, F-003 shipped. Test infra: E2E_PORT_BASE makes e2e ports configurable for parallel worktrees.
 - F-010 edge case: after an edit the recount highlights the next match without moving the selection.
+- F-004 shipped. Property/conformance suites get a 60 s per-test timeout (load-sensitive).

@@ -95,7 +95,8 @@ export function Toolbar({ app }: { app: AppController }) {
         <button type="button" class="tk-button" disabled={off} onClick={() => void app.format('minify')}>
           {t('action.minify')}
         </button>
-        <button type="button" class="tk-button" disabled={off}>
+        {/* Implements: F-004.R1 — re-indent with the indent selector's style (CMP-Toolbar). */}
+        <button type="button" class="tk-button" disabled={off} onClick={() => void app.reindent()}>
           {t('action.reindent')}
         </button>
         <IndentSelector app={app} disabled={off} />

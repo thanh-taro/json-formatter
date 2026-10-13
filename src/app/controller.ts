@@ -4,11 +4,13 @@
 import { formatCount, formatSize, hintFor, t, tCount } from '../copy';
 import {
   beautifiedBytes,
+  indentStyle,
   isLargeTier,
   tierOf,
   type FormatMode,
   type IndentStyle,
   type Issue,
+  type LineEnding,
   type Tier,
   type ValidationResult,
 } from '../core';
@@ -73,6 +75,15 @@ const formattedFacts: FactsOf = (r) => {
   if (r.type !== 'formatted') throw new JobFailure('internal', `unexpected ${r.type}`);
   return r.facts;
 };
+
+/**
+ * A worker-built text has '\n' breaks only; the document keeps its line ending (F-004.R2,
+ * RULE-17), so the commit facts count its breaks as that ending.
+ */
+function keepLineEnding(facts: ReplaceFacts, eol: LineEnding): ReplaceFacts {
+  const n = facts.breaks.lf + facts.breaks.crlf + facts.breaks.cr;
+  return { ...facts, breaks: eol === 'crlf' ? { lf: 0, crlf: n, cr: 0 } : { lf: n, crlf: 0, cr: 0 } };
+}
 
 function stateOf(result: ValidationResult): Validation['state'] {
   return result.validity;
@@ -481,11 +492,68 @@ export class AppController {
     this.editor.focus();
   }
 
+  /**
+   * Implements: F-004.R1–R7 — re-indents the document to the indent selector's style (RULE-09)
+   * in the worker: a detection pass, then (after the RULE-02 confirmation when the result would
+   * exceed 100 MB) a conversion committed as one undo step (INV-04, RULE-15). Busy policy
+   * (D-005) with COPY-progress.formatting and cancel; cancel or failure leaves the document
+   * unchanged (INV-03). Nothing indented → unchanged with COPY-notice.no_indent (F-004.R5).
+   */
+  async reindent(): Promise<void> {
+    if (this.blocked() || !this.editor || this.editor.isEmpty) return;
+    const ed = this.editor;
+    // RULE-01: an invalid width (NaN, < 1, > 8, fractional) never reaches the re-indenter.
+    const target = indentStyle(this.state.indent.value);
+    const version = ed.version;
+    const eol = ed.lineEnding;
+    const sourceName = ed.sourceName;
+    // Review m-1: both passes (and the confirmation between them) run as one busy operation,
+    // so the progress bar and cancel stay continuous.
+    await this.run('progress.formatting', async (busy) => {
+      // Pass 1: detection (the first quarter of the progress bar).
+      const planJob = this.worker.run(
+        { kind: 'reindentPlan', version, target },
+        { onProgress: (f) => busy.progress(f / 4) },
+      );
+      busy.onCancel(() => planJob.cancel());
+      const r = await planJob.result;
+      if (r.type === 'notIndented') {
+        this.showBar({ kind: 'info', id: 'notice.no_indent', text: t('notice.no_indent') });
+        return;
+      }
+      if (r.type !== 'reindentPlan') throw new JobFailure('internal', `unexpected ${r.type}`);
+      // Review m-6: an identical result changes nothing and takes no undo step.
+      if (r.unchanged) return;
+      // Implements: F-004.R7 / RULE-02 — a result over 100 MB is confirmed first, unless the
+      // document already is over 100 MB (shared decision, ./confirm).
+      const bytesAfter = ed.bytes + r.delta;
+      if (needsVeryLargeConfirm(ed.bytes, bytesAfter)) {
+        const asking = this.confirmVeryLarge(bytesAfter);
+        busy.onCancel(() => this.state.confirm.value?.answer(false));
+        if (!(await asking)) throw new Cancelled();
+      }
+      if (this.editor !== ed || ed.version !== version) throw new Cancelled();
+      // Pass 2: conversion into a pending document, committed as one undo step.
+      const pending = ed.beginReplace('reindent');
+      const total = Math.max(1, bytesAfter);
+      const job = this.worker.run(
+        { kind: 'reindent', version, target, unit: r.unit },
+        {
+          onChunk: (text) => this.append(pending, job, text),
+          onProgress: (f) => busy.progress(0.25 + 0.75 * Math.min(f, pending.appended / total)),
+        },
+      );
+      await this.feed(job, pending, busy, (res) => keepLineEnding(loadedFacts(res), eol), { sourceName });
+    });
+    this.editor?.focus();
+  }
+
   // ---- beautify / minify (F-002, F-003) ----------------------------------------------------
 
   /** Implements: RULE-01 / F-002.R2 — the indent selector (2 or 4 spaces, tab, custom 1–8). */
   setIndent(style: IndentStyle): void {
-    this.state.indent.value = style;
+    // RULE-01 (F-004 review MJ-1): an invalid width (NaN, < 1, > 8, fractional) is never stored.
+    this.state.indent.value = indentStyle(style);
   }
 
   /**
