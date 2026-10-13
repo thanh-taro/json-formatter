@@ -32,12 +32,12 @@
     },
     "design": {
       "title": "2 Design",
-      "status": "gate",
+      "status": "done",
       "step": "2.4 D2-D4 screens & flows: making (fork)",
       "gate": {
-        "status": "pending",
-        "at": null,
-        "note": null
+        "status": "passed",
+        "at": "2026-10-13T08:06:47+00:00",
+        "note": "44 boards (D1-D4), Workbench; audits converged; a11y contrast+targets pass; D-017..D-020"
       }
     },
     "architecture": {
@@ -382,6 +382,67 @@
       "answer": "Soft-wrap under 600 px; jump scrolls column into view",
       "asked": "2026-10-13T07:48:04+00:00",
       "answered": "2026-10-13T07:48:04+00:00"
+    },
+    {
+      "id": "D-020",
+      "question": "Gate G2 designs",
+      "options": [
+        "approve",
+        "changes"
+      ],
+      "recommendation": "approve",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Approved",
+      "asked": "2026-10-13T08:06:29+00:00",
+      "answered": "2026-10-13T08:06:30+00:00"
+    },
+    {
+      "id": "D-021",
+      "question": "WebKit service worker vs NFR-01",
+      "options": [
+        "amend NFR-01",
+        "skip WebKit",
+        "drop offline"
+      ],
+      "recommendation": "amend NFR-01",
+      "kind": "product",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Amend NFR-01: browser's own install/update fetches of the tool's own files allowed",
+      "asked": "2026-10-13T08:06:30+00:00",
+      "answered": "2026-10-13T08:06:30+00:00"
+    },
+    {
+      "id": "D-022",
+      "question": "Syntax colouring threshold",
+      "options": [
+        "2 MB",
+        "10 MB"
+      ],
+      "recommendation": "2 MB",
+      "kind": "product",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Keep 10 MB; accept lag 2-10 MB (NFR-02 exception)",
+      "asked": "2026-10-13T08:06:30+00:00",
+      "answered": "2026-10-13T08:06:30+00:00"
+    },
+    {
+      "id": "D-023",
+      "question": "F-007 download-blocked requirement",
+      "options": [
+        "deprecate R5",
+        "always hint"
+      ],
+      "recommendation": "deprecate R5",
+      "kind": "product",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Deprecate F-007.R5/AC6; Copy fallback covers it",
+      "asked": "2026-10-13T08:06:30+00:00",
+      "answered": "2026-10-13T08:06:31+00:00"
     }
   ],
   "loops": {
@@ -786,9 +847,45 @@
     {
       "at": "2026-10-13T08:05:22+00:00",
       "event": "phase design -> gate"
+    },
+    {
+      "at": "2026-10-13T08:06:29+00:00",
+      "event": "decision D-020 opened: Gate G2 designs"
+    },
+    {
+      "at": "2026-10-13T08:06:30+00:00",
+      "event": "decision D-020 answered: Approved"
+    },
+    {
+      "at": "2026-10-13T08:06:30+00:00",
+      "event": "decision D-021 opened: WebKit service worker vs NFR-01"
+    },
+    {
+      "at": "2026-10-13T08:06:30+00:00",
+      "event": "decision D-021 answered: Amend NFR-01: browser's own install/update fetches of the tool's own files allowed"
+    },
+    {
+      "at": "2026-10-13T08:06:30+00:00",
+      "event": "decision D-022 opened: Syntax colouring threshold"
+    },
+    {
+      "at": "2026-10-13T08:06:30+00:00",
+      "event": "decision D-022 answered: Keep 10 MB; accept lag 2-10 MB (NFR-02 exception)"
+    },
+    {
+      "at": "2026-10-13T08:06:30+00:00",
+      "event": "decision D-023 opened: F-007 download-blocked requirement"
+    },
+    {
+      "at": "2026-10-13T08:06:31+00:00",
+      "event": "decision D-023 answered: Deprecate F-007.R5/AC6; Copy fallback covers it"
+    },
+    {
+      "at": "2026-10-13T08:06:47+00:00",
+      "event": "gate design passed: 44 boards (D1-D4), Workbench; audits converged; a11y contrast+targets pass; D-017..D-020"
     }
   ],
-  "updated": "2026-10-13T08:05:22+00:00",
+  "updated": "2026-10-13T08:06:47+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

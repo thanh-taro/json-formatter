@@ -19,7 +19,7 @@ the status bar, auto-dismisses).
 |---|---|
 | progress bar | progress text + bar + COPY-action.cancel (loading, formatting, exporting); toolbar controls stay in place, disabled |
 | info bar | e.g. COPY-notice.large, COPY-notice.undo_trimmed, COPY-notice.no_indent, COPY-notice.multiple_files; dismissible |
-| error bar | file errors offer COPY-action.open to try another file; e.g. COPY-error.encoding, COPY-error.too_large, COPY-error.not_a_file, COPY-error.download, COPY-error.clipboard; dismissible |
+| error bar | file errors offer COPY-action.open to try another file; e.g. COPY-error.encoding, COPY-error.too_large, COPY-error.not_a_file, COPY-error.clipboard; dismissible |
 | toast | e.g. COPY-toast.copied; disappears after 2 s; never the only signal for errors |
 
 ## Behavior

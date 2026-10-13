@@ -15,3 +15,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - D1 round 2: accessible-name copy (COPY-label.toolbar/view/issues/tree), singular-form notes, Clear disabled on empty document.
 - D2 design review: tree actions move to a selected-row header bar (D-018); editor soft-wraps under 600 px and jump scrolls horizontally (D-019); tree checking progress/cancel; too-large switch; confirm title; file-error recovery action.
 - D2 round 2: narrow status bar keeps size/lines via COPY-status.size_lines_short (F-005.R6).
+- Spike decisions: NFR-01 allows the browser's own offline-cache install/update fetches of the tool's own files (D-021, SP-iframe WebKit); NFR-02 exception for colouring 2–10 MB (D-022, SP-editor); F-007.R5/AC6 deprecated — sandbox download blocks are undetectable (D-023, SP-iframe).
