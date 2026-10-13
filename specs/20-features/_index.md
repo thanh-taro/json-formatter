@@ -2,7 +2,7 @@
 
 | ID | Title | Milestone | Priority | Status |
 |---|---|---|---|---|
-| F-001 | Load a document | M-1 | P0 | ready |
+| F-001 | Load a document | M-1 | P0 | building |
 | F-002 | Beautify a document | M-1 | P0 | ready |
 | F-003 | Minify a document | M-1 | P0 | ready |
 | F-004 | Change indentation without reflow | M-1 | P1 | ready |

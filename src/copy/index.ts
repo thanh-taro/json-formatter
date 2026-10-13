@@ -13,3 +13,14 @@ export function t<Id extends MessageId>(id: Id, ...args: Args<Id>): string {
   if (!params) return text;
   return text.replace(/\{([a-zA-Z]\w*)\}/g, (whole, name: string) => (name in params ? String(params[name]) : whole));
 }
+
+/**
+ * Locale-neutral size for messages such as COPY-notice.large and COPY-confirm.very_large:
+ * bytes below 1 KB, then KB and MB with one decimal (1 KB = 1,000 B, 1 MB = 1,000,000 B;
+ * specs/10-domain/rules.md).
+ */
+export function formatSize(bytes: number): string {
+  if (bytes < 1000) return `${bytes} B`;
+  if (bytes < 1_000_000) return `${(Math.floor(bytes / 100) / 10).toFixed(1)} KB`;
+  return `${(Math.floor(bytes / 100_000) / 10).toFixed(1)} MB`;
+}
