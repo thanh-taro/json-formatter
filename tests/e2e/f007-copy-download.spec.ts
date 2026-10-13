@@ -139,9 +139,15 @@ test.describe('F-007 copy', () => {
     const text = '{\r\n  "id": 9007199254740993,\r\n  "name": "Zoë 😀"\r\n}\r\n';
     await openFile(page, { name: 'crlf.json', mimeType: 'application/json', buffer: Buffer.from(text) });
     await waitIdle(page);
+    // The polite live region exists, empty, before the toast's text is inserted (announced).
+    const region = page.locator('.tk-toasts');
+    await expect(region).toHaveAttribute('aria-live', 'polite');
+    await expect(region).toBeEmpty();
+    const regionBefore = await region.elementHandle();
     await copyButton(page).click();
     await expect(toast(page)).toHaveText(COPY['toast.copied']);
-    await expect(toast(page)).toHaveAttribute('role', 'status');
+    expect(await region.evaluate((el, before) => el === before, regionBefore)).toBe(true);
+    await expect(region).toContainText(COPY['toast.copied']);
     await reportShot(page, 'F-007/copied-toast-dark.png');
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

@@ -1,7 +1,9 @@
 // MOD-IO copy and download (F-007): RULE-10 file names, the clipboard outcomes ("copied",
 // "blocked", or the export's own failure) with a fake clipboard, and the worker export the copy
 // and download use (line ending, progress, cancel).
+import { ChangeSet } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
+import { toolAfter, UndoHistory, type DocFacts, type ToolKind } from '../../src/editor/history';
 import { copyBlob, download, downloadName, type ClipboardEnv } from '../../src/io';
 import { WorkerEngine } from '../../src/worker/engine';
 import type { FromWorker } from '../../src/worker/protocol';
@@ -155,5 +157,55 @@ describe('MOD-Worker export for copy and download', () => {
       type: 'failed',
       reason: 'cancelled',
     });
+  });
+});
+
+describe('RULE-10 after undo and redo (review m2)', () => {
+  /**
+   * MOD-Editor's sequence with its pure parts: a tool operation records the facts before it
+   * (including the most recent tool operation), then sets its own kind; undo/redo apply the
+   * recorded facts through `toolAfter` and record the current ones for the way back.
+   */
+  function editor() {
+    const h = new UndoHistory();
+    let lastTool: ToolKind | null = null;
+    const facts = (): DocFacts => ({ lineEnding: 'lf', sourceName: null, nonBreakBytes: 1, lastTool });
+    const change = ChangeSet.of({ from: 0, to: 1, insert: 'x' }, 1);
+    return {
+      run(tool: ToolKind) {
+        h.record({ kind: 'changes', changes: change, tool, facts: facts(), eol: 'lf', time: 0, group: tool }, false);
+        lastTool = tool;
+      },
+      step(direction: 'undo' | 'redo') {
+        const e = direction === 'undo' ? h.popUndo() : h.popRedo();
+        if (e?.kind !== 'changes' || !e.facts) throw new Error('no tool entry');
+        const inverse = { ...e, facts: facts() };
+        lastTool = toolAfter(lastTool, e.facts);
+        if (direction === 'undo') h.pushRedo(inverse);
+        else h.pushUndo(inverse);
+      },
+      name: () => downloadName(null, lastTool),
+    };
+  }
+
+  it('F-007.AC3 RULE-10 minify then undo names the download after the previous operation; redo restores minified.json', () => {
+    const ed = editor();
+    ed.run('minify');
+    expect(ed.name()).toBe('minified.json');
+    ed.step('undo');
+    expect(ed.name()).toBe('document.json');
+    ed.step('redo');
+    expect(ed.name()).toBe('minified.json');
+
+    const ed2 = editor();
+    ed2.run('beautify');
+    ed2.run('minify');
+    ed2.step('undo');
+    expect(ed2.name()).toBe('formatted.json');
+  });
+
+  it('RULE-10 facts without a tool record (paste, typing) leave the most recent tool operation as it is', () => {
+    expect(toolAfter('minify', { lineEnding: 'lf', sourceName: null, nonBreakBytes: 0 })).toBe('minify');
+    expect(toolAfter('minify', { lineEnding: 'lf', sourceName: null, nonBreakBytes: 0, lastTool: null })).toBe(null);
   });
 });

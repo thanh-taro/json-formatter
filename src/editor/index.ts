@@ -26,7 +26,7 @@ import {
 } from '../core';
 import { t } from '../copy';
 import { textChunks } from './builder';
-import { UndoHistory, type DocFacts, type Entry, type Snapshot, type ToolKind } from './history';
+import { toolAfter, UndoHistory, type DocFacts, type Entry, type Snapshot, type ToolKind } from './history';
 import { ColumnIndex } from './column';
 import { issueMarks, issuePosition, issuesEffect, type IssueMark } from './issues';
 import { createPending, type Pending } from './pending';
@@ -225,7 +225,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   }
 
   const bytesOf = (doc: Text) => documentBytes(nonBreakBytes, doc.lines - 1, lineEnding);
-  const facts = (): DocFacts => ({ lineEnding, sourceName, nonBreakBytes });
+  const facts = (): DocFacts => ({ lineEnding, sourceName, nonBreakBytes, lastTool });
   const snapshotNow = (): Snapshot => ({ blob: observed(options.snapshot()), facts: facts() });
 
   const historyKeys = keymap.of([
@@ -381,6 +381,8 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     lineEnding = next.lineEnding;
     sourceName = next.sourceName;
     nonBreakBytes = next.nonBreakBytes;
+    // Implements: RULE-10 — undo/redo restore the most recent tool operation with the text.
+    lastTool = toolAfter(lastTool, next);
     const nextTier = tierOf(documentBytes(nonBreakBytes, nextDoc.lines - 1, lineEnding));
     const effects = nextTier !== tier ? [tierConf.reconfigure(tierExtension(nextTier, narrow))] : [];
     tier = nextTier;
