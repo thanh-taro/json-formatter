@@ -3,7 +3,17 @@
 // reading in 1 MB `slice().arrayBuffer()` windows, export Blobs. DOM-free and transport-free
 // (`post` is injected) so it runs under Vitest in Node as well as in the module worker.
 import { ChangeSet } from '@codemirror/state';
-import { LineBreakScanner } from '../core';
+import {
+  LineBreakScanner,
+  MB,
+  PositionResolver,
+  positionsOf,
+  resultOf,
+  Validator,
+  type LineEnding,
+  type SkipTable,
+  type ValidationOutcome,
+} from '../core';
 import { Mirror, MirrorBuilder } from './mirror';
 import type { FailReason, FromWorker, JobSpec, TextFacts, ToWorker } from './protocol';
 
@@ -13,14 +23,31 @@ export const SLICE_UNITS = 1 << 20;
 export const READ_BYTES = 1 << 20;
 /** Text forwarded to the main thread per message, at most. */
 const FORWARD_UNITS = 1 << 20;
+/** ADR-0005 §2: validation is immediate below ~1 MB, debounced by idle time above. */
+export const VALIDATE_IMMEDIATE_UNITS = 1 << 20;
+export const VALIDATE_DEBOUNCE_MS = 200;
+/** ADR-0007 §1: the skip table is built during validation in the large tiers (> 10 MB). */
+const SKIP_TABLE_UNITS = 10 * MB;
 
 type Post = (msg: FromWorker, transfer?: Transferable[]) => void;
 
 class Cancelled extends Error {}
+/** The document changed while the job ran: its result would describe stale text (INV-05). */
+class Superseded extends Cancelled {}
 /** The fatal decoder rejected the bytes (RULE-13); only this is reported as `encoding`. */
 class EncodingError extends Error {}
 
 /** Yields to the event loop without the 4 ms timer clamp, so `cancel`/`edit` get through. */
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** `chunk` in pieces of at most one slice of input (mirror chunks may reach 4 M units). */
+function* pieces(chunks: Iterable<string>): Generator<string> {
+  for (const c of chunks) {
+    if (c.length <= SLICE_UNITS) yield c;
+    else for (let i = 0; i < c.length; i += SLICE_UNITS) yield c.slice(i, i + SLICE_UNITS);
+  }
+}
+
 function yieldTick(): Promise<void> {
   return new Promise((resolve) => {
     const ch = new MessageChannel();
@@ -40,6 +67,7 @@ class Slicer {
     private readonly engine: WorkerEngine,
     private readonly jobId: number,
     private readonly onSliceEnd: () => void,
+    private readonly stale: () => boolean = () => false,
   ) {}
 
   /** Call after each unit of work; yields at the end of a slice (≤ 16 ms or ≤ 1 MB of input). */
@@ -50,6 +78,7 @@ class Slicer {
     this.engine.post({ type: 'progress', jobId: this.jobId, fraction: fraction() });
     await yieldTick();
     this.engine.throwIfCancelled(this.jobId);
+    if (this.stale()) throw new Superseded('document changed');
     this.start = performance.now();
     this.units = 0;
   }
@@ -138,8 +167,13 @@ interface QueuedJob {
 export class WorkerEngine {
   mirror: Mirror = Mirror.empty;
   version = 0;
-  /** The result of the last finished load/insert job, until `adopt` or `cancel`. */
-  private pending: { jobId: number; mirror: Mirror } | null = null;
+  /** The result of the last finished load/insert job, until `adopt` or `cancel`; a load also
+   * carries the validation done while reading (ADR-0005 §2). */
+  private pending: { jobId: number; mirror: Mirror; outcome?: ValidationOutcome } | null = null;
+  /** The last validation outcome and the mirror it describes (reused when nothing changed). */
+  private validated: { mirror: Mirror; outcome: ValidationOutcome } | null = null;
+  /** ADR-0007 §1: the skip table of the current mirror, built during validation (for the tree). */
+  skipTable: { mirror: Mirror; table: SkipTable } | null = null;
   private seedBuilder: MirrorBuilder | null = null;
   private readonly cancelled = new Set<number>();
   private readonly inboxes = new Map<number, TextInbox>();
@@ -204,6 +238,7 @@ export class WorkerEngine {
           break;
         }
         this.mirror = this.pending.mirror;
+        if (this.pending.outcome) this.validated = { mirror: this.mirror, outcome: this.pending.outcome };
         this.pending = null;
         this.version = msg.version;
         this.post({ type: 'adopted', jobId: msg.jobId, version: msg.version });
@@ -246,6 +281,9 @@ export class WorkerEngine {
         run = () => this.exportMirror(jobId, doc, job.eol);
         break;
       }
+      case 'validate':
+        run = () => this.validate(jobId, job.version, job.lineEnding);
+        break;
     }
     const key = job.supersedes;
     if (key !== undefined) {
@@ -295,9 +333,11 @@ export class WorkerEngine {
       // ignoreBOM keeps a leading byte-order mark as the first character (RULE-03, RULE-13).
       const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
       const scan = new LineBreakScanner();
-      const builder = new MirrorBuilder();
-      const fwd = new Forwarder(this, jobId);
       const total = source.size;
+      // ADR-0005 §2: validate while reading (with the skip table in the large tiers).
+      const validator = new Validator({ skipTable: total > SKIP_TABLE_UNITS, lengthHint: total });
+      const builder = new MirrorBuilder((text) => validator.feed(text));
+      const fwd = new Forwarder(this, jobId);
       let offset = 0;
       const slicer = new Slicer(this, jobId, () => fwd.flush());
       const decode = (bytes?: Uint8Array): string => {
@@ -324,8 +364,54 @@ export class WorkerEngine {
       take(decode());
       fwd.flush();
       const mirror = builder.finish();
-      this.pending = { jobId, mirror };
+      this.pending = { jobId, mirror, outcome: validator.end() };
       this.post({ type: 'loaded', jobId, facts: factsOf(scan, mirror.length) });
+    } catch (e) {
+      this.fail(jobId, e);
+    }
+  }
+
+  /**
+   * Implements: F-005.R1, F-005.R7 — validates the mirror at `version` in ≤ 16 ms / 1 MB slices
+   * (debounced above ~1 MB), then resolves the reported positions (ENT-Issue). Dropped as soon
+   * as the document changes (INV-05: a result always describes the text it was computed for);
+   * the outcome of an unchanged mirror (e.g. validated while loading) is reused.
+   */
+  private async validate(jobId: number, version: number, lineEnding: LineEnding): Promise<void> {
+    try {
+      const stale = () => this.version !== version;
+      if (stale()) throw new Superseded('document changed');
+      const doc = this.mirror;
+      const total = Math.max(1, doc.length);
+      const slicer = new Slicer(this, jobId, () => undefined, stale);
+      let outcome = this.validated?.mirror === doc ? this.validated.outcome : null;
+      if (!outcome) {
+        if (doc.length > VALIDATE_IMMEDIATE_UNITS) {
+          await sleep(VALIDATE_DEBOUNCE_MS);
+          this.throwIfCancelled(jobId);
+          if (stale()) throw new Superseded('document changed');
+        }
+        const validator = new Validator({ skipTable: doc.length > SKIP_TABLE_UNITS, lengthHint: doc.length });
+        let done = 0;
+        for (const piece of pieces(doc.chunks)) {
+          if (!validator.feed(piece)) break;
+          done += piece.length;
+          await slicer.step(piece.length, () => (0.9 * done) / total);
+        }
+        outcome = validator.end();
+        this.validated = { mirror: doc, outcome };
+      }
+      if (outcome.skipTable) this.skipTable = { mirror: doc, table: outcome.skipTable };
+      const resolver = new PositionResolver(positionsOf(outcome), lineEnding);
+      let done = 0;
+      if (!resolver.done) {
+        for (const piece of pieces(doc.chunks)) {
+          if (resolver.feed(piece)) break;
+          done += piece.length;
+          await slicer.step(piece.length, () => 0.9 + (0.1 * done) / total);
+        }
+      }
+      this.post({ type: 'validation', jobId, version, result: resultOf(outcome, resolver.end()) });
     } catch (e) {
       this.fail(jobId, e);
     }

@@ -1,5 +1,5 @@
 // MOD-Editor — editor engine in a shadow root, tiers, chunked commit, undo history (ADR-0004,
-// ADR-0006). Find (F-010) and issue markers (F-005) plug in later.
+// ADR-0006), issue marks and jump to a position (F-005). Find (F-010) plugs in later.
 import { bracketMatching, syntaxHighlighting } from '@codemirror/language';
 import { json } from '@codemirror/lang-json';
 import { defaultKeymap } from '@codemirror/commands';
@@ -27,10 +27,12 @@ import {
 import { t } from '../copy';
 import { textChunks } from './builder';
 import { UndoHistory, type DocFacts, type Entry, type Snapshot, type ToolKind } from './history';
+import { issueMarks, issuesEffect, type IssueMark } from './issues';
 import { createPending, type Pending } from './pending';
 import { editorTheme, jsonHighlight } from './theme';
 
 export type { DocFacts, Snapshot, ToolKind } from './history';
+export type { IssueMark } from './issues';
 export { DiscardedError } from './pending';
 
 /** Typed input on lines at least this long is applied directly (ADR-0004 direct-input handler). */
@@ -127,6 +129,10 @@ export interface EditorHandle {
   redo(): HistoryStep | null;
   /** The document as strings of ~1 M units with '\n' breaks (worker re-seed). */
   chunks(): Iterable<string>;
+  /** Implements: F-005.R3, F-005.R4 — marks the latest validation's issues (marks follow edits). */
+  setIssues(marks: readonly IssueMark[], invalid: boolean): void;
+  /** Implements: F-005.R5 — moves the cursor to `pos` and scrolls it into view, both ways. */
+  goTo(pos: number): void;
   destroy(): void;
 }
 
@@ -138,6 +144,21 @@ function rangeBytes(doc: Text, from: number, to: number): number {
   let n = 0;
   for (const it = doc.iterRange(from, to); !it.next().done;) if (!it.lineBreak) n += utf8Length(it.value);
   return n;
+}
+
+/** 1-based column in code points of `head` on the line starting at `from` (ENT-Issue columns). */
+function codePointColumn(doc: Text, from: number, head: number): number {
+  let pairs = 0;
+  let high = false;
+  for (const it = doc.iterRange(from, head); !it.next().done;) {
+    const s = it.value;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      if (high && c >= 0xdc00 && c <= 0xdfff) pairs++;
+      high = c >= 0xd800 && c <= 0xdbff;
+    }
+  }
+  return head - from - pairs + 1;
 }
 
 function insertedUnits(changes: ChangeSet): number {
@@ -199,6 +220,17 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   let incomingEol: LineEnding | null = null;
   /** A drag that started inside the editor (moving text): left to the engine. */
   let internalDrag = false;
+  let cursorTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /** Reports the cursor (status bar); on very long lines the code-point count waits for a pause. */
+  function reportCursor(state: EditorState): void {
+    const head = state.selection.main.head;
+    const line = state.doc.lineAt(head);
+    const send = () => options.onCursor?.(line.number, codePointColumn(state.doc, line.from, head));
+    clearTimeout(cursorTimer);
+    if (head - line.from <= LONG_LINE) send();
+    else cursorTimer = setTimeout(send, 150);
+  }
 
   const bytesOf = (doc: Text) => documentBytes(nonBreakBytes, doc.lines - 1, lineEnding);
   const facts = (): DocFacts => ({ lineEnding, sourceName, nonBreakBytes });
@@ -290,12 +322,9 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
         EditorView.contentAttributes.of({ 'aria-label': t('label.editor'), tabindex: '0' }),
         tierConf.of(tierExtension('normal', false)),
         busyConf.of([]),
+        issueMarks,
         EditorView.updateListener.of((u) => {
-          if (u.docChanged || u.selectionSet) {
-            const head = u.state.selection.main.head;
-            const line = u.state.doc.lineAt(head);
-            options.onCursor?.(line.number, head - line.from + 1);
-          }
+          if (u.docChanged || u.selectionSet) reportCursor(u.state);
         }),
       ],
     }),
@@ -601,7 +630,20 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     undo: () => historyStep('undo'),
     redo: () => historyStep('redo'),
     chunks: () => textChunks(view.state.doc),
+    setIssues(marks, invalid) {
+      view.dispatch({ effects: issuesEffect(marks, invalid) });
+    },
+    goTo(pos) {
+      const at = Math.min(Math.max(0, pos), view.state.doc.length);
+      // CMP-Editor: scrolls vertically and horizontally (centred), soft-wrap aware.
+      view.dispatch({
+        selection: { anchor: at },
+        effects: EditorView.scrollIntoView(at, { y: 'center', x: 'center' }),
+      });
+      view.focus();
+    },
     destroy() {
+      clearTimeout(cursorTimer);
       resize.disconnect();
       view.destroy();
     },

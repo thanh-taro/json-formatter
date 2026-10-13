@@ -1,8 +1,8 @@
 // MOD-App state in signals (ADR-0002): document facts (ENT-Document), busy operation with
 // progress and cancel, the notice bar, the confirmation dialog and the drop overlay.
 import { signal } from '@preact/signals';
-import type { LineEnding, Tier } from '../core';
-import type { MessageId } from '../copy';
+import type { LineEnding, Tier, ValidationResult } from '../core';
+import { t, type MessageId } from '../copy';
 
 export interface DocState {
   empty: boolean;
@@ -41,6 +41,18 @@ export interface Bar {
   offerOpen?: boolean;
 }
 
+/**
+ * ENT-Document `validity` and `issues` (F-005.R2, INV-05): `checking` keeps the previous result,
+ * which the UI marks as out of date until the result for the current version arrives.
+ */
+export interface Validation {
+  state: 'empty' | 'checking' | 'valid' | 'invalid';
+  /** The latest result received (for an older version while `checking`). */
+  result: ValidationResult | null;
+  /** The document version this state describes. */
+  version: number;
+}
+
 export interface Confirm {
   bytes: number;
   answer: (proceed: boolean) => void;
@@ -56,6 +68,9 @@ export function createAppState() {
     /** The worker mirror is being re-seeded (ADR-0005 §4): operations wait, the editor is read-only. */
     seeding: signal(false),
     dragging: signal(false),
+    validation: signal<Validation>({ state: 'empty', result: null, version: 0 }),
+    /** Text of the polite status region: validity changes and each new error, once (SCR-Formatter). */
+    announcement: signal(t('status.empty')),
   };
 }
 

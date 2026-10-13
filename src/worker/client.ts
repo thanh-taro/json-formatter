@@ -4,6 +4,7 @@
 // must arrive at least every second; otherwise (or on an `error` event) the worker is
 // terminated and restarted, every running job fails with `internal`, and the owner re-seeds
 // the mirror (callers discard their pending documents, INV-03).
+import type { LineEnding, ValidationResult } from '../core';
 import type { ChangeSetJSON, FailReason, FromWorker, JobSpec, TextFacts, ToWorker } from './protocol';
 
 export class JobFailure extends Error {
@@ -20,8 +21,11 @@ export interface JobHooks {
   onProgress?: (fraction: number) => void;
 }
 
-/** Result of a job: facts for load/insert jobs, a Blob for export jobs. */
-export type JobResult = { type: 'loaded'; facts: TextFacts } | { type: 'blob'; blob: Blob };
+/** Result of a job: facts for load/insert jobs, a Blob for export jobs, a validation result. */
+export type JobResult =
+  | { type: 'loaded'; facts: TextFacts }
+  | { type: 'blob'; blob: Blob }
+  | { type: 'validation'; version: number; result: ValidationResult };
 
 export interface Job {
   readonly jobId: number;
@@ -141,13 +145,18 @@ export class WorkerClient {
         return;
       }
       case 'loaded':
-      case 'blob': {
+      case 'blob':
+      case 'validation': {
         const r = this.running.get(msg.jobId);
         this.running.delete(msg.jobId);
         if (r)
           this.settle(
             r,
-            msg.type === 'loaded' ? { type: 'loaded', facts: msg.facts } : { type: 'blob', blob: msg.blob },
+            msg.type === 'loaded'
+              ? { type: 'loaded', facts: msg.facts }
+              : msg.type === 'blob'
+                ? { type: 'blob', blob: msg.blob }
+                : { type: 'validation', version: msg.version, result: msg.result },
           );
         return;
       }
@@ -211,6 +220,17 @@ export class WorkerClient {
   exportBlob(version: number, eol: '\n' | '\r\n'): Promise<Blob> {
     return this.run({ kind: 'export', version, eol }).result.then((r) =>
       r.type === 'blob' ? r.blob : Promise.reject(new JobFailure('internal')),
+    );
+  }
+
+  /**
+   * Implements: F-005.R1 — validates the document at `version`. A newer request supersedes a
+   * queued one, and the worker drops a running one when the document changes (both settle as
+   * `cancelled`); the caller still ignores results for versions it no longer shows (INV-05).
+   */
+  validate(version: number, lineEnding: LineEnding): Promise<{ version: number; result: ValidationResult }> {
+    return this.run({ kind: 'validate', version, lineEnding, supersedes: 'validate' }).result.then((r) =>
+      r.type === 'validation' ? r : Promise.reject(new JobFailure('internal', `unexpected ${r.type}`)),
     );
   }
 

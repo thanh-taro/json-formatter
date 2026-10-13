@@ -2,7 +2,7 @@
 // thread and the worker, a document version and/or job id on every message. Hand-written, no
 // RPC library. New operations (validate, format, re-indent, tree queries) plug in by adding a
 // `JobSpec` kind with its worker handler and, where needed, a result message.
-import type { BreakCounts } from '../core';
+import type { BreakCounts, LineEnding, ValidationResult } from '../core';
 
 /** `ChangeSet.toJSON()` of @codemirror/state. */
 export type ChangeSetJSON = readonly (number | readonly [number, ...string[]])[];
@@ -19,6 +19,9 @@ export type JobSpec = { supersedes?: string } &
     | { kind: 'insertText'; version: number; from: number; to: number }
     /** UTF-8 Blob of the mirror at `version` (undo snapshots, later copy and download). */
     | { kind: 'export'; version: number; eol: '\n' | '\r\n' }
+    /** Validate the mirror at `version` (F-005.R1): dropped when the document changes first;
+     * `lineEnding` is the document's, for ENT-Issue code-point offsets. */
+    | { kind: 'validate'; version: number; lineEnding: LineEnding }
   );
 
 export type JobKind = JobSpec['kind'];
@@ -57,5 +60,7 @@ export type FromWorker =
   /** A load or insert job finished; its pending mirror waits for `adopt`. */
   | { type: 'loaded'; jobId: number; facts: TextFacts }
   | { type: 'blob'; jobId: number; blob: Blob }
+  /** The result of a `validate` job for `version` (MOD-Worker `validation(version, result)`). */
+  | { type: 'validation'; jobId: number; version: number; result: ValidationResult }
   | { type: 'failed'; jobId: number; reason: FailReason; detail?: string }
   | { type: 'adopted'; jobId: number; version: number };

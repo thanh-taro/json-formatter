@@ -3,7 +3,10 @@
   .tk-formatter {
     display: grid;
     /* --tk-statusbar-height: statusbar.css (taller for coarse pointers). */
-    grid-template-rows: var(--tk-size-toolbar) auto minmax(0, 1fr) var(--tk-statusbar-height, var(--tk-size-statusbar));
+    /* toolbar · notice bar · main area · issue panel (at most size.issuePanelMax) · status bar */
+    grid-template-rows:
+      var(--tk-size-toolbar) auto minmax(0, 1fr) fit-content(var(--tk-size-issue-panel-max))
+      var(--tk-statusbar-height, var(--tk-size-statusbar));
     height: 100%;
   }
 
