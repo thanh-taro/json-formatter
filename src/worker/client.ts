@@ -88,6 +88,9 @@ export class WorkerClient {
     w.addEventListener('error', () => {
       if (w === this.worker) this.restart('worker error');
     });
+    w.addEventListener('messageerror', () => {
+      if (w === this.worker) this.restart('message could not be read');
+    });
     return w;
   }
 
@@ -202,8 +205,10 @@ export class WorkerClient {
     this.send({ type: 'adopt', jobId, version });
   }
 
-  /** UTF-8 Blob of the mirror as it is now (captured when the worker receives the request). */
-  exportBlob(version: number, eol: '\n' | '\r\n' = '\n'): Promise<Blob> {
+  /** UTF-8 Blob of the mirror as it is now (captured when the worker receives the request), its
+   * line breaks written as `eol` — always explicit (undo snapshots use '\n', export uses the
+   * document's line ending, ADR-0006 §3). */
+  exportBlob(version: number, eol: '\n' | '\r\n'): Promise<Blob> {
     return this.run({ kind: 'export', version, eol }).result.then((r) =>
       r.type === 'blob' ? r.blob : Promise.reject(new JobFailure('internal')),
     );

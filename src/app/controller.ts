@@ -3,9 +3,17 @@
 // once, and the worker ↔ editor wiring (architecture.md "Load" data flow).
 import { formatSize, t } from '../copy';
 import { isLargeTier, tierOf, type Tier } from '../core';
-import { createEditor, LARGE_PASTE, type EditorHandle, type LargePaste, type PendingDocument } from '../editor';
+import {
+  createEditor,
+  LARGE_PASTE,
+  type EditorHandle,
+  type LargePaste,
+  type MirrorSync,
+  type PendingDocument,
+  type ReplaceFacts,
+} from '../editor';
 import { installDropTarget, pickFile, type DropKind } from '../io';
-import { JobFailure, WorkerClient, type Job } from '../worker/client';
+import { JobFailure, WorkerClient, type Job, type JobResult } from '../worker/client';
 import type { FailReason } from '../worker/protocol';
 import type { AppState, Bar, Busy } from './state';
 
@@ -26,6 +34,18 @@ const yieldMain = (): Promise<void> =>
 
 class Cancelled extends Error {}
 
+interface BusyHandle {
+  progress: (fraction: number) => void;
+  onCancel: (fn: () => void) => void;
+}
+
+/** Facts for a pending commit from a job's result (generalised for later result kinds). */
+type FactsOf = (result: JobResult) => ReplaceFacts;
+const loadedFacts: FactsOf = (r) => {
+  if (r.type !== 'loaded') throw new JobFailure('internal', `unexpected ${r.type}`);
+  return r.facts;
+};
+
 export class AppController {
   editor: EditorHandle | null = null;
   readonly worker: WorkerClient;
@@ -33,7 +53,11 @@ export class AppController {
   private barSeq = 0;
   private trimmedNoticeShown = false;
   private removeDrop: (() => void) | null = null;
-  private reseeding = false;
+  /** Reasons the editor is read-only (a busy operation, a re-seed); D-005. */
+  private locks = 0;
+  private seeding: Promise<void> | null = null;
+  private seedAgain = false;
+  private progressFrame = 0;
 
   constructor(readonly state: AppState) {
     this.worker = new WorkerClient({ onRestart: () => void this.reseed() });
@@ -43,26 +67,19 @@ export class AppController {
   attach(host: HTMLElement): void {
     if (this.editor) return;
     const editor = createEditor(host, {
-      snapshot: () => this.worker.exportBlob(editor.version),
-      onChange: (e) => {
-        if (e.sync) this.worker.edit(e.version, e.changes.toJSON());
-      },
+      snapshot: () => this.worker.exportBlob(editor.version, '\n'),
+      onChange: (e) => this.sync(e.sync, e.version, e.changes),
       onFacts: () => this.syncFacts(),
       onCursor: (line, column) => (this.state.cursor.value = { line, column }),
       onLargePaste: (p) => void this.largePaste(p),
       onHistoryKey: (direction) => void this.history(direction),
-      onHistoryTrimmed: () => {
-        // Implements: RULE-15 / F-001.AC12 — the user is told once.
-        if (this.trimmedNoticeShown) return;
-        this.trimmedNoticeShown = true;
-        this.showBar({ kind: 'info', id: 'notice.undo_trimmed', text: t('notice.undo_trimmed') });
-      },
+      onHistoryTrimmed: () => this.toldTrimmed(),
     });
     this.editor = editor;
     this.removeDrop = installDropTarget(window, {
       isInEditor: (e) => e.composedPath().includes(host),
       onDrop: (d) => this.drop(d),
-      onOverlay: (on) => (this.state.dragging.value = on && !this.state.busy.value),
+      onOverlay: (on) => (this.state.dragging.value = on && !this.blocked()),
     });
     this.syncFacts();
   }
@@ -72,6 +89,17 @@ export class AppController {
     this.editor?.destroy();
     this.editor = null;
     this.worker.dispose();
+  }
+
+  /** True while an operation runs, the mirror is re-seeded, or a confirmation is open (review m2). */
+  blocked(): boolean {
+    return !!this.state.busy.value || this.state.seeding.value || !!this.state.confirm.value;
+  }
+
+  private sync(how: MirrorSync, version: number, changes: { toJSON(): unknown }): void {
+    if (how === 'edit') this.worker.edit(version, changes.toJSON() as Parameters<WorkerClient['edit']>[1]);
+    else if (how === 'reseed') void this.reseed();
+    // 'adopt': the operation that produced the text adopts its job
   }
 
   // ---- facts, tiers, notices --------------------------------------------------------------
@@ -95,6 +123,13 @@ export class AppController {
     this.tier = tier;
   }
 
+  /** Implements: RULE-15 / F-001.AC12 — the user is told once. */
+  private toldTrimmed(): void {
+    if (this.trimmedNoticeShown) return;
+    this.trimmedNoticeShown = true;
+    this.showBar({ kind: 'info', id: 'notice.undo_trimmed', text: t('notice.undo_trimmed') });
+  }
+
   showBar(bar: Omit<Bar, 'seq'>): void {
     this.state.bar.value = { ...bar, seq: ++this.barSeq };
   }
@@ -103,23 +138,27 @@ export class AppController {
     this.state.bar.value = null;
   }
 
-  private showFailure(reason: FailReason | 'main-memory'): void {
+  private showFailure(reason: FailReason): void {
     if (reason === 'cancelled') return;
     if (reason === 'encoding')
       this.showBar({ kind: 'error', id: 'error.encoding', text: t('error.encoding'), offerOpen: true });
-    // Implements: F-001.R9 — allocation failure, or the worker died (platform-mapping: last resort).
+    // Implements: F-001.R9 — allocation failure, a length check that failed, or the worker died
+    // while reading (platform-mapping: "worker error event as last resort").
     else this.showBar({ kind: 'error', id: 'error.too_large', text: t('error.too_large'), offerOpen: true });
   }
 
   // ---- busy policy (D-005) ---------------------------------------------------------------
 
+  private lock(): void {
+    if (this.locks++ === 0) this.editor?.setBusy(true);
+  }
+  private unlock(): void {
+    if (--this.locks === 0) this.editor?.setBusy(false);
+  }
+
   /** Runs `op` with the busy policy: editor read-only, actions disabled, progress after 0.5 s. */
-  private async run(
-    label: Busy['label'],
-    op: (busy: { progress: (f: number) => void; onCancel: (fn: () => void) => void }) => Promise<void>,
-  ) {
-    if (this.state.busy.value) return;
-    const ed = this.editor!;
+  private async run(label: Busy['label'], op: (busy: BusyHandle) => Promise<void>): Promise<boolean> {
+    if (this.blocked() || !this.editor) return false;
     const cancels: (() => void)[] = [];
     let cancelled = false;
     const busy: Busy = {
@@ -134,7 +173,7 @@ export class AppController {
     };
     this.state.busy.value = busy;
     this.state.dragging.value = false;
-    ed.setBusy(true);
+    this.lock();
     const timer = setTimeout(() => {
       if (this.state.busy.value === busy) this.state.busy.value = { ...busy, visible: true };
     }, PROGRESS_DELAY_MS);
@@ -142,18 +181,25 @@ export class AppController {
       await op({
         progress: (f) => {
           busy.fraction = Math.max(busy.fraction, Math.min(0.99, f));
-          const cur = this.state.busy.value;
-          if (cur && cur.cancel === busy.cancel && cur.visible)
-            this.state.busy.value = { ...cur, fraction: busy.fraction };
+          // throttled to animation frames (platform-mapping)
+          if (this.progressFrame) return;
+          this.progressFrame = requestAnimationFrame(() => {
+            this.progressFrame = 0;
+            const cur = this.state.busy.value;
+            if (cur && cur.cancel === busy.cancel && cur.visible)
+              this.state.busy.value = { ...cur, fraction: busy.fraction };
+          });
         },
         onCancel: (fn) => cancels.push(fn),
       });
+      return true;
     } catch (e) {
-      if (!cancelled)
-        this.showFailure(e instanceof JobFailure ? e.reason : e instanceof RangeError ? 'main-memory' : 'internal');
+      if (!cancelled && !(e instanceof Cancelled))
+        this.showFailure(e instanceof JobFailure ? e.reason : e instanceof RangeError ? 'too-large' : 'internal');
+      return false;
     } finally {
       clearTimeout(timer);
-      ed.setBusy(false);
+      this.unlock();
       this.state.busy.value = null;
     }
   }
@@ -162,11 +208,16 @@ export class AppController {
     this.state.busy.value?.cancel();
   }
 
-  /** Streams a job's chunks into `pending`, commits it as one step and lets the worker adopt it. */
+  /**
+   * Streams a job's chunks into `pending`, commits it as one step and lets the worker adopt it.
+   * Generalised: `factsOf` turns the job's result into the commit facts (loads today; format
+   * results later).
+   */
   private async feed(
     job: Job,
     pending: PendingDocument,
-    busy: { onCancel: (fn: () => void) => void },
+    busy: BusyHandle,
+    factsOf: FactsOf = loadedFacts,
     extra: { sourceName?: string | null } = {},
   ): Promise<void> {
     let cancelled = false;
@@ -176,9 +227,8 @@ export class AppController {
       pending.discard();
     });
     try {
-      const result = await job.result;
-      if (result.type !== 'loaded') throw new JobFailure('internal');
-      const version = await pending.commit({ ...result.facts, ...extra });
+      const facts = factsOf(await job.result);
+      const version = await pending.commit({ ...facts, ...extra });
       this.worker.adopt(job.jobId, version);
     } catch (e) {
       pending.discard();
@@ -205,35 +255,31 @@ export class AppController {
 
   /** Implements: F-001.R2, F-001.R3, F-001.R4, F-001.R5, F-001.R8, F-001.R9; INV-03. */
   async loadFile(file: File): Promise<void> {
-    if (this.state.busy.value || !this.editor) return;
+    if (this.blocked() || !this.editor) return;
     if (tierOf(file.size) === 'very-large' && !(await this.confirmVeryLarge(file.size))) return;
     const ed = this.editor;
     await this.run('progress.loading', async (busy) => {
       const pending = ed.beginReplace('load');
-      let read = 0;
       const total = Math.max(1, file.size);
       const job = this.worker.run(
         { kind: 'loadFile', file },
         {
           onChunk: (text) => pending.append(text),
-          onProgress: (f) => {
-            read = f;
-            busy.progress(Math.min(read, pending.appended / total));
-          },
+          onProgress: (f) => busy.progress(Math.min(f, pending.appended / total)),
         },
       );
-      await this.feed(job, pending, busy, { sourceName: file.name });
+      await this.feed(job, pending, busy, loadedFacts, { sourceName: file.name });
     });
   }
 
   async open(): Promise<void> {
-    if (this.state.busy.value) return;
+    if (this.blocked()) return;
     const file = await pickFile();
     if (file) await this.loadFile(file);
   }
 
   drop(d: DropKind): void {
-    if (this.state.busy.value) return;
+    if (this.blocked()) return; // also while the confirmation is open (security review MINOR-4)
     if (d.kind === 'not-a-file') {
       this.showBar({ kind: 'error', id: 'error.not_a_file', text: t('error.not_a_file'), offerOpen: true });
       return;
@@ -244,22 +290,27 @@ export class AppController {
 
   /** Implements: F-001.R6, F-001.R7 — one undo step. */
   clear(): void {
-    if (this.state.busy.value || !this.editor || this.editor.isEmpty) return;
+    if (this.blocked() || !this.editor || this.editor.isEmpty) return;
     this.editor.clear();
     this.editor.focus();
   }
 
-  /** Implements: F-001.R4 large-paste path (ADR-0006 §2), F-001.AC11. */
+  /** Implements: F-001.R4 large-paste path (ADR-0006 §2), F-001.AC11; also large external drops. */
   async largePaste(p: LargePaste): Promise<void> {
-    if (this.state.busy.value || !this.editor) return;
-    if (tierOf(p.bytesAfter) === 'very-large' && !(await this.confirmVeryLarge(p.bytesAfter))) return;
+    if (this.blocked() || !this.editor) return;
+    if (p.needsConfirm && !(await this.confirmVeryLarge(p.bytesAfter))) return;
     const ed = this.editor;
-    await this.run('progress.exporting', async (busy) => {
+    await this.run('progress.inserting', async (busy) => {
       const pending = ed.beginPaste(p.from, p.to, p.eol);
       const job = this.worker.run({ kind: 'insertText', version: ed.version, from: p.from, to: p.to });
       let stop = false;
       busy.onCancel(() => (stop = true));
       const feeding = this.feed(job, pending, busy);
+      // Review M6: stop streaming as soon as the job settled (failed, cancelled or done).
+      feeding.then(
+        () => (stop = true),
+        () => (stop = true),
+      );
       const text = p.text;
       let t0 = performance.now();
       for (let i = 0; i < text.length && !stop; i += LARGE_PASTE) {
@@ -280,50 +331,82 @@ export class AppController {
 
   /** Implements: F-001.R7, INV-04, RULE-15 — undo/redo; large-tier tool operations reload. */
   async history(direction: 'undo' | 'redo'): Promise<void> {
-    if (this.state.busy.value || !this.editor) return;
+    if (this.blocked() || !this.editor) return;
     const step = direction === 'undo' ? this.editor.undo() : this.editor.redo();
     if (!step || step.kind === 'applied') return;
-    await this.run('progress.exporting', async (busy) => {
+    let cancelled = false;
+    const ok = await this.run('progress.restoring', async (busy) => {
+      busy.onCancel(() => (cancelled = true));
+      let blob: Blob;
       try {
-        const blob = await step.snapshot.blob;
-        const job = this.worker.run(
-          { kind: 'loadBlob', blob },
-          {
-            onChunk: (text) => step.pending.append(text),
-            onProgress: (f) => busy.progress(Math.min(f, step.pending.appended / Math.max(1, blob.size))),
-          },
-        );
-        await this.feed(job, step.pending, busy);
-      } catch (e) {
-        step.abort();
-        throw e;
+        blob = await step.snapshot.blob;
+      } catch {
+        throw new JobFailure('internal', 'snapshot unavailable');
       }
-    });
+      const job = this.worker.run(
+        { kind: 'loadBlob', blob },
+        {
+          onChunk: (text) => step.pending.append(text),
+          onProgress: (f) => busy.progress(Math.min(f, step.pending.appended / Math.max(1, blob.size))),
+        },
+      );
+      await this.feed(job, step.pending, busy);
+    }).catch(() => false);
+    if (!ok) {
+      if (cancelled) step.abort();
+      else {
+        // Review M2: a snapshot that cannot be restored is dropped (with everything older); the
+        // document stays as it is and the user is told that older history is gone.
+        step.drop();
+        if (this.state.bar.value?.kind === 'error') this.dismissBar();
+        this.showBar({ kind: 'info', id: 'notice.undo_trimmed', text: t('notice.undo_trimmed') });
+      }
+    }
     this.editor?.focus();
   }
 
-  /** ADR-0005 §4: after a worker restart, re-seed its mirror from the editor in ≤ 8 ms slices. */
-  private async reseed(): Promise<void> {
-    const ed = this.editor;
-    if (!ed || this.reseeding) return;
-    this.reseeding = true;
-    const wasBusy = !!this.state.busy.value;
-    if (!wasBusy) ed.setBusy(true);
-    try {
-      const version = ed.version;
-      this.worker.seed('begin', version);
-      let t0 = performance.now();
-      for (const text of ed.chunks()) {
-        this.worker.seed('chunk', version, text);
-        if (performance.now() - t0 > SLICE_MS) {
-          await yieldMain();
-          t0 = performance.now();
-        }
-      }
-      this.worker.seed('end', version);
-    } finally {
-      this.reseeding = false;
-      if (!wasBusy && !this.state.busy.value) ed.setBusy(false);
+  /**
+   * ADR-0005 §4 / review M1: (re)builds the worker mirror from the editor in ≤ 8 ms slices.
+   * Serialised: the editor is read-only and every operation is blocked meanwhile; the worker
+   * defers edits, adopts and jobs until the seed ends; a restart during the seed starts it over.
+   */
+  reseed(): Promise<void> {
+    if (this.seeding) {
+      this.seedAgain = true;
+      return this.seeding;
     }
+    const ed = this.editor;
+    if (!ed) return Promise.resolve();
+    this.state.seeding.value = true;
+    this.lock();
+    this.seeding = (async () => {
+      try {
+        do {
+          this.seedAgain = false;
+          const generation = this.worker.restarts;
+          const version = ed.version;
+          this.worker.seed('begin', version);
+          let t0 = performance.now();
+          for (const text of ed.chunks()) {
+            if (this.seedAgain || this.worker.restarts !== generation) break;
+            this.worker.seed('chunk', version, text);
+            if (performance.now() - t0 > SLICE_MS) {
+              await yieldMain();
+              t0 = performance.now();
+            }
+          }
+          if (this.seedAgain || this.worker.restarts !== generation || ed.version !== version) {
+            this.seedAgain = true;
+            continue;
+          }
+          this.worker.seed('end', version);
+        } while (this.seedAgain);
+      } finally {
+        this.seeding = null;
+        this.state.seeding.value = false;
+        this.unlock();
+      }
+    })();
+    return this.seeding;
   }
 }

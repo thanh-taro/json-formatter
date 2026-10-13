@@ -17,6 +17,8 @@ const FORWARD_UNITS = 1 << 20;
 type Post = (msg: FromWorker, transfer?: Transferable[]) => void;
 
 class Cancelled extends Error {}
+/** The fatal decoder rejected the bytes (RULE-13); only this is reported as `encoding`. */
+class EncodingError extends Error {}
 
 /** Yields to the event loop without the 4 ms timer clamp, so `cancel`/`edit` get through. */
 function yieldTick(): Promise<void> {
@@ -115,8 +117,8 @@ function factsOf(scan: LineBreakScanner, length: number): TextFacts {
 
 function reasonOf(e: unknown): FailReason {
   if (e instanceof Cancelled) return 'cancelled';
-  // Implements: RULE-13 — the fatal decoder throws a TypeError on invalid UTF-8.
-  if (e instanceof TypeError) return 'encoding';
+  // Implements: RULE-13 — only failures of the fatal decoder itself (security review MINOR-2).
+  if (e instanceof EncodingError) return 'encoding';
   // Implements: F-001.R9 — allocation failures become "too large" instead of a crash.
   if (e instanceof RangeError) return 'too-large';
   if (e instanceof Error && /memory|allocation/i.test(e.message)) return 'too-large';
@@ -125,6 +127,8 @@ function reasonOf(e: unknown): FailReason {
 
 interface QueuedJob {
   jobId: number;
+  /** Jobs with the same key supersede each other while queued (e.g. validation of stale versions). */
+  key?: string | undefined;
   run: () => Promise<void>;
 }
 
@@ -138,6 +142,9 @@ export class WorkerEngine {
   private readonly inboxes = new Map<number, TextInbox>();
   private readonly queue: QueuedJob[] = [];
   private running = false;
+  private runningJob: number | null = null;
+  /** Messages that arrive while a re-seed is in flight, applied after its `end` (review M1). */
+  private deferred: ToWorker[] = [];
 
   constructor(readonly post: Post) {}
 
@@ -151,24 +158,33 @@ export class WorkerEngine {
   }
 
   handle(msg: ToWorker): void {
+    // While re-seeding, the mirror is incomplete: edits, adopts and jobs wait for the seed `end`.
+    if (this.seedBuilder && msg.type !== 'seed' && msg.type !== 'cancel' && msg.type !== 'text') {
+      this.deferred.push(msg);
+      return;
+    }
     switch (msg.type) {
       case 'job':
         this.enqueue(msg.jobId, msg.job);
         break;
-      case 'text': {
-        let inbox = this.inboxes.get(msg.jobId);
-        if (!inbox) this.inboxes.set(msg.jobId, (inbox = new TextInbox()));
-        inbox.put(msg.text, msg.end);
+      case 'text':
+        // Only for a queued or running insertText job; text for a finished, failed or
+        // cancelled job is dropped at once (review M6).
+        this.inboxes.get(msg.jobId)?.put(msg.text, msg.end);
         break;
-      }
-      case 'cancel':
-        this.cancelled.add(msg.jobId);
-        this.inboxes.get(msg.jobId)?.put('', true);
+      case 'cancel': {
+        const inbox = this.inboxes.get(msg.jobId);
+        this.inboxes.delete(msg.jobId);
+        inbox?.put('', true);
+        const queued = this.queue.some((j) => j.jobId === msg.jobId);
+        // Remembered only while the job still has to see it (review m9: no unbounded set).
+        if (queued || this.runningJob === msg.jobId) this.cancelled.add(msg.jobId);
         if (this.pending?.jobId === msg.jobId) {
           this.pending = null;
           this.post({ type: 'failed', jobId: msg.jobId, reason: 'cancelled' });
         }
         break;
+      }
       case 'edit':
         try {
           this.mirror = this.mirror.apply(ChangeSet.fromJSON(msg.changes));
@@ -180,7 +196,8 @@ export class WorkerEngine {
         break;
       case 'adopt': {
         if (this.pending?.jobId !== msg.jobId) {
-          this.post({ type: 'failed', jobId: msg.jobId, reason: 'internal', detail: 'nothing to adopt' });
+          // The main thread committed text the mirror does not have: re-seed (review m1).
+          this.post({ type: 'failed', jobId: -1, reason: 'internal', detail: 'nothing to adopt' });
           break;
         }
         this.mirror = this.pending.mirror;
@@ -190,12 +207,17 @@ export class WorkerEngine {
         break;
       }
       case 'seed':
-        if (msg.phase === 'begin') this.seedBuilder = new MirrorBuilder();
-        else if (msg.phase === 'chunk') this.seedBuilder?.push(msg.text ?? '');
+        if (msg.phase === 'begin') {
+          this.seedBuilder = new MirrorBuilder();
+          this.pending = null;
+        } else if (msg.phase === 'chunk') this.seedBuilder?.push(msg.text ?? '');
         else if (this.seedBuilder) {
           this.mirror = this.seedBuilder.finish();
           this.version = msg.version;
           this.seedBuilder = null;
+          const later = this.deferred;
+          this.deferred = [];
+          for (const m of later) this.handle(m);
         }
         break;
     }
@@ -211,7 +233,7 @@ export class WorkerEngine {
         run = () => this.load(jobId, job.blob);
         break;
       case 'insertText': {
-        if (!this.inboxes.has(jobId)) this.inboxes.set(jobId, new TextInbox());
+        this.inboxes.set(jobId, new TextInbox());
         run = () => this.insertText(jobId, job.version, job.from, job.to);
         break;
       }
@@ -222,7 +244,15 @@ export class WorkerEngine {
         break;
       }
     }
-    this.queue.push({ jobId, run });
+    const key = job.supersedes;
+    if (key !== undefined) {
+      // Extension point (F-005): newer work of the same kind drops queued stale work.
+      for (const stale of this.queue.filter((j) => j.key === key)) {
+        this.queue.splice(this.queue.indexOf(stale), 1);
+        this.post({ type: 'failed', jobId: stale.jobId, reason: 'cancelled', detail: 'superseded' });
+      }
+    }
+    this.queue.push({ jobId, key, run });
     void this.drain();
   }
 
@@ -231,11 +261,18 @@ export class WorkerEngine {
     this.running = true;
     try {
       for (let job = this.queue.shift(); job; job = this.queue.shift()) {
-        if (this.cancelled.has(job.jobId)) {
+        if (this.cancelled.delete(job.jobId)) {
+          this.inboxes.delete(job.jobId);
           this.post({ type: 'failed', jobId: job.jobId, reason: 'cancelled' });
           continue;
         }
-        await job.run();
+        this.runningJob = job.jobId;
+        try {
+          await job.run();
+        } finally {
+          this.cancelled.delete(job.jobId);
+          this.runningJob = null;
+        }
       }
     } finally {
       this.running = false;
@@ -259,6 +296,13 @@ export class WorkerEngine {
       const total = source.size;
       let offset = 0;
       const slicer = new Slicer(this, jobId, () => fwd.flush());
+      const decode = (bytes?: Uint8Array): string => {
+        try {
+          return bytes ? decoder.decode(bytes, { stream: true }) : decoder.decode();
+        } catch (e) {
+          throw e instanceof TypeError ? new EncodingError(e.message) : e;
+        }
+      };
       const take = (text: string) => {
         if (!text) return;
         scan.feed(text);
@@ -269,11 +313,11 @@ export class WorkerEngine {
         const end = Math.min(total, offset + READ_BYTES);
         const bytes = new Uint8Array(await source.slice(offset, end).arrayBuffer());
         this.throwIfCancelled(jobId);
-        take(decoder.decode(bytes, { stream: true }));
+        take(decode(bytes));
         offset = end;
         await slicer.step(bytes.length, () => offset / total);
       }
-      take(decoder.decode());
+      take(decode());
       fwd.flush();
       const mirror = builder.finish();
       this.pending = { jobId, mirror };

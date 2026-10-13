@@ -172,4 +172,62 @@ describe('MOD-Worker edits, export and large paste', () => {
     expect(h.engine.mirror.toString()).toBe('abc');
     expect(h.engine.version).toBe(5);
   });
+
+  it('F-001.R4 review M6 text for a failed or unknown paste job is not kept in the worker', async () => {
+    const h = harness();
+    // stale version: the job fails at once
+    const paste = h.start({ kind: 'insertText', version: 5, from: 0, to: 0 });
+    await h.engine.idle();
+    expect(h.end(paste)).toMatchObject({ type: 'failed', reason: 'internal' });
+    h.engine.handle({ type: 'text', jobId: paste, text: 'x'.repeat(1000), end: false });
+    h.engine.handle({ type: 'text', jobId: 999, text: 'y', end: true });
+    expect((h.engine as unknown as { inboxes: Map<number, unknown> }).inboxes.size).toBe(0);
+  });
+
+  it('INV-03 review M6 a paste cancelled while queued releases its text', async () => {
+    const h = harness();
+    const exp = h.start({ kind: 'export', version: 0, eol: '\n' });
+    const paste = h.start({ kind: 'insertText', version: 0, from: 0, to: 0 });
+    h.engine.handle({ type: 'text', jobId: paste, text: 'abc', end: false });
+    h.engine.handle({ type: 'cancel', jobId: paste });
+    await h.engine.idle();
+    expect(h.end(exp)?.type).toBe('blob');
+    expect(h.end(paste)).toMatchObject({ type: 'failed', reason: 'cancelled' });
+    const internals = h.engine as unknown as { inboxes: Map<number, unknown>; cancelled: Set<number> };
+    expect(internals.inboxes.size).toBe(0);
+    expect(internals.cancelled.size).toBe(0);
+  });
+
+  it('ADR-0005 review M1 edits and jobs that arrive during a re-seed wait for its end', async () => {
+    const h = harness();
+    h.engine.handle({ type: 'seed', phase: 'begin', version: 3 });
+    h.engine.handle({ type: 'seed', phase: 'chunk', version: 3, text: '[1]' });
+    h.engine.handle({ type: 'edit', version: 4, changes: ChangeSet.of({ from: 1, to: 2, insert: '2' }, 3).toJSON() });
+    const exp = h.start({ kind: 'export', version: 4, eol: '\n' });
+    expect(h.out.filter((m) => m.type === 'failed')).toEqual([]);
+    h.engine.handle({ type: 'seed', phase: 'end', version: 3 });
+    await h.engine.idle();
+    expect(h.engine.mirror.toString()).toBe('[2]');
+    expect(h.engine.version).toBe(4);
+    const m = h.end(exp);
+    if (m?.type === 'blob') expect(await m.blob.text()).toBe('[2]');
+    else expect.fail('no export');
+  });
+
+  it('ADR-0005 review m1 adopting a job the worker does not have asks for a re-seed', () => {
+    const h = harness();
+    h.engine.handle({ type: 'adopt', jobId: 42, version: 9 });
+    expect(h.out.at(-1)).toMatchObject({ type: 'failed', jobId: -1, reason: 'internal' });
+  });
+
+  it('F-001.R1 queued work with the same supersede key is replaced by newer work', async () => {
+    const h = harness();
+    const running = h.start({ kind: 'export', version: 0, eol: '\n' });
+    const stale = h.start({ kind: 'export', version: 0, eol: '\n', supersedes: 'validate' });
+    const fresh = h.start({ kind: 'export', version: 0, eol: '\n', supersedes: 'validate' });
+    await h.engine.idle();
+    expect(h.end(running)?.type).toBe('blob');
+    expect(h.end(stale)).toMatchObject({ type: 'failed', reason: 'cancelled', detail: 'superseded' });
+    expect(h.end(fresh)?.type).toBe('blob');
+  });
 });

@@ -7,16 +7,19 @@ import type { BreakCounts } from '../core';
 /** `ChangeSet.toJSON()` of @codemirror/state. */
 export type ChangeSetJSON = readonly (number | readonly [number, ...string[]])[];
 
-/** Long-running work, one at a time in the worker, each in ≤ 16 ms / 1 MB slices. */
-export type JobSpec =
+/** Long-running work, one at a time in the worker, each in ≤ 16 ms / 1 MB slices. `supersedes`: a newer job with the same key drops queued ones
+ * (`failed(cancelled, 'superseded')`) — the extension point for F-005 validation of stale versions. */
+export type JobSpec = { supersedes?: string } &
   /** Read a chosen or dropped file (F-001.R2/R3): fatal UTF-8 (RULE-13), BOM kept, pending mirror. */
-  | { kind: 'loadFile'; file: Blob }
-  /** Reload a large-tier undo/redo snapshot (ADR-0006 §4); same path as a file. */
-  | { kind: 'loadBlob'; blob: Blob }
-  /** Large paste (ADR-0006 §2): replace [from, to) of the mirror with text streamed by `text` messages. */
-  | { kind: 'insertText'; version: number; from: number; to: number }
-  /** UTF-8 Blob of the mirror at `version` (undo snapshots, later copy and download). */
-  | { kind: 'export'; version: number; eol: '\n' | '\r\n' };
+  (
+    | { kind: 'loadFile'; file: Blob }
+    /** Reload a large-tier undo/redo snapshot (ADR-0006 §4); same path as a file. */
+    | { kind: 'loadBlob'; blob: Blob }
+    /** Large paste (ADR-0006 §2): replace [from, to) of the mirror with text streamed by `text` messages. */
+    | { kind: 'insertText'; version: number; from: number; to: number }
+    /** UTF-8 Blob of the mirror at `version` (undo snapshots, later copy and download). */
+    | { kind: 'export'; version: number; eol: '\n' | '\r\n' }
+  );
 
 export type JobKind = JobSpec['kind'];
 

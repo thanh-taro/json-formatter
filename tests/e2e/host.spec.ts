@@ -186,7 +186,7 @@ test('F-008.AC6 F-008.R5 INV-02 the only message to the host is one ready signal
 test('F-008.AC7 F-008.R6 standalone: the tool works without a host and sends nothing', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('toolbar', { name: 'Document actions' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Open file' })).toBeEnabled();
+  await expect(page.getByRole('toolbar').getByRole('button', { name: 'Open file' })).toBeEnabled();
   await page.getByRole('button', { name: 'Local only' }).click();
   await expect(page.getByRole('dialog')).toContainText('This tool runs entirely in your browser.');
   await page.keyboard.press('Escape');

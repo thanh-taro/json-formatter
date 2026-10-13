@@ -28,7 +28,17 @@ export interface Snapshot {
 
 export type Entry =
   /** Apply `changes` to the current document to get back to the recorded state. */
-  | { kind: 'changes'; changes: ChangeSet; tool: ToolKind | null; facts: DocFacts | null; time: number; group: string }
+  | {
+      kind: 'changes';
+      changes: ChangeSet;
+      tool: ToolKind | null;
+      /** Whole-document facts to restore (tool operations); null for typing. */
+      facts: DocFacts | null;
+      /** The line ending of the recorded state (a paste may have changed it, RULE-17). */
+      eol: LineEnding;
+      time: number;
+      group: string;
+    }
   /** Reload the recorded document from a Blob (large-tier tool operations). */
   | { kind: 'snapshot'; snapshot: Snapshot; tool: ToolKind };
 
@@ -56,6 +66,7 @@ export class UndoHistory {
       last?.kind === 'changes' &&
       last.tool === null &&
       last.group === entry.group &&
+      last.eol === entry.eol &&
       entry.time - last.time < GROUP_DELAY_MS
     ) {
       // entry.changes takes the newest document back to the previous one; last.changes takes
@@ -96,6 +107,16 @@ export class UndoHistory {
   /** After a redo (or an aborted undo): back on the undo stack without clearing redo. */
   pushUndo(entry: Entry): void {
     this.done.push(entry);
+  }
+
+  /**
+   * A snapshot could not be restored (its export or reload failed): the entry was popped and is
+   * not put back; everything older in that direction is unreachable too, so it is dropped
+   * (the document itself is unchanged).
+   */
+  dropBeyond(direction: 'undo' | 'redo'): void {
+    if (direction === 'undo') this.done = [];
+    else this.undone = [];
   }
 
   get canUndo(): boolean {

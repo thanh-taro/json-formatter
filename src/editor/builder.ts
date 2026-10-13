@@ -15,6 +15,7 @@ export class TextBuilder {
   private pendingCR = false;
   private queue: string[] = [];
   private qpos = 0;
+  private failure: Error | null = null;
 
   /** Queues a chunk; `step()` processes it. */
   push(chunk: string): void {
@@ -25,22 +26,41 @@ export class TextBuilder {
     return this.queue.length === 0;
   }
 
-  /** Processes queued input until `budgetMs` is used or the queue is empty; true when empty. */
+  /**
+   * Processes queued input until `budgetMs` is used or the queue is empty; true when empty.
+   * A piece leaves the queue only after it was appended. The first error (e.g. a `RangeError`
+   * when memory runs out) is kept: every later `step`/`finish` throws it, so a text with a piece
+   * missing can never be completed (F-001.R9, INV-03).
+   */
   step(budgetMs = Infinity): boolean {
+    if (this.failure !== null) throw this.failure;
     const t0 = performance.now();
     while (this.queue.length) {
       const head = this.queue[0]!;
       const end = Math.min(head.length, this.qpos + PIECE);
       const piece = this.qpos === 0 && end === head.length ? head : head.slice(this.qpos, end);
+      try {
+        this.append(piece);
+      } catch (e) {
+        this.failure = e instanceof Error ? e : new Error(String(e));
+        throw this.failure;
+      }
       this.qpos = end;
       if (end >= head.length) {
         this.queue.shift();
         this.qpos = 0;
       }
-      this.append(piece);
       if (performance.now() - t0 >= budgetMs) break;
     }
     return this.queue.length === 0;
+  }
+
+  /** Drops everything (a discarded pending document). */
+  clear(): void {
+    this.queue = [];
+    this.qpos = 0;
+    this.carry = [];
+    this.doc = null;
   }
 
   private append(piece: string): void {
@@ -75,6 +95,7 @@ export class TextBuilder {
   /** Completes the text (processes anything still queued). */
   finish(): Text {
     this.step();
+    if (this.failure !== null) throw this.failure;
     const last = this.carry.join('');
     this.carry = [];
     const doc = this.doc ? this.doc.append(Text.of(['', last])) : Text.of([last]);

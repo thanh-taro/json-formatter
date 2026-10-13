@@ -15,7 +15,13 @@ export interface DocState {
 
 /** A running operation (busy policy D-005): progress appears after 0.5 s, cancel throughout. */
 export interface Busy {
-  label: 'progress.loading' | 'progress.exporting';
+  label:
+    | 'progress.loading'
+    | 'progress.inserting'
+    | 'progress.restoring'
+    | 'progress.formatting'
+    | 'progress.exporting'
+    | 'progress.tree';
   fraction: number;
   /** True once the operation has run for 0.5 s (NFR-02). */
   visible: boolean;
@@ -47,6 +53,8 @@ export function createAppState() {
     busy: signal<Busy | null>(null),
     bar: signal<Bar | null>(null),
     confirm: signal<Confirm | null>(null),
+    /** The worker mirror is being re-seeded (ADR-0005 §4): operations wait, the editor is read-only. */
+    seeding: signal(false),
     dragging: signal(false),
   };
 }

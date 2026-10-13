@@ -14,53 +14,67 @@ import {
   lineNumbers,
 } from '@codemirror/view';
 import {
-  type BreakCounts,
   documentBytes,
   dominantLineEnding,
   isLargeTier,
   LineBreakScanner,
   tierOf,
   utf8Length,
+  type BreakCounts,
   type LineEnding,
   type Tier,
 } from '../core';
 import { t } from '../copy';
-import { TextBuilder, textChunks } from './builder';
+import { textChunks } from './builder';
 import { UndoHistory, type DocFacts, type Entry, type Snapshot, type ToolKind } from './history';
+import { createPending, type Pending } from './pending';
 import { editorTheme, jsonHighlight } from './theme';
 
 export type { DocFacts, Snapshot, ToolKind } from './history';
-export { textChunks } from './builder';
+export { DiscardedError } from './pending';
 
 /** Typed input on lines at least this long is applied directly (ADR-0004 direct-input handler). */
 export const LONG_LINE = 100_000;
-/** Pastes longer than this (UTF-16 units) go through the chunked builder (ADR-0006 §2). */
+/** Pastes and external drops longer than this (UTF-16 units) go through the chunked builder (ADR-0006 §2). */
 export const LARGE_PASTE = 1 << 20;
-/** Main-thread append slice (architecture.md tunables). */
-const APPEND_SLICE_MS = 8;
+/** History steps inserting more than this re-seed the worker instead of posting the change set (NFR-02). */
+const RESEED_UNITS = 1 << 20;
 /** Width under which the normal tier soft-wraps (D-019). */
 const NARROW_PX = 600;
 
 /** Facts of a text the owner read or built (from the worker). */
 export interface LoadedFacts {
+  /** Length in editor positions of the resulting document, checked on commit. */
+  length: number;
   breaks: BreakCounts;
   nonBreakBytes: number;
 }
 
+/** How the worker mirror follows a document change. */
+export type MirrorSync =
+  /** post `changes` as an edit */
+  | 'edit'
+  /** the owner adopts the job that produced the text */
+  | 'adopt'
+  /** too big to post in one message: the owner re-seeds the mirror in slices */
+  | 'reseed';
+
 export interface ChangeEvent {
   version: number;
   changes: ChangeSet;
-  /** True when the worker mirror must apply `changes`; false when the owner adopts a job. */
-  sync: boolean;
+  sync: MirrorSync;
 }
 
+/** Pasted or externally dropped text the editor did not apply itself. */
 export interface LargePaste {
   text: string;
   from: number;
   to: number;
-  /** UTF-8 size of the document after the paste (RULE-02). */
+  /** UTF-8 size of the document after the insertion (RULE-02). */
   bytesAfter: number;
-  /** The document's line ending after the paste (RULE-17). */
+  /** True when the insertion makes the document cross into the very-large tier (RULE-02). */
+  needsConfirm: boolean;
+  /** The document's line ending after the insertion (RULE-17). */
   eol: LineEnding;
 }
 
@@ -72,7 +86,7 @@ export interface EditorOptions {
   /** Document facts changed (size, tier, line ending, source name). */
   onFacts?: () => void;
   onCursor?: (line: number, column: number) => void;
-  /** A paste the editor did not apply: over 1 MB, or one that needs the RULE-02 confirmation. */
+  /** An insertion the editor did not apply: over 1 MB, or one that needs the RULE-02 confirmation. */
   onLargePaste?: (paste: LargePaste) => void;
   /** Undo/redo keys: the owner runs the step (it may be a reload, ADR-0006 §4). */
   onHistoryKey?: (direction: 'undo' | 'redo') => void;
@@ -80,25 +94,19 @@ export interface EditorOptions {
   onHistoryTrimmed?: () => void;
 }
 
+export type ReplaceFacts = LoadedFacts & { sourceName?: string | null };
+
 /** Text arriving in chunks, shown only when complete (ADR-0006 §1, INV-03). */
-export interface PendingDocument {
-  append(text: string): void;
-  /** UTF-16 units appended so far. */
-  readonly appended: number;
-  /** Waits for the builder, then replaces the document in one transaction (one undo step). */
-  commit(facts: LoadedFacts & { sourceName?: string | null }): Promise<number>;
-  /** Drops the pending text; the visible document was never touched. */
-  discard(): void;
-}
+export type PendingDocument = Pending<ReplaceFacts>;
 
 export type HistoryStep =
   | { kind: 'applied' }
-  /** A large-tier tool operation: the owner reloads `snapshot.blob` into `pending`, then commits
-   * (or discards and calls `abort`, which puts the entry back). */
-  | { kind: 'reload'; snapshot: Snapshot; pending: PendingDocument; abort: () => void };
+  /** A large-tier tool operation: the owner reloads `snapshot.blob` into `pending` and commits.
+   * On cancel it calls `abort` (the entry goes back); when the snapshot cannot be restored it
+   * calls `drop` (the entry and everything older are dropped, the document is unchanged). */
+  | { kind: 'reload'; snapshot: Snapshot; pending: PendingDocument; abort: () => void; drop: () => void };
 
 export interface EditorHandle {
-  readonly view: EditorView;
   readonly version: number;
   readonly tier: Tier;
   readonly bytes: number;
@@ -125,21 +133,23 @@ export interface EditorHandle {
 type Origin = 'tool' | 'undo' | 'redo' | 'paste';
 const origin = Annotation.define<Origin>();
 
-const yieldMain = (): Promise<void> =>
-  new Promise((resolve) => {
-    const ch = new MessageChannel();
-    ch.port1.onmessage = () => {
-      ch.port1.close();
-      resolve();
-    };
-    ch.port2.postMessage(0);
-  });
-
 /** UTF-8 bytes of the non-break text in [from, to) of `doc`. */
 function rangeBytes(doc: Text, from: number, to: number): number {
   let n = 0;
   for (const it = doc.iterRange(from, to); !it.next().done;) if (!it.lineBreak) n += utf8Length(it.value);
   return n;
+}
+
+function insertedUnits(changes: ChangeSet): number {
+  let n = 0;
+  changes.iterChanges((_a, _b, _c, _d, inserted) => (n += inserted.length));
+  return n;
+}
+
+/** A snapshot whose rejection is observed (no unhandled rejection); awaiting it still rejects. */
+function observed(blob: Promise<Blob>): Promise<Blob> {
+  blob.catch(() => undefined);
+  return blob;
 }
 
 // Implements: ADR-0004 direct-input handler — typing on lines ≥ 100,000 characters (not while
@@ -185,9 +195,14 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   let tier: Tier = 'normal';
   let narrow = false;
   let activePending = 0;
+  /** Line ending to adopt with the next paste/drop transaction the engine dispatches (RULE-17). */
+  let incomingEol: LineEnding | null = null;
+  /** A drag that started inside the editor (moving text): left to the engine. */
+  let internalDrag = false;
 
   const bytesOf = (doc: Text) => documentBytes(nonBreakBytes, doc.lines - 1, lineEnding);
   const facts = (): DocFacts => ({ lineEnding, sourceName, nonBreakBytes });
+  const snapshotNow = (): Snapshot => ({ blob: observed(options.snapshot()), facts: facts() });
 
   const historyKeys = keymap.of([
     { key: 'Mod-z', run: () => (options.onHistoryKey?.('undo'), true), preventDefault: true },
@@ -195,34 +210,66 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     { key: 'Mod-y', run: () => (options.onHistoryKey?.('redo'), true), preventDefault: true },
   ]);
 
-  // Implements: F-001.R4 (large paste path), RULE-17 for pastes, ADR-0006 §2.
-  const pasteHandler = EditorView.domEventHandlers({
+  /**
+   * Implements: F-001.R4 (large paste path), RULE-02, RULE-17 for pastes and external text drops
+   * (ADR-0006 §2). Returns true when the insertion was taken over (the event must be cancelled).
+   */
+  function incoming(view: EditorView, text: string, from: number, to: number): boolean {
+    const doc = view.state.doc;
+    const whole = from === 0 && to === doc.length;
+    const selBreaks = doc.lineAt(to).number - doc.lineAt(from).number;
+    const kept = whole ? 0 : nonBreakBytes - rangeBytes(doc, from, to);
+    const scan = new LineBreakScanner();
+    scan.feed(text);
+    scan.end();
+    // RULE-17: the document's line ending is the dominant one after the insertion (ties → LF).
+    const keptBreaks = whole ? 0 : doc.lines - 1 - selBreaks;
+    const counts = { ...scan.counts };
+    if (lineEnding === 'crlf') counts.crlf += keptBreaks;
+    else counts.lf += keptBreaks;
+    const eol = dominantLineEnding(counts);
+    const bytesAfter = documentBytes(kept + scan.nonBreakBytes, keptBreaks + scan.breaks, eol);
+    // RULE-02: confirm only when the insertion makes the document exceed 100 MB.
+    const needsConfirm = tierOf(bytesAfter) === 'very-large' && tier !== 'very-large';
+    if (text.length > LARGE_PASTE || needsConfirm) {
+      options.onLargePaste?.({ text, from, to, bytesAfter, needsConfirm, eol });
+      return true;
+    }
+    incomingEol = eol; // the engine applies the insertion right after this handler
+    queueMicrotask(() => (incomingEol = null));
+    return false;
+  }
+
+  const insertionHandlers = EditorView.domEventHandlers({
     paste(event, view) {
       if (view.state.readOnly) return false;
       const text = event.clipboardData?.getData('text/plain');
       if (!text) return false;
       const sel = view.state.selection.main;
-      const doc = view.state.doc;
-      const whole = sel.from === 0 && sel.to === doc.length;
-      const selBreaks = doc.lineAt(sel.to).number - doc.lineAt(sel.from).number;
-      const kept = whole ? 0 : nonBreakBytes - rangeBytes(doc, sel.from, sel.to);
-      const scan = new LineBreakScanner();
-      scan.feed(text);
-      scan.end();
-      // RULE-17: the document's line ending is the dominant one after the paste (ties → LF).
-      const keptBreaks = whole ? 0 : doc.lines - 1 - selBreaks;
-      const counts = { ...scan.counts };
-      if (lineEnding === 'crlf') counts.crlf += keptBreaks;
-      else counts.lf += keptBreaks;
-      const eolAfter = dominantLineEnding(counts);
-      const bytesAfter = documentBytes(kept + scan.nonBreakBytes, keptBreaks + scan.breaks, eolAfter);
-      if (text.length > LARGE_PASTE || tierOf(bytesAfter) === 'very-large') {
-        event.preventDefault();
-        options.onLargePaste?.({ text, from: sel.from, to: sel.to, bytesAfter, eol: eolAfter });
-        return true;
-      }
-      lineEnding = eolAfter; // the engine applies the paste right after this handler
+      if (!incoming(view, text, sel.from, sel.to)) return false;
+      event.preventDefault();
+      return true;
+    },
+    dragstart() {
+      internalDrag = true;
       return false;
+    },
+    dragend() {
+      internalDrag = false;
+      return false;
+    },
+    // Security review MINOR-3: external text drops follow the same size rules as pastes.
+    drop(event, view) {
+      if (internalDrag || view.state.readOnly) {
+        internalDrag = false;
+        return false;
+      }
+      const text = event.dataTransfer?.getData('text/plain');
+      if (!text) return false;
+      const pos = view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.head;
+      if (!incoming(view, text, pos, pos)) return false;
+      event.preventDefault();
+      return true;
     },
   });
 
@@ -237,7 +284,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
         historyKeys,
         keymap.of(defaultKeymap),
         directInput,
-        pasteHandler,
+        insertionHandlers,
         editorTheme,
         // tabindex makes the scroll region's focusable content explicit (axe scrollable-region-focusable).
         EditorView.contentAttributes.of({ 'aria-label': t('label.editor'), tabindex: '0' }),
@@ -259,8 +306,13 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
         if (!tr.docChanged) continue;
         version++;
         if (tr.annotation(origin)) continue; // bookkeeping done by the caller
+        // A user edit: typing, small paste or drop, cut, drag within the text.
         userEdit = true;
-        // A user edit: typing, small paste, cut, drag within the text.
+        const eolBefore = lineEnding;
+        if (incomingEol && (tr.isUserEvent('input.paste') || tr.isUserEvent('input.drop'))) {
+          lineEnding = incomingEol;
+          incomingEol = null;
+        }
         tr.changes.iterChanges((fromA, toA, _fromB, _toB, inserted) => {
           if (toA > fromA)
             nonBreakBytes -=
@@ -279,11 +331,12 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
           changes: tr.changes.invert(tr.startState.doc),
           tool: null,
           facts: null,
+          eol: eolBefore,
           time: Date.now(),
           group,
         };
         history.record(entry, isLargeTier(tierOf(bytesOf(tr.state.doc))));
-        options.onChange?.({ version, changes: tr.changes, sync: true });
+        options.onChange?.({ version, changes: tr.changes, sync: 'edit' });
       }
       if (userEdit) afterChange();
     },
@@ -324,14 +377,20 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     return ChangeSet.of({ from: 0, to: len, insert: text }, len);
   }
 
+  /** Security review MAJOR-1: the committed text must have the length the worker built. */
+  function verifyLength(actual: number, expected: number): void {
+    if (actual !== expected) throw new RangeError(`document length ${actual} ≠ ${expected}`);
+  }
+
   function undoEntryFor(tool: ToolKind, changes: ChangeSet): Entry {
     // Implements: ADR-0006 §4 — in the large tiers the previous document is kept only as a Blob.
-    if (isLargeTier(tier)) return { kind: 'snapshot', snapshot: { blob: options.snapshot(), facts: facts() }, tool };
+    if (isLargeTier(tier)) return { kind: 'snapshot', snapshot: snapshotNow(), tool };
     return {
       kind: 'changes',
       changes: changes.invert(view.state.doc),
       tool,
       facts: facts(),
+      eol: lineEnding,
       time: Date.now(),
       group: tool,
     };
@@ -341,44 +400,14 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     if (history.record(entry, isLargeTier(tier))) options.onHistoryTrimmed?.();
   }
 
-  function makePending(
-    onCommit: (text: Text, loaded: LoadedFacts & { sourceName?: string | null }) => void,
-  ): PendingDocument {
-    const builder = new TextBuilder();
+  /** A pending document that only the latest `begin…` may commit. */
+  function pending(onCommit: (text: Text, loaded: ReplaceFacts) => void): PendingDocument {
     const id = ++activePending;
-    let appended = 0;
-    let discarded = false;
-    let pumping: Promise<void> | null = null;
-    const pump = async () => {
-      while (!discarded && !builder.step(APPEND_SLICE_MS)) await yieldMain();
-    };
-    const kick = () => {
-      if (!pumping) pumping = pump().finally(() => (pumping = null));
-    };
-    return {
-      get appended() {
-        return appended;
-      },
-      append(text) {
-        if (discarded) return;
-        appended += text.length;
-        builder.push(text);
-        kick();
-      },
-      async commit(loaded) {
-        while (pumping || !builder.idle) {
-          kick();
-          await pumping;
-        }
-        if (discarded || id !== activePending) throw new Error('pending document was discarded');
-        const text = builder.finish();
-        onCommit(text, loaded);
-        return version;
-      },
-      discard() {
-        discarded = true;
-      },
-    };
+    return createPending<ReplaceFacts>((text, loaded) => {
+      if (id !== activePending) throw new Error('a newer pending document exists');
+      onCommit(text, loaded);
+      return version;
+    });
   }
 
   function historyStep(direction: 'undo' | 'redo'): HistoryStep | null {
@@ -388,57 +417,72 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     const keep = (e: Entry) => (direction === 'undo' ? history.pushRedo(e) : history.pushUndo(e));
     const how: Origin = direction;
     if (entry.kind === 'changes') {
-      const inverse =
+      const inverse: Entry =
         entry.tool && isLargeTier(tier)
-          ? ({ kind: 'snapshot', snapshot: { blob: options.snapshot(), facts: facts() }, tool: entry.tool } as Entry)
-          : ({
+          ? { kind: 'snapshot', snapshot: snapshotNow(), tool: entry.tool }
+          : {
               kind: 'changes',
               changes: entry.changes.invert(view.state.doc),
               tool: entry.tool,
               facts: entry.tool ? facts() : null,
+              eol: lineEnding,
               time: 0,
               group: how,
-            } as Entry);
+            };
       if (entry.facts) applyTool(entry.changes, entry.facts, how);
       else {
         const before = view.state.doc;
+        let bytes = nonBreakBytes;
         entry.changes.iterChanges((fromA, toA, _fromB, _toB, inserted) => {
-          if (toA > fromA) nonBreakBytes -= rangeBytes(before, fromA, toA);
-          if (inserted.length) nonBreakBytes += rangeBytes(inserted, 0, inserted.length);
+          if (toA > fromA) bytes -= rangeBytes(before, fromA, toA);
+          if (inserted.length) bytes += rangeBytes(inserted, 0, inserted.length);
         });
         const head = entry.changes.mapPos(view.state.selection.main.head);
-        applyTool(entry.changes, facts(), how, head);
+        // Review M3: undoing a paste restores the line ending it replaced (RULE-17).
+        applyTool(entry.changes, { lineEnding: entry.eol, sourceName, nonBreakBytes: bytes }, how, head);
       }
       keep(inverse);
-      options.onChange?.({ version, changes: entry.changes, sync: true });
+      // Review m6: a large in-memory restore is re-seeded in slices instead of one big message.
+      options.onChange?.({
+        version,
+        changes: entry.changes,
+        sync: insertedUnits(entry.changes) > RESEED_UNITS ? 'reseed' : 'edit',
+      });
       return { kind: 'applied' };
     }
     // Snapshot entry: a reload through the builder (ADR-0006 §4), run by the owner.
     const current = facts();
     const redoSnapshot: Entry | null = isLargeTier(tier)
-      ? { kind: 'snapshot', snapshot: { blob: options.snapshot(), facts: current }, tool: entry.tool }
+      ? { kind: 'snapshot', snapshot: snapshotNow(), tool: entry.tool }
       : null;
-    const pending = makePending((text, loaded) => {
+    const pend = pending((text, loaded) => {
+      verifyLength(text.length, loaded.length);
       const changes = replaceAll(text);
       const inverse: Entry = redoSnapshot ?? {
         kind: 'changes',
         changes: changes.invert(view.state.doc),
         tool: entry.tool,
         facts: current,
+        eol: current.lineEnding,
         time: 0,
         group: how,
       };
       applyTool(changes, { ...entry.snapshot.facts, nonBreakBytes: loaded.nonBreakBytes }, how);
       keep(inverse);
-      options.onChange?.({ version, changes, sync: false });
+      options.onChange?.({ version, changes, sync: 'adopt' });
     });
     return {
       kind: 'reload',
       snapshot: entry.snapshot,
-      pending,
+      pending: pend,
       abort: () => {
-        pending.discard();
+        pend.discard();
         putBack(entry);
+      },
+      // Review M2: an unrestorable snapshot is not put back (it would fail again).
+      drop: () => {
+        pend.discard();
+        history.dropBeyond(direction);
       },
     };
   }
@@ -453,7 +497,6 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   resize.observe(host);
 
   return {
-    view,
     get version() {
       return version;
     },
@@ -505,7 +548,8 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     },
     // Implements: ADR-0006 §1 chunked commit; INV-03 (discard leaves the document untouched); INV-04.
     beginReplace(kind) {
-      return makePending((text, loaded) => {
+      return pending((text, loaded) => {
+        verifyLength(text.length, loaded.length);
         const changes = replaceAll(text);
         const entry = undoEntryFor(kind, changes);
         applyTool(
@@ -518,12 +562,13 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
           'tool',
         );
         record(entry);
-        options.onChange?.({ version, changes, sync: false });
+        options.onChange?.({ version, changes, sync: 'adopt' });
       });
     },
     beginPaste(from, to, eol) {
-      return makePending((text, loaded) => {
+      return pending((text, loaded) => {
         const doc = view.state.doc;
+        verifyLength(doc.length - (to - from) + text.length, loaded.length);
         const changes = ChangeSet.of({ from, to, insert: text }, doc.length);
         const whole = from === 0 && to === doc.length;
         const kept = whole ? 0 : nonBreakBytes - rangeBytes(doc, from, to);
@@ -532,6 +577,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
           changes: changes.invert(doc),
           tool: null,
           facts: null,
+          eol: lineEnding,
           time: 0,
           group: 'paste',
         };
@@ -542,7 +588,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
           from + text.length,
         );
         record(entry);
-        options.onChange?.({ version, changes, sync: false });
+        options.onChange?.({ version, changes, sync: 'adopt' });
       });
     },
     clear() {
@@ -550,7 +596,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
       const entry = undoEntryFor('clear', changes);
       applyTool(changes, { lineEnding: 'lf', sourceName: null, nonBreakBytes: 0 }, 'tool');
       record(entry);
-      options.onChange?.({ version, changes, sync: true });
+      options.onChange?.({ version, changes, sync: 'edit' });
     },
     undo: () => historyStep('undo'),
     redo: () => historyStep('redo'),

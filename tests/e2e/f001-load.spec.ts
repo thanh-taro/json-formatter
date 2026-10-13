@@ -16,6 +16,7 @@ import {
   recordNotices,
   seamWorker,
   smallFixture,
+  killWorker,
   waitIdle,
 } from './load-helpers';
 
@@ -327,45 +328,146 @@ test.describe('F-001 size tiers (RULE-02)', () => {
     await expect(app(page)).toHaveAttribute('data-bytes', String(120 * MB), { timeout: 120_000 });
   });
 
-  test('F-001.R4 ADR-0006 a 2 MB paste goes through the chunked path and is one undo step', async ({ page }) => {
+  test('F-001.R4 ADR-0006 a 2 MB paste goes through the chunked path with COPY-progress.inserting and is one undo step', async ({
+    page,
+  }) => {
+    await seamWorker(page, { slowMs: 600 });
     await start(page);
     await paste(page, '[]');
     await page.keyboard.press('ControlOrMeta+a');
     await paste(page, { repeat: '[10,\r\n2]', times: (2 * MB) / 8 });
+    await expect(page.getByRole('status').filter({ hasText: /^Adding pasted text… \d+%/ })).toBeVisible();
     await waitIdle(page);
     await expect(app(page)).toHaveAttribute('data-bytes', String(2 * MB));
     await expect(app(page)).toHaveAttribute('data-line-ending', 'crlf');
     await content(page).focus();
     await page.keyboard.press('ControlOrMeta+z');
     await expect.poll(() => docText(page)).toBe('[]');
+    // review M3: undoing the paste restores the line ending it replaced (RULE-17)
+    await expect(app(page)).toHaveAttribute('data-line-ending', 'lf');
+    await expect(app(page)).toHaveAttribute('data-bytes', '2');
   });
 
-  test('F-001.AC12 RULE-15 after 4 tool operations on 30 MB documents only the last 3 undo; COPY-notice.undo_trimmed once', async ({
+  test('F-001.R4 RULE-02 a 2 MB text dropped from outside the editor takes the chunked path', async ({ page }) => {
+    await start(page);
+    await paste(page, '[]');
+    await content(page).evaluate((el) => {
+      const dt = new DataTransfer();
+      dt.setData('text/plain', ' '.repeat(2_000_000));
+      const r = el.getBoundingClientRect();
+      el.dispatchEvent(
+        new DragEvent('drop', {
+          dataTransfer: dt,
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          clientX: r.left + 2,
+          clientY: r.top + 2,
+        }),
+      );
+    });
+    await waitIdle(page);
+    await expect(app(page)).toHaveAttribute('data-bytes', String(2_000_002));
+  });
+
+  test('F-001.AC12 RULE-15 with 5 loads of 30 MB only the last 3 undo; COPY-notice.undo_trimmed shown once; COPY-progress.restoring', async ({
     page,
   }) => {
     test.setTimeout(300_000);
-    const files = ['A', 'B', 'C', 'D'].map((l) => largeFixture(`undo${l}`, 30 * MB + l.charCodeAt(0)));
+    const labels = ['A', 'B', 'C', 'D', 'E'];
+    const files = labels.map((l) => largeFixture(`undo${l}`, 30 * MB + l.charCodeAt(0)));
+    await seamWorker(page, { slowMs: 15 });
     await start(page);
     for (const f of files) {
       await openFile(page, f);
       await waitIdle(page);
     }
-    await expect(page.locator('.cm-line').nth(1)).toHaveText('  {"fixture": "undoD"},');
+    await expect(page.locator('.cm-line').nth(1)).toHaveText('  {"fixture": "undoE"},');
     await expect(page.getByRole('status').filter({ hasText: COPY['notice.undo_trimmed'] })).toBeVisible();
     await page.screenshot({ path: '.build-my-app/reports/build/F-001/undo-trimmed.png', caret: 'initial' });
-    for (const label of ['C', 'B', 'A']) {
+    for (const label of ['D', 'C', 'B']) {
       await content(page).focus();
       await page.keyboard.press('ControlOrMeta+z');
+      if (label === 'D') await expect(page.getByRole('status').filter({ hasText: /^Restoring… \d+%/ })).toBeVisible();
       await waitIdle(page);
       await expect(page.locator('.cm-line').nth(1)).toHaveText(`  {"fixture": "undo${label}"},`, { timeout: 60_000 });
       await expect(app(page)).toHaveAttribute('data-bytes', String(30 * MB + label.charCodeAt(0)));
     }
-    // a 4th undo has nothing left: the first load was dropped
+    // a 4th undo has nothing left: the loads before C were dropped (two trims, one notice)
     await content(page).focus();
     await page.keyboard.press('ControlOrMeta+z');
     await waitIdle(page);
-    await expect(page.locator('.cm-line').nth(1)).toHaveText('  {"fixture": "undoA"},');
+    await expect(page.locator('.cm-line').nth(1)).toHaveText('  {"fixture": "undoB"},');
     expect((await notices(page)).filter((n) => n === 'notice.undo_trimmed')).toHaveLength(1);
+  });
+
+  test('ADR-0005 F-001.R9 after a silent worker death the mirror is re-seeded and undo restores the right text', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    const big = largeFixture('reseed', 30 * MB);
+    await seamWorker(page, {});
+    await start(page);
+    await openFile(page, big);
+    await expect(app(page)).toHaveAttribute('data-bytes', String(30 * MB), { timeout: 60_000 });
+    await waitIdle(page);
+    await killWorker(page);
+    // an edit the dead worker never sees
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+Home');
+    await page.keyboard.type('X');
+    // the next job gets no answer: the watchdog restarts the worker, re-seeds, and fails the job
+    await openFile(page, { name: 'small.json', mimeType: 'application/json', buffer: Buffer.from('[1]') });
+    await expect(page.getByRole('alert').filter({ hasText: COPY['error.too_large'] })).toBeVisible({ timeout: 10_000 });
+    await waitIdle(page);
+    await expect(page.locator('.cm-line').first()).toHaveText('X[');
+    // the new worker works; its snapshot of the previous (re-seeded) document is exact
+    await openFile(page, { name: 'small.json', mimeType: 'application/json', buffer: Buffer.from('[1]') });
+    await waitIdle(page);
+    await expect.poll(() => docText(page)).toBe('[1]');
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+z');
+    await waitIdle(page);
+    await expect(page.locator('.cm-line').first()).toHaveText('X[', { timeout: 60_000 });
+    await expect(app(page)).toHaveAttribute('data-bytes', String(30 * MB + 1));
+  });
+
+  test('RULE-02 security review MINOR-4 a second file dropped while the confirmation is open is ignored', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const file = largeFixture('verylarge', 150 * MB);
+    await start(page);
+    await paste(page, '{"small": true}');
+    await openFile(page, file);
+    const dialog = page.getByRole('dialog', { name: COPY['confirm.title'] });
+    await expect(dialog).toBeVisible();
+    await drop(page, 'body', [{ name: 'other.json', text: '[2]' }]);
+    await dialog.getByRole('button', { name: COPY['action.cancel'] }).click();
+    await waitIdle(page);
+    await expect.poll(() => docText(page)).toBe('{"small": true}');
+  });
+});
+
+test.describe('F-001 keyboard', () => {
+  test('F-001.R3 CMP-Toolbar arrow keys move between actions with one Tab stop', async ({ page }) => {
+    await start(page);
+    await paste(page, '[1]');
+    const toolbar = page.getByRole('toolbar');
+    const open = toolbar.getByRole('button', { name: COPY['action.open'] });
+    const clear = toolbar.getByRole('button', { name: COPY['action.clear'] });
+    await open.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(clear).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(open).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(toolbar.getByRole('button', { name: COPY['action.download'] })).toBeFocused();
+    await page.keyboard.press('Home');
+    await expect(open).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(toolbar.getByRole('button', { name: COPY['action.download'] })).toBeFocused();
+    expect(await toolbar.locator('[tabindex="0"]').count()).toBe(1);
   });
 });
 

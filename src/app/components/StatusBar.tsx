@@ -2,7 +2,9 @@
 // F-009.R1 (privacy statement always visible), F-009.R2 (details popover, dismissible),
 // F-009 edge case "narrow" (icon labelled COPY-privacy.badge_label).
 // Validity, size and lines arrive with F-005.
+import type { Signal } from '@preact/signals';
 import { t } from '../../copy';
+import type { DocState } from '../state';
 import { Icon } from './Icon';
 
 const DETAILS_ID = 'tk-privacy-details';
@@ -10,17 +12,17 @@ const LABEL_ID = 'tk-privacy-label';
 const TITLE_ID = 'tk-privacy-title';
 
 interface Props {
-  empty: boolean;
-  cursor: { line: number; column: number };
+  doc: Signal<DocState>;
+  cursor: Signal<{ line: number; column: number }>;
 }
 
-export function StatusBar({ empty, cursor }: Props) {
+export function StatusBar({ doc, cursor }: Props) {
   return (
     <footer class="tk-statusbar">
       <span class="tk-statusbar__validity" role="status">
-        {empty ? t('status.empty') : ''}
+        {doc.value.empty ? t('status.empty') : ''}
       </span>
-      <span class="tk-statusbar__facts">{t('status.cursor', cursor)}</span>
+      <span class="tk-statusbar__facts">{t('status.cursor', cursor.value)}</span>
       <PrivacyStatement />
     </footer>
   );

@@ -47,6 +47,7 @@ export function NoticeBar({ app }: { app: AppController }) {
         class={`tk-notice tk-notice--${bar.kind}`}
         role={bar.kind === 'error' ? 'alert' : 'status'}
         data-notice-id={bar.id}
+        data-notice-seq={bar.seq}
         onKeyDown={onKeyDown}
       >
         <Icon name="alert" class="tk-notice__icon" />

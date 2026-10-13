@@ -117,11 +117,14 @@ export async function recordNotices(page: Page) {
   await page.addInitScript(() => {
     const w = window as unknown as { __notices: string[] };
     w.__notices = [];
-    const seen = new WeakSet<Element>();
+    const seen = new Set<string>();
     new MutationObserver(() => {
+      // one entry per time a notice was shown (a bar hidden by a progress bar and shown again
+      // keeps its sequence number)
       for (const el of document.querySelectorAll('[data-notice-id]')) {
-        if (seen.has(el)) continue;
-        seen.add(el);
+        const key = `${el.getAttribute('data-notice-id') ?? ''}#${el.getAttribute('data-notice-seq') ?? ''}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
         w.__notices.push(el.getAttribute('data-notice-id') ?? '');
       }
     }).observe(document, { childList: true, subtree: true });
@@ -133,13 +136,21 @@ export const notices = (page: Page) => page.evaluate(() => (window as unknown as
 /**
  * Test-side worker seam (no product hook): wraps `Worker` so that
  * - `slowMs`: every message from the worker is delivered `slowMs` later, in order (a slow read);
- * - `tooLarge`: a `loadFile` job for a file of that name fails as if the device ran out of memory.
+ * - `tooLarge`: a `loadFile` job for a file of that name fails as if the device ran out of memory;
+ * - every instance is listed in `window.__workers`, so `killWorker` can end one silently (WebKit
+ *   under memory pressure, ADR-0005 §4).
  */
 export async function seamWorker(page: Page, opts: { slowMs?: number; tooLarge?: string }) {
   await page.addInitScript((o) => {
     const Native = window.Worker;
+    const list: Worker[] = [];
+    (window as unknown as { __workers: Worker[] }).__workers = list;
     class Seamed extends Native {
       private queue: Promise<void> = Promise.resolve();
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super(url, options);
+        list.push(this);
+      }
       override addEventListener(
         type: string,
         listener: EventListenerOrEventListenerObject,
@@ -174,4 +185,9 @@ export async function seamWorker(page: Page, opts: { slowMs?: number; tooLarge?:
     }
     window.Worker = Seamed;
   }, opts);
+}
+
+/** Terminates the current worker without any event: the app only notices through its watchdog. */
+export async function killWorker(page: Page) {
+  await page.evaluate(() => (window as unknown as { __workers: Worker[] }).__workers.at(-1)?.terminate());
 }

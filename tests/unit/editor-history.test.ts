@@ -15,6 +15,7 @@ const typing = (time: number, group = 'type', before = 0): Entry => ({
   changes: ChangeSet.of({ from: before, to: before + 1 }, before + 1),
   tool: null,
   facts: null,
+  eol: 'lf',
   time,
   group,
 });
@@ -55,7 +56,10 @@ describe('RULE-15 undo history', () => {
     const h = new UndoHistory();
     const doc = Text.of(['{"a":1}']);
     const load = ChangeSet.of({ from: 0, to: 0, insert: doc }, 0);
-    h.record({ kind: 'changes', changes: load.invert(Text.empty), tool: 'load', facts, time: 0, group: 'load' }, false);
+    h.record(
+      { kind: 'changes', changes: load.invert(Text.empty), tool: 'load', facts, eol: 'lf', time: 0, group: 'load' },
+      false,
+    );
     h.record(typing(1000, 'type', 7), false);
     h.record(typing(1100, 'type', 8), false);
     h.record(typing(1200, 'type', 9), false);
@@ -71,5 +75,15 @@ describe('RULE-15 undo history', () => {
     expect(h.canRedo).toBe(true);
     h.record(typing(0), false);
     expect(h.canRedo).toBe(false);
+  });
+
+  it('INV-04 review M2 an unrestorable snapshot is dropped with everything older, not put back', () => {
+    const h = new UndoHistory();
+    h.record(blobEntry('load', 'A'), true);
+    h.record(blobEntry('load', 'B'), true);
+    const e = h.popUndo();
+    expect(e).toBeDefined();
+    h.dropBeyond('undo');
+    expect(h.canUndo).toBe(false);
   });
 });
