@@ -1,11 +1,12 @@
 // Implements: CMP-Toolbar — load group wired (F-001: COPY-action.open, COPY-action.clear);
 // "empty document" and "busy" states; toolbar keyboard model (WAI-ARIA APG: one Tab stop,
-// Left/Right arrows move between enabled controls, Home/End go to the first/last). The other
-// actions arrive with F-002…F-010.
+// Left/Right arrows move between enabled controls, Home/End go to the first/last); beautify,
+// minify and the indent selector (F-002, F-003). The other actions arrive with F-004…F-010.
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../../copy';
 import type { AppController } from '../controller';
 import { Icon } from './Icon';
+import { IndentSelector } from './IndentSelector';
 
 const controlsOf = (bar: HTMLElement) =>
   [...bar.querySelectorAll<HTMLButtonElement | HTMLSelectElement>('button, select')].filter((c) => !c.disabled);
@@ -81,23 +82,16 @@ export function Toolbar({ app }: { app: AppController }) {
         </button>
       </div>
       <div class="tk-toolbar__group">
-        <button type="button" class="tk-button" disabled={off}>
+        <button type="button" class="tk-button" disabled={off} onClick={() => void app.format('beautify')}>
           {t('action.beautify')}
         </button>
-        <button type="button" class="tk-button" disabled={off}>
+        <button type="button" class="tk-button" disabled={off} onClick={() => void app.format('minify')}>
           {t('action.minify')}
         </button>
         <button type="button" class="tk-button" disabled={off}>
           {t('action.reindent')}
         </button>
-        <label class="tk-select">
-          <span class="tk-visually-hidden">{t('label.indent')}</span>
-          <select disabled={off}>
-            <option value="2">{t('indent.spaces2')}</option>
-            <option value="4">{t('indent.spaces4')}</option>
-            <option value="tab">{t('indent.tab')}</option>
-          </select>
-        </label>
+        <IndentSelector app={app} disabled={off} />
       </div>
       <div class="tk-toolbar__group" role="group" aria-label={t('label.view')}>
         <button type="button" class="tk-button" aria-pressed="true" disabled={off}>

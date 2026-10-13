@@ -2,7 +2,16 @@
 // undo contract (MOD-App "run(operation)"), the RULE-02 tiers and confirmation, notices shown
 // once, and the worker ↔ editor wiring (architecture.md "Load" data flow).
 import { formatCount, formatSize, hintFor, t, tCount } from '../copy';
-import { isLargeTier, tierOf, type Issue, type Tier, type ValidationResult } from '../core';
+import {
+  beautifiedBytes,
+  isLargeTier,
+  tierOf,
+  type FormatMode,
+  type IndentStyle,
+  type Issue,
+  type Tier,
+  type ValidationResult,
+} from '../core';
 import {
   createEditor,
   LARGE_PASTE,
@@ -53,6 +62,10 @@ interface BusyHandle {
 type FactsOf = (result: JobResult) => ReplaceFacts;
 const loadedFacts: FactsOf = (r) => {
   if (r.type !== 'loaded') throw new JobFailure('internal', `unexpected ${r.type}`);
+  return r.facts;
+};
+const formattedFacts: FactsOf = (r) => {
+  if (r.type !== 'formatted') throw new JobFailure('internal', `unexpected ${r.type}`);
   return r.facts;
 };
 
@@ -439,6 +452,88 @@ export class AppController {
     if (this.blocked() || !this.editor || this.editor.isEmpty) return;
     this.editor.clear();
     this.editor.focus();
+  }
+
+  // ---- beautify / minify (F-002, F-003) ----------------------------------------------------
+
+  /** Implements: RULE-01 / F-002.R2 — the indent selector (2 or 4 spaces, tab, custom 1–8). */
+  setIndent(style: IndentStyle): void {
+    this.state.indent.value = style;
+  }
+
+  /**
+   * Implements: F-002.R1–R7, F-003.R1–R5; INV-03, INV-04, RULE-02 — beautifies or
+   * minifies the whole document in the worker. The validation of the current text decides first:
+   * an invalid document stays unchanged and its first error is shown and focused; a beautify
+   * whose result (predicted from that validation) would exceed 100 MB is confirmed first. The
+   * result streams into a pending document, committed as one undo step (Blob snapshot in the
+   * large tiers, ADR-0006); cancel or failure leaves the document as it was. Busy policy D-005
+   * throughout: read-only editor, actions disabled, progress after 0.5 s, cancel.
+   */
+  async format(kind: 'beautify' | 'minify'): Promise<void> {
+    const ed = this.editor;
+    if (this.blocked() || !ed || ed.isEmpty) return;
+    const version = ed.version;
+    const result = await this.validationOf(version);
+    if (!result || this.editor !== ed || ed.version !== version) return;
+    if (result.validity !== 'valid') {
+      // F-002.R4 / F-003.R3 / INV-03: unchanged; the first error is shown (issue panel) and focused.
+      this.jumpTo(0);
+      return;
+    }
+    const mode: FormatMode = kind === 'beautify' ? { kind, indent: this.state.indent.value } : { kind };
+    const lineEnding = ed.lineEnding;
+    const nonBreakBytes = ed.bytes - (ed.lineCount - 1) * (lineEnding === 'crlf' ? 2 : 1);
+    if (mode.kind === 'beautify' && result.layout) {
+      // Implements: RULE-02 / F-002.R7 / F-002.AC10 — confirm a result over 100 MB; declining keeps the document.
+      const bytes = beautifiedBytes(result.layout, nonBreakBytes, mode.indent, lineEnding);
+      if (tierOf(bytes) === 'very-large' && !(await this.confirmVeryLarge(bytes))) return;
+      if (this.editor !== ed || ed.version !== version) return;
+    }
+    await this.run('progress.formatting', async (busy) => {
+      // RULE-10: committed as tool operation `kind` (the editor records the most recent one).
+      const pending = ed.beginReplace(kind);
+      const job = this.worker.run(
+        { kind: 'format', version, mode, lineEnding, nonBreakBytes },
+        { onChunk: (text) => this.append(pending, job, text), onProgress: (f) => busy.progress(f) },
+      );
+      // RULE-10: a formatted document keeps the name of the file it came from.
+      await this.feed(job, pending, busy, formattedFacts, { sourceName: ed.sourceName });
+    });
+  }
+
+  /**
+   * The validation result of the document at `version`: the shown one when it is current,
+   * otherwise computed now under the busy policy (the worker reuses a finished pass); null when
+   * cancelled or failed.
+   */
+  private async validationOf(version: number): Promise<ValidationResult | null> {
+    const shown = this.state.validation.value;
+    if (shown.version === version && shown.result && (shown.state === 'valid' || shown.state === 'invalid'))
+      return shown.result;
+    const ed = this.editor;
+    if (!ed) return null;
+    let result: ValidationResult | null = null;
+    await this.run('progress.formatting', async (busy) => {
+      const job = this.worker.run(
+        {
+          kind: 'validate',
+          version,
+          lineEnding: ed.lineEnding,
+          skipTable: isLargeTier(tierOf(ed.bytes)),
+          supersedes: 'validate',
+        },
+        { onProgress: (f) => busy.progress(f) },
+      );
+      busy.onCancel(() => job.cancel());
+      const r = await job.result;
+      if (r.type !== 'validation') throw new JobFailure('internal', `unexpected ${r.type}`);
+      if (this.editor?.version !== r.version) return;
+      clearTimeout(this.checkingTimer);
+      this.showValidation({ state: stateOf(r.result), result: r.result, version: r.version });
+      result = r.result;
+    });
+    return result;
   }
 
   /** Implements: F-001.R4 large-paste path (ADR-0006 §2), F-001.AC11; also large external drops. */

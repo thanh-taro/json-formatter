@@ -1,7 +1,7 @@
 // MOD-App state in signals (ADR-0002): document facts (ENT-Document), busy operation with
 // progress and cancel, the notice bar, the confirmation dialog and the drop overlay.
 import { signal } from '@preact/signals';
-import type { LineEnding, Tier, ValidationResult } from '../core';
+import type { IndentStyle, LineEnding, Tier, ValidationResult } from '../core';
 import { t, type MessageId } from '../copy';
 
 export interface DocState {
@@ -68,6 +68,9 @@ export function createAppState() {
     /** The worker mirror is being re-seeded (ADR-0005 §4): operations wait, the editor is read-only. */
     seeding: signal(false),
     dragging: signal(false),
+    /** The indent style chosen in CMP-Toolbar's indent selector (RULE-01, default 2 spaces);
+     * shared by beautify (F-002) and re-indent (F-004). */
+    indent: signal<IndentStyle>({ kind: 'spaces', width: 2 }),
     validation: signal<Validation>({ state: 'empty', result: null, version: 0 }),
     /** Text of the polite status region: validity changes and each new error, once (SCR-Formatter). */
     announcement: signal(t('status.empty')),

@@ -21,9 +21,10 @@ export interface JobHooks {
   onProgress?: (fraction: number) => void;
 }
 
-/** Result of a job: facts for load/insert jobs, a Blob for export jobs, a validation result. */
+/** Result of a job: facts for load/insert/format jobs, a Blob for export jobs, a validation result. */
 export type JobResult =
   | { type: 'loaded'; facts: TextFacts }
+  | { type: 'formatted'; facts: TextFacts }
   | { type: 'blob'; blob: Blob }
   | { type: 'validation'; version: number; result: ValidationResult };
 
@@ -145,6 +146,7 @@ export class WorkerClient {
         return;
       }
       case 'loaded':
+      case 'formatted':
       case 'blob':
       case 'validation': {
         const r = this.running.get(msg.jobId);
@@ -152,8 +154,8 @@ export class WorkerClient {
         if (r)
           this.settle(
             r,
-            msg.type === 'loaded'
-              ? { type: 'loaded', facts: msg.facts }
+            msg.type === 'loaded' || msg.type === 'formatted'
+              ? { type: msg.type, facts: msg.facts }
               : msg.type === 'blob'
                 ? { type: 'blob', blob: msg.blob }
                 : { type: 'validation', version: msg.version, result: msg.result },
