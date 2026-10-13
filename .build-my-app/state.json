@@ -53,7 +53,7 @@
     "build": {
       "title": "4 Implementation",
       "status": "in_progress",
-      "step": "4 wave 1: F-001 | F-008+F-009 building (worktrees)",
+      "step": "4 wave 2: F-005 building",
       "gate": {
         "status": "pending",
         "at": null,
@@ -1076,9 +1076,17 @@
     {
       "at": "2026-10-13T14:01:41+00:00",
       "event": "loop build-F-001 ended: converged"
+    },
+    {
+      "at": "2026-10-13T14:02:51+00:00",
+      "event": "build step: 4 wave 2: F-005 building"
+    },
+    {
+      "at": "2026-10-13T14:02:51+00:00",
+      "event": "Wave 1 done: F-001, F-009 shipped; F-008 building (AC6/AC7 later)"
     }
   ],
-  "updated": "2026-10-13T14:01:41+00:00",
+  "updated": "2026-10-13T14:02:51+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
