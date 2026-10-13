@@ -28,7 +28,8 @@ import {
   type ContainerRef,
   type TreeItem,
 } from '../core';
-import { geometry, RowModel, type RNode, type Row } from './rowmodel';
+import { restoreExpansion, snapshotOf, type ExpansionSnapshot } from './expansion';
+import { geometry, RowModel, type Cont, type RNode, type Row } from './rowmodel';
 
 /** What MOD-Tree needs from the rest of the app (worker, clipboard, editor, app state). */
 export interface TreeDeps {
@@ -227,6 +228,10 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
   let frame = 0;
   let rowH = 24;
   let ownFocus = false;
+  /** The expansion of a tree that is not shown (invalid or failed in between, F-006 edge case). */
+  let kept: ExpansionSnapshot | null = null;
+  const virtualTop = () =>
+    model ? geometry(model.total, rowH, viewport.clientHeight, viewport.scrollTop).virtualTop : 0;
 
   const nodeId = (n: RNode) => {
     let id = nodeIds.get(n);
@@ -735,55 +740,80 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
         box.append(label, track.track, cancel);
       });
     }, PROGRESS_DELAY_MS);
-    job.root.then(
-      async (rootItem) => {
+    // F-006 edge case: the expansion, selection and scroll of the previous tree, by path
+    const snap = model ? snapshotOf(model, cursor, selected, virtualTop()) : kept;
+    const fail = (e: unknown) => {
+      if (opening !== op) return;
+      clearTimeout(buildTimer);
+      opening = null;
+      buildMessage = null;
+      const reason = (e as { reason?: string }).reason ?? 'internal';
+      // superseded by a newer version: that version's show() builds again
+      if (reason === 'cancelled') {
+        if (!model) setMode('none');
+        return;
+      }
+      if (model) kept = snapshotOf(model, cursor, selected, virtualTop());
+      model = null;
+      version = -1;
+      setStale(false);
+      // Implements: F-006.R8 / F-006.AC11 — the device cannot hold the tree: COPY-tree.too_large.
+      if (reason === 'too-large') {
+        setMode('too-large');
+        showMessage((box) => {
+          box.append(icon('text', 'tk-tree__message-icon'), el('p', 'tk-tree__message-text', t('tree.too_large')));
+          const text = el('button', 'tk-button tk-button--outline', t('view.text'));
+          text.type = 'button';
+          text.addEventListener('click', () => deps.showText());
+          box.append(text);
+        });
+        return;
+      }
+      // Review F-006 M2: never stuck building — COPY-error.failed in the text view; the next
+      // version (or switching back) builds again.
+      setMode('none');
+      deps.failed(reason);
+    };
+    job.root
+      .then(async (rootItem) => {
         const m = new RowModel(rootItem);
         const rootNode = m.expandInitial();
+        const load = async (c: Cont, block: number) => {
+          if (opening !== op) throw Object.assign(new Error('replaced'), { reason: 'cancelled' });
+          m.put(c.s, block, await deps.children(v, { s: c.s, e: c.e, n: c.n, kind: c.kind }, block * GROUP, GROUP));
+        };
         if (rootNode && rootNode.g === 1) {
-          const c = rootNode.cont;
-          m.put(c.s, 0, await deps.children(v, { s: c.s, e: c.e, n: c.n, kind: c.kind }, 0, GROUP));
+          await load(rootNode.cont, 0);
           m.expandChildren(rootNode);
+        }
+        let at: { node: RNode; entry: number } | null = null;
+        try {
+          if (snap) at = await restoreExpansion(m, snap, load);
+        } catch (e) {
+          // a failed fetch only ends the replay early; a replaced build stops here
+          if ((e as { reason?: string }).reason === 'cancelled') throw e;
         }
         if (opening !== op) return;
         clearTimeout(buildTimer);
         opening = null;
         buildMessage = null;
+        kept = null;
         model = m;
         version = v;
-        cursor = { node: m.top, entry: 0 };
-        selected = false;
+        cursor = at ?? { node: m.top, entry: 0 };
+        selected = !!at && !!snap?.selected;
         inflight.clear();
         for (const p of pool) p.sig = '';
         hideFallback();
         setMode('tree');
         setStale(false);
-        viewport.scrollTop = 0;
         readRowHeight();
+        viewport.scrollTop = 0;
         render();
-      },
-      (e: unknown) => {
-        if (opening !== op) return;
-        clearTimeout(buildTimer);
-        opening = null;
-        const reason = (e as { reason?: string }).reason ?? 'internal';
-        if (reason === 'cancelled') return;
-        model = null;
-        // Implements: F-006.R8 / F-006.AC11 — the device cannot hold the tree: COPY-tree.too_large.
-        if (reason === 'too-large') {
-          setMode('too-large');
-          showMessage((box) => {
-            box.append(icon('text', 'tk-tree__message-icon'), el('p', 'tk-tree__message-text', t('tree.too_large')));
-            const text = el('button', 'tk-button tk-button--outline', t('view.text'));
-            text.type = 'button';
-            text.addEventListener('click', () => deps.showText());
-            box.append(text);
-          });
-          return;
-        }
-        setMode('none');
-        deps.failed(reason);
-      },
-    );
+        viewport.scrollTop = geometry(m.total, rowH, viewport.clientHeight, 0).toScroll(snap?.top ?? 0);
+        render();
+      })
+      .catch(fail);
   }
 
   function collapseAll(): void {
@@ -830,6 +860,7 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
     },
     showInvalid(location) {
       stopBuilding();
+      if (model) kept = snapshotOf(model, cursor, selected, virtualTop());
       model = null;
       version = -1;
       setStale(false);

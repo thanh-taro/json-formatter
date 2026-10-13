@@ -43,8 +43,8 @@ export const VALIDATE_IMMEDIATE_UNITS = 1 << 20;
 export const VALIDATE_DEBOUNCE_MS = 200;
 /** ADR-0007 §2: background checkpoint fill runs in slices of at most this long. */
 export const FILL_SLICE_MS = 8;
-/** Children scanned per checkpoint-fill step (a few hundred KB at most). */
-const FILL_STEP = 1000;
+/** Positions scanned per checkpoint-fill step (~1 ms of scanning; ADR-0007 §2). */
+const FILL_UNITS = 1 << 18;
 
 type Post = (msg: FromWorker, transfer?: Transferable[]) => void;
 
@@ -801,8 +801,8 @@ export class WorkerEngine {
       const stale = () => this.version !== version;
       const slicer = new Slicer(this, jobId, () => undefined, stale);
       while (!index.ready(c, from)) {
-        index.fill(c, FILL_STEP);
-        await slicer.step(0, () => 0);
+        index.fill(c, FILL_UNITS);
+        await slicer.step(FILL_UNITS, () => 0);
       }
       const rows = index.children(c, from, Math.min(count, GROUP));
       this.post({ type: 'treeRows', jobId, version, rows });
@@ -838,7 +838,7 @@ export class WorkerEngine {
     const t0 = performance.now();
     while (this.fillStack.length && performance.now() - t0 < FILL_SLICE_MS) {
       const c = this.fillStack[this.fillStack.length - 1]!;
-      if (tree.index.fill(c, FILL_STEP)) this.fillStack.pop();
+      if (tree.index.fill(c, FILL_UNITS)) this.fillStack.pop();
     }
     this.scheduleFill();
   }

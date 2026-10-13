@@ -59,9 +59,13 @@ const clipboard = (page: Page) => page.evaluate(() => window.__clip?.writes.at(-
  * Test-side worker seam (no product hook): while `window.__hold` is true, results of the kinds
  * listed are held back and delivered by `window.__release()`; `treeTooLarge` fails every tree
  * job as if the device ran out of memory; `slowTree` delays the tree's root by that many ms
- * while reporting progress (a long structural pass).
+ * while reporting progress (a long structural pass); `failChildren` fails that many children
+ * queries with `internal` (e.g. a worker restart).
  */
-async function treeSeam(page: Page, opts: { hold?: string[]; treeTooLarge?: boolean; slowTree?: number }) {
+async function treeSeam(
+  page: Page,
+  opts: { hold?: string[]; treeTooLarge?: boolean; slowTree?: number; failChildren?: number },
+) {
   await page.addInitScript((o) => {
     const Native = window.Worker;
     const held: (() => void)[] = [];
@@ -69,8 +73,8 @@ async function treeSeam(page: Page, opts: { hold?: string[]; treeTooLarge?: bool
       window.__hold = false;
       for (const f of held.splice(0)) f();
     };
+    let failChildren = o.failChildren ?? 0;
     class Seamed extends Native {
-      private tree = new Set<number>();
       override addEventListener(
         type: string,
         listener: EventListenerOrEventListenerObject,
@@ -109,6 +113,16 @@ async function treeSeam(page: Page, opts: { hold?: string[]; treeTooLarge?: bool
           const jobId = m.jobId;
           setTimeout(() => {
             this.dispatchEvent(new MessageEvent('message', { data: { type: 'failed', jobId, reason: 'too-large' } }));
+          }, 30);
+          return;
+        }
+        if (failChildren > 0 && m.type === 'job' && m.job?.kind === 'treeChildren') {
+          failChildren--;
+          const jobId = m.jobId;
+          setTimeout(() => {
+            this.dispatchEvent(
+              new MessageEvent('message', { data: { type: 'failed', jobId, reason: 'internal', detail: 'seam' } }),
+            );
           }, 30);
           return;
         }
@@ -465,6 +479,99 @@ test.describe('F-006 tree view', () => {
     await expect(textButton(page)).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('F-006 edge case: Cancel on the checking bar shows the text view', async ({ page }) => {
+    await treeSeam(page, { hold: ['validation'] });
+    await start(page);
+    await openFile(page, { name: 'a.json', mimeType: 'application/json', buffer: Buffer.from('{"a": 1}') });
+    await waitIdle(page);
+    await content(page).click();
+    await page.keyboard.press('End');
+    await page.keyboard.press('ArrowLeft');
+    await paste(page, ', "b": 2');
+    await showTree(page);
+    await row(page, 'b').click();
+    await page.evaluate(() => (window.__hold = true));
+    await page.keyboard.press('Control+z');
+    const cancel = page.locator('.tk-tree__checking').getByRole('button', { name: COPY['action.cancel'] });
+    await expect(cancel).toBeVisible();
+    await cancel.click();
+    await expect(content(page)).toBeVisible();
+    await expect(tree(page)).toBeHidden();
+    await expect(textButton(page)).toHaveAttribute('aria-pressed', 'true');
+    await page.evaluate(() => window.__release?.());
+    expect(await editorText(page)).toBe('{"a": 1}');
+  });
+
+  test('F-006 edge case: undo and redo in the tree keep a deep node expanded and selected (by path)', async ({
+    page,
+  }) => {
+    await start(page);
+    await openFile(page, {
+      name: 'order.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from('{"order": {"items": [{"meta": {"tag": "x"}}, {"meta": {"tag": "y"}}]}}'),
+    });
+    await waitIdle(page);
+    await content(page).click();
+    await page.keyboard.press('Home');
+    await page.keyboard.press('ArrowRight');
+    // one undo step: insert a member at the start of the root
+    await paste(page, '"new": 1, ');
+    await expect(page.locator('.tk-statusbar__validity')).toHaveText(COPY['status.valid']);
+    await showTree(page);
+    await expect(row(page, 'new')).toBeVisible();
+    await twisty(row(page, 'items')).click();
+    await twisty(row(page, '1')).click();
+    await twisty(row(page, 'meta')).click();
+    await row(page, 'tag').click();
+    await expect(header(page).locator('.tk-tree__path')).toHaveText('$.order.items[1].meta.tag');
+    await page.keyboard.press('Control+z');
+    await expect(row(page, 'new')).toHaveCount(0);
+    await expect(row(page, 'tag')).toBeVisible();
+    await expect(row(page, 'meta')).toHaveAttribute('aria-expanded', 'true');
+    await expect(row(page, 'tag')).toHaveAttribute('aria-selected', 'true');
+    await expect(header(page).locator('.tk-tree__path')).toHaveText('$.order.items[1].meta.tag');
+    await page.keyboard.press('Control+Shift+z');
+    await expect(row(page, 'new')).toBeVisible();
+    await expect(row(page, 'tag')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('ADR-0007 §4 NFR-06 when the selected row is scrolled out, the tree is the tab stop and Tab brings the row back', async ({
+    page,
+  }) => {
+    await start(page);
+    const list = Array.from({ length: 90 }, (_, i) => i);
+    await paste(page, JSON.stringify({ a: 'first', list }));
+    await showTree(page);
+    await row(page, 'a').click();
+    await expect(row(page, 'a')).toBeFocused();
+    const viewport = page.locator('.tk-tree__viewport');
+    await viewport.evaluate((el) => (el.scrollTop = el.scrollHeight));
+    await expect(row(page, 'a')).toHaveCount(0);
+    await expect(viewport).toHaveAttribute('tabindex', '0');
+    await expect(page.locator('.tk-tree__row[tabindex="0"]')).toHaveCount(0);
+    await headerButton(page, 'action.collapse_all').focus();
+    await page.keyboard.press('Tab');
+    await expect(row(page, 'a')).toBeFocused();
+    await expect(row(page, 'a')).toBeInViewport();
+    await expect(viewport).toHaveAttribute('tabindex', '-1');
+  });
+
+  test('F-006 review M2 a failing children query shows COPY-error.failed, never a stuck build; the tree opens again later', async ({
+    page,
+  }) => {
+    await treeSeam(page, { failChildren: 1 });
+    await start(page);
+    await paste(page, ORDER);
+    await waitIdle(page);
+    await treeButton(page).click();
+    await expect(page.locator('[data-notice-id="error.failed"]')).toBeVisible();
+    await expect(content(page)).toBeVisible();
+    await expect(page.locator('.tk-tree__progress-label')).toHaveCount(0);
+    await showTree(page);
+    await expect(row(page, 'order')).toBeVisible();
+  });
+
   test('CMP-TreeView narrow coarse layout: icon-only header actions and touch-size rows', async ({
     browser,
     browserName,
@@ -585,6 +692,44 @@ async function scrollFrames(page: Page, ms: number): Promise<{ max: number; fram
   );
 }
 
+/** NFR-04: JS heap of the page and of the worker after garbage collection (Chromium, CDP). */
+async function heapAfterGc(page: Page): Promise<{ main: number; worker: number | null }> {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('HeapProfiler.collectGarbage');
+  const own = (await cdp.send('Runtime.getHeapUsage')) as { usedSize: number; backingStorageSize?: number };
+  const main = own.usedSize + (own.backingStorageSize ?? 0);
+  let worker: number | null = null;
+  try {
+    const { targetInfos } = await cdp.send('Target.getTargets');
+    const w = targetInfos.find((t) => t.type === 'worker');
+    if (w) {
+      const { sessionId } = await cdp.send('Target.attachToTarget', { targetId: w.targetId, flatten: false });
+      let id = 0;
+      const waiting = new Map<number, (r: Record<string, number>) => void>();
+      cdp.on('Target.receivedMessageFromTarget', (e) => {
+        if (e.sessionId !== sessionId) return;
+        const m = JSON.parse(e.message) as { id?: number; result?: Record<string, number> };
+        if (m.id !== undefined) waiting.get(m.id)?.(m.result ?? {});
+      });
+      const send = (method: string) =>
+        new Promise<Record<string, number>>((resolve, reject) => {
+          const mid = ++id;
+          waiting.set(mid, resolve);
+          setTimeout(() => reject(new Error('timeout')), 10_000);
+          void cdp.send('Target.sendMessageToTarget', { sessionId, message: JSON.stringify({ id: mid, method }) });
+        });
+      await send('HeapProfiler.collectGarbage');
+      const usage = await send('Runtime.getHeapUsage');
+      // the mirror's large flat strings are counted as backing storage
+      worker = (usage['usedSize'] ?? 0) + (usage['backingStorageSize'] ?? 0);
+    }
+  } catch {
+    worker = null;
+  }
+  await cdp.detach();
+  return { main, worker };
+}
+
 test.describe('F-006 scale', () => {
   test('F-006.AC9 NFR-04 a 50 MB document: a 100,000-child container shows its first group within 100 ms and scrolls without long frames', async ({
     page,
@@ -628,6 +773,14 @@ test.describe('F-006 scale', () => {
       `F-006.AC9 scroll 10,000+ rows: ${frames.frames} frames, max ${frames.max.toFixed(1)} ms, > 50 ms: ${frames.over50}`,
     );
     expect(frames.over50).toBe(0);
+    // the rows in view load their data after the fling
+    await expect(page.locator('.tk-tree__row--loading:not([hidden])')).toHaveCount(0, { timeout: 5_000 });
+    // NFR-04: memory after GC with the 50 MB document and its tree (editor + worker mirror + tree)
+    const mem = await heapAfterGc(page);
+    console.log(
+      `F-006.AC9 50 MB memory after GC: main ${(mem.main / 1e6).toFixed(1)} MB, worker ${mem.worker === null ? 'n/a' : (mem.worker / 1e6).toFixed(1) + ' MB'}`,
+    );
+    expect(mem.main + (mem.worker ?? 0)).toBeLessThan(1.5e9);
   });
 
   test('ADR-0007 F-006.AC9 a 1,000,000-child container: first group within 100 ms, a deep cold group, scrolling', async ({
@@ -663,9 +816,75 @@ test.describe('F-006 scale', () => {
     const deep = await timed(page, '[734000 … 734099]', '734000', true);
     console.log(`1M: deep group [734000 … 734099] ${deep.toFixed(1)} ms`);
     expect(deep).toBeLessThan(1000);
-    const frames = await scrollFrames(page, 2000);
-    console.log(`1M scroll: ${frames.frames} frames, max ${frames.max.toFixed(1)} ms, > 50 ms: ${frames.over50}`);
-    expect(frames.over50).toBe(0);
+
+    // ADR-0007 §4 scaled mode: > 333,334 rows (8 M px spacer). Expand every group of 10,000 and
+    // 3,400 groups of 100, bottom up, through the tree's own keyboard handling.
+    await headerButton(page, 'action.collapse_all').click();
+    await twisty(row(page, 'items')).click();
+    await row(page, 'items').click();
+    for (let k = 0; k < 100; k++) await page.keyboard.press('ArrowDown');
+    await expect(page.locator('.tk-tree__row:focus .tk-tree__key')).toHaveText('[990000 … 999999]');
+    const total = await page.evaluate(() => {
+      const key = (k: string) =>
+        document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+      const level = () => document.activeElement!.getAttribute('aria-level');
+      for (let k = 0; k < 100; k++) {
+        key('ArrowRight');
+        key('ArrowUp');
+      }
+      key('End'); // "tail"
+      key('ArrowUp'); // "head"
+      key('ArrowUp'); // [999900 … 999999]
+      let expanded = 0;
+      while (expanded < 3400) {
+        if (level() === '4' && document.activeElement!.getAttribute('aria-expanded') === 'false') {
+          key('ArrowRight');
+          expanded++;
+        }
+        key('ArrowUp');
+      }
+      return (document.querySelector('.tk-tree__spacer') as HTMLElement).getBoundingClientRect().height;
+    });
+    expect(total).toBe(8_000_000);
+    // real wheel scrolling over the scaled list, frames recorded meanwhile
+    const viewport = page.locator('.tk-tree__viewport');
+    const box = (await viewport.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.evaluate(() => {
+      const w = window as unknown as { __frames: number[]; __stop: boolean };
+      w.__frames = [];
+      w.__stop = false;
+      let last = performance.now();
+      const tick = () => {
+        const now = performance.now();
+        w.__frames.push(now - last);
+        last = now;
+        if (!w.__stop) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    const before = await viewport.evaluate((el) => el.scrollTop);
+    for (let k = 0; k < 120; k++) await page.mouse.wheel(0, k < 60 ? 2400 : -800);
+    const frames = await page.evaluate(() => {
+      const w = window as unknown as { __frames: number[]; __stop: boolean };
+      w.__stop = true;
+      return w.__frames.slice(1);
+    });
+    const after = await viewport.evaluate((el) => el.scrollTop);
+    expect(after).not.toBe(before);
+    const max = Math.max(...frames);
+    console.log(
+      `1M scaled (${total}): wheel ${frames.length} frames, max ${max.toFixed(1)} ms, > 50 ms: ${frames.filter((f) => f > 50).length}`,
+    );
+    expect(frames.filter((f) => f > 50)).toEqual([]);
+    // the rows in view load their data
+    await expect(page.locator('.tk-tree__row--loading:not([hidden])')).toHaveCount(0, { timeout: 5_000 });
+    await expect(rows(page).first()).toBeVisible();
+    const mem = await heapAfterGc(page);
+    console.log(
+      `1M memory after GC: main ${(mem.main / 1e6).toFixed(1)} MB, worker ${mem.worker === null ? 'n/a' : (mem.worker / 1e6).toFixed(1) + ' MB'}`,
+    );
+    expect(mem.main).toBeLessThan(1.5e9);
   });
 
   test('F-006.AC11 a very large document whose tree cannot be built shows COPY-tree.too_large with a switch to the text', async ({

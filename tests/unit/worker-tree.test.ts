@@ -146,4 +146,16 @@ describe('MOD-Worker tree', () => {
     expect(last).toHaveLength(50);
     expect(last.at(-1)!.i).toBe(99_999);
   });
+
+  it('review F-006 m5 an edit drops the tree index of the previous text (and its checkpoints)', async () => {
+    const h = harness();
+    h.setText(withBigArray(5_000), 1);
+    const root = await h.root(1);
+    await h.children(1, ref(root), 0, 2);
+    const engine = h.engine as unknown as { tree: unknown; fillStack: unknown[] };
+    expect(engine.tree).not.toBeNull();
+    h.setText('[1]', 2);
+    expect(engine.tree).toBeNull();
+    expect(engine.fillStack).toHaveLength(0);
+  });
 });

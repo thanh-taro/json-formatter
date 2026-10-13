@@ -219,6 +219,29 @@ describe('RULE-11 values and F-006.R2 rows', () => {
   });
 });
 
+describe('review F-006 minors', () => {
+  it('F-006 edge case: a cut preview never splits a surrogate pair', () => {
+    const src = '["' + 'x'.repeat(199) + '😀' + 'y'.repeat(10) + '"]';
+    const index = new TreeIndex([src], null);
+    const [row] = index.children(ref(index.root()), 0, 1);
+    expect(row!.vt).toBe(1);
+    expect(row!.v).toBe('"' + 'x'.repeat(199));
+    expect(/[\ud800-\udbff]$/.test(row!.v!)).toBe(false);
+  });
+
+  it('ADR-0007 §2 a checkpoint fill step stops after its budget of positions', () => {
+    const src = withBigArray(20_000);
+    const index = new TreeIndex([src], skipTableOf([src], 4096));
+    const big = index.children(ref(index.root()), 1, 1)[0]!;
+    const c = ref(big);
+    let steps = 0;
+    while (!index.fill(c, 4096)) steps++;
+    // ~20 positions per child, 20,000 children: about 100 steps of 4,096 positions
+    expect(steps).toBeGreaterThan(50);
+    expect(index.complete(c)).toBe(true);
+  });
+});
+
 describe('tree queries vs the oracle (chunked, several skip thresholds)', () => {
   const cases: [string, () => string, number[], number[]][] = [
     ['tricky', () => TRICKY, [8, 64, 4096], [5, 64, 1 << 20]],

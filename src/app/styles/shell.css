@@ -90,6 +90,8 @@
   .tk-main {
     position: relative;
     min-height: 0;
+    /* a grid item's automatic minimum would let a long unwrapped line widen the main area */
+    min-width: 0;
     background: var(--tk-color-bg);
   }
   .tk-editor__empty-title {

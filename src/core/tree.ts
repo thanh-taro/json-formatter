@@ -266,12 +266,15 @@ export class TreeIndex {
     return out;
   }
 
-  /** Background fill: extends the checkpoints of `c` by up to `maxChildren` children.
-   * Returns true when they are complete. */
-  fill(c: ContainerRef, maxChildren: number): boolean {
+  /**
+   * Background fill (ADR-0007 §2): extends the checkpoints of `c`, scanning about `budget`
+   * positions (it stops at the first child boundary after that), so a step stays within its
+   * time slice whatever the children's sizes. Returns true when the checkpoints are complete.
+   */
+  fill(c: ContainerRef, budget: number): boolean {
     const cp = this.checkpoints(c);
     if (!cp || cp.filled === cp.offs.length) return true;
-    this.scan(c, (cp.filled - 1) * GROUP + maxChildren, 0, null, null);
+    this.scan(c, c.n, 0, null, null, budget);
     return cp.filled === cp.offs.length;
   }
 
@@ -283,7 +286,13 @@ export class TreeIndex {
     }
     if (kind >= KIND_STRING) {
       const len = e - s;
-      it.v = this.text(s, s + Math.min(len, PREVIEW_MAX));
+      let cut = s + Math.min(len, PREVIEW_MAX);
+      // never split a surrogate pair at the cut (review F-006 m2)
+      if (len > PREVIEW_MAX) {
+        const last = this.text(cut - 1, cut).charCodeAt(0);
+        if (last >= 0xd800 && last <= 0xdbff) cut--;
+      }
+      it.v = this.text(s, cut);
       if (len > PREVIEW_MAX) it.vt = 1;
     }
     return it;
@@ -293,8 +302,9 @@ export class TreeIndex {
    * Scans the direct children of `c` from the nearest checkpoint at or before child `from`,
    * collecting children [from, from + count) into `out` (when given) and stopping after the
    * last one. Without `out`, it stops once child `from` is reached — or, with `info`, at the
-   * container's end, reporting its end and child count. Nested containers are skipped through
-   * the skip table when indexed, otherwise by scanning.
+   * container's end, reporting its end and child count. With a `budget`, it also stops at the
+   * first child boundary once that many positions are behind it and a checkpoint was added. Nested containers are skipped
+   * through the skip table when indexed, otherwise by scanning.
    */
   private scan(
     c: ContainerRef,
@@ -302,6 +312,7 @@ export class TreeIndex {
     count: number,
     out: TreeItem[] | null,
     info: { e: number; n: number } | null,
+    budget = Infinity,
   ): void {
     const chunks = this.chunks;
     const starts = this.starts;
@@ -317,6 +328,8 @@ export class TreeIndex {
       pos = cp.offs[k]!;
     }
     const stopIdx = out ? from + count : from;
+    const stopPos = pos + budget;
+    const filled0 = cp ? cp.filled : 0;
     let skI = lowerBound(sk.starts, skN, pos);
     let depth = 1;
     let expectKey = isObj;
@@ -417,6 +430,8 @@ export class TreeIndex {
               cp.offs[cp.filled++] = base + i + 1;
             i++;
             if (idx >= stopIdx && (out || !info)) break outer;
+            // a budgeted step stops once it has added a checkpoint and spent its budget
+            if (base + i >= stopPos && (!cp || cp.filled > filled0)) break outer;
             continue;
           case 58:
             i++;
