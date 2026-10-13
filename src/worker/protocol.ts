@@ -2,7 +2,7 @@
 // thread and the worker, a document version and/or job id on every message. Hand-written, no
 // RPC library. New operations (validate, format, re-indent, tree queries) plug in by adding a
 // `JobSpec` kind with its worker handler and, where needed, a result message.
-import type { BreakCounts, LineEnding, ValidationResult } from '../core';
+import type { BreakCounts, IndentStyle, LineEnding, SourceUnit, ValidationResult } from '../core';
 
 /** `ChangeSet.toJSON()` of @codemirror/state. */
 export type ChangeSetJSON = readonly (number | readonly [number, ...string[]])[];
@@ -23,6 +23,11 @@ export type JobSpec = { supersedes?: string } &
      * `lineEnding` is the document's, for ENT-Issue code-point offsets; `skipTable` in the
      * large tiers (RULE-02, measured in UTF-8 bytes by the main thread; ADR-0007 §1). */
     | { kind: 'validate'; version: number; lineEnding: LineEnding; skipTable?: boolean }
+    /** Re-indent pass 1 (F-004, RULE-09): detect the source unit of the mirror at `version` and
+     * predict the size change for `target` → `reindentPlan`, or `notIndented` (F-004.R5). */
+    | { kind: 'reindentPlan'; version: number; target: IndentStyle }
+    /** Re-indent pass 2: convert the mirror at `version` into a pending mirror → `loaded`. */
+    | { kind: 'reindent'; version: number; target: IndentStyle; unit: SourceUnit }
   );
 
 export type JobKind = JobSpec['kind'];
@@ -63,5 +68,9 @@ export type FromWorker =
   | { type: 'blob'; jobId: number; blob: Blob }
   /** The result of a `validate` job for `version` (MOD-Worker `validation(version, result)`). */
   | { type: 'validation'; jobId: number; version: number; result: ValidationResult }
+  /** Re-indent detection result: the unit and the change in length of the result (F-004.R7). */
+  | { type: 'reindentPlan'; jobId: number; version: number; unit: SourceUnit; delta: number }
+  /** No line of the document is indented (F-004.R5): nothing to change. */
+  | { type: 'notIndented'; jobId: number }
   | { type: 'failed'; jobId: number; reason: FailReason; detail?: string }
   | { type: 'adopted'; jobId: number; version: number };

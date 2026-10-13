@@ -36,3 +36,13 @@ export {
 } from './validate';
 export { PositionResolver, resolvePositions, type Position } from './positions';
 export { positionsOf, resultOf, validateText, type ValidationResult } from './result';
+export {
+  IndentScanner,
+  Reindenter,
+  detectUnit,
+  reindentDelta,
+  reindentText,
+  type IndentStyle,
+  type IndentStats,
+  type SourceUnit,
+} from './reindent';

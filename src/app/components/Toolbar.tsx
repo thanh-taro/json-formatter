@@ -4,13 +4,21 @@
 // actions arrive with F-002…F-010.
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../../copy';
+import type { IndentStyle } from '../../core';
 import type { AppController } from '../controller';
 import { Icon } from './Icon';
 
 const controlsOf = (bar: HTMLElement) =>
   [...bar.querySelectorAll<HTMLButtonElement | HTMLSelectElement>('button, select')].filter((c) => !c.disabled);
 
+/** The indent selector's option value for an indent style (RULE-01). */
+const indentValue = (s: IndentStyle) => (s.kind === 'tab' ? 'tab' : String(s.width));
+
 export function Toolbar({ app }: { app: AppController }) {
+  const onIndent = (e: Event) => {
+    const v = (e.currentTarget as HTMLSelectElement).value;
+    app.state.indent.value = v === 'tab' ? { kind: 'tab' } : { kind: 'spaces', width: Number(v) };
+  };
   const empty = app.state.doc.value.empty;
   const busy = app.blocked();
   // Busy: every action disabled except cancel (in the progress bar), D-005.
@@ -87,12 +95,13 @@ export function Toolbar({ app }: { app: AppController }) {
         <button type="button" class="tk-button" disabled={off}>
           {t('action.minify')}
         </button>
-        <button type="button" class="tk-button" disabled={off}>
+        {/* Implements: F-004.R1 — re-indent with the indent selector's style (CMP-Toolbar). */}
+        <button type="button" class="tk-button" disabled={off} onClick={() => void app.reindent()}>
           {t('action.reindent')}
         </button>
         <label class="tk-select">
           <span class="tk-visually-hidden">{t('label.indent')}</span>
-          <select disabled={off}>
+          <select disabled={off} value={indentValue(app.state.indent.value)} onChange={onIndent}>
             <option value="2">{t('indent.spaces2')}</option>
             <option value="4">{t('indent.spaces4')}</option>
             <option value="tab">{t('indent.tab')}</option>

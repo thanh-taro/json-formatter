@@ -2,7 +2,15 @@
 // undo contract (MOD-App "run(operation)"), the RULE-02 tiers and confirmation, notices shown
 // once, and the worker ↔ editor wiring (architecture.md "Load" data flow).
 import { formatCount, formatSize, hintFor, t, tCount } from '../copy';
-import { isLargeTier, tierOf, type Issue, type Tier, type ValidationResult } from '../core';
+import {
+  isLargeTier,
+  tierOf,
+  type Issue,
+  type LineEnding,
+  type SourceUnit,
+  type Tier,
+  type ValidationResult,
+} from '../core';
 import {
   createEditor,
   LARGE_PASTE,
@@ -55,6 +63,15 @@ const loadedFacts: FactsOf = (r) => {
   if (r.type !== 'loaded') throw new JobFailure('internal', `unexpected ${r.type}`);
   return r.facts;
 };
+
+/**
+ * A worker-built text has '\n' breaks only; the document keeps its line ending (F-004.R2,
+ * RULE-17), so the commit facts count its breaks as that ending.
+ */
+function keepLineEnding(facts: ReplaceFacts, eol: LineEnding): ReplaceFacts {
+  const n = facts.breaks.lf + facts.breaks.crlf + facts.breaks.cr;
+  return { ...facts, breaks: eol === 'crlf' ? { lf: 0, crlf: n, cr: 0 } : { lf: n, crlf: 0, cr: 0 } };
+}
 
 function stateOf(result: ValidationResult): Validation['state'] {
   return result.validity;
@@ -439,6 +456,59 @@ export class AppController {
     if (this.blocked() || !this.editor || this.editor.isEmpty) return;
     this.editor.clear();
     this.editor.focus();
+  }
+
+  /**
+   * Implements: F-004.R1–R7 — re-indents the document to the indent selector's style (RULE-09)
+   * in the worker: a detection pass, then (after the RULE-02 confirmation when the result would
+   * exceed 100 MB) a conversion committed as one undo step (INV-04, RULE-15). Busy policy
+   * (D-005) with COPY-progress.formatting and cancel; cancel or failure leaves the document
+   * unchanged (INV-03). Nothing indented → unchanged with COPY-notice.no_indent (F-004.R5).
+   */
+  async reindent(): Promise<void> {
+    if (this.blocked() || !this.editor || this.editor.isEmpty) return;
+    const ed = this.editor;
+    const target = this.state.indent.value;
+    const version = ed.version;
+    let plan: { unit: SourceUnit; delta: number } | null = null;
+    let none = false;
+    // Pass 1: detection (its share of the progress bar: the first quarter).
+    const planned = await this.run('progress.formatting', async (busy) => {
+      const job = this.worker.run(
+        { kind: 'reindentPlan', version, target },
+        { onProgress: (f) => busy.progress(f / 4) },
+      );
+      busy.onCancel(() => job.cancel());
+      const r = await job.result;
+      if (r.type === 'notIndented') none = true;
+      else if (r.type === 'reindentPlan') plan = { unit: r.unit, delta: r.delta };
+      else throw new JobFailure('internal', `unexpected ${r.type}`);
+    });
+    if (!planned) return;
+    if (none || !plan) {
+      this.showBar({ kind: 'info', id: 'notice.no_indent', text: t('notice.no_indent') });
+      return;
+    }
+    const { unit, delta } = plan as { unit: SourceUnit; delta: number };
+    // Implements: F-004.R7 / RULE-02 — a result over 100 MB is confirmed first.
+    const bytesAfter = ed.bytes + delta;
+    if (tierOf(bytesAfter) === 'very-large' && !(await this.confirmVeryLarge(bytesAfter))) return;
+    if (this.editor !== ed || ed.version !== version) return;
+    const eol = ed.lineEnding;
+    const sourceName = ed.sourceName;
+    await this.run('progress.formatting', async (busy) => {
+      const pending = ed.beginReplace('reindent');
+      const total = Math.max(1, ed.bytes + delta);
+      const job = this.worker.run(
+        { kind: 'reindent', version, target, unit },
+        {
+          onChunk: (text) => this.append(pending, job, text),
+          onProgress: (f) => busy.progress(0.25 + 0.75 * Math.min(f, pending.appended / total)),
+        },
+      );
+      await this.feed(job, pending, busy, (r) => keepLineEnding(loadedFacts(r), eol), { sourceName });
+    });
+    this.editor?.focus();
   }
 
   /** Implements: F-001.R4 large-paste path (ADR-0006 §2), F-001.AC11; also large external drops. */
