@@ -19,3 +19,8 @@ full suite after each merge.
 Scale: ~10 feature-builder runs + reviewers; waves 1 and 3 run 3–4 agents in parallel worktrees.
 Spike code (branches `spike/*`) may be promoted deliberately, citing the ADR, never merged wholesale.
 Gate G4: all 11 features shipped, CI green, AC coverage 100% (or listed manual checks).
+
+## Integration follow-ups (run after the last wave merges)
+- F-007.AC7 from the tree view (needs F-006); F-007.AC3 with a real minify (needs F-003).
+- F-008.AC6/AC7 full-suite re-run (all M-1 features).
+- Real-clipboard copy > 5 s and in WebKit (manual QA if not automatable).

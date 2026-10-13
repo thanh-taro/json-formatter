@@ -53,7 +53,7 @@
     "build": {
       "title": "4 Implementation",
       "status": "in_progress",
-      "step": "4 wave 2: F-005 building",
+      "step": "4 wave 3: F-002+F-003 | F-004 | F-007 | F-010 building",
       "gate": {
         "status": "pending",
         "at": null,
@@ -570,6 +570,20 @@
       "started": "2026-10-13T14:35:09+00:00",
       "outcome": "converged",
       "ended": "2026-10-13T15:00:16+00:00"
+    },
+    "build-F-004": {
+      "round": 1,
+      "max": 3,
+      "active": true,
+      "started": "2026-10-13T15:16:09+00:00",
+      "outcome": null
+    },
+    "build-F-007": {
+      "round": 1,
+      "max": 3,
+      "active": true,
+      "started": "2026-10-13T15:20:39+00:00",
+      "outcome": null
     }
   },
   "log": [
@@ -1104,9 +1118,25 @@
     {
       "at": "2026-10-13T15:00:16+00:00",
       "event": "loop build-F-005 ended: converged"
+    },
+    {
+      "at": "2026-10-13T15:01:30+00:00",
+      "event": "build step: 4 wave 3: F-002+F-003 | F-004 | F-007 | F-010 building"
+    },
+    {
+      "at": "2026-10-13T15:01:31+00:00",
+      "event": "F-005 shipped; wave 3 launched"
+    },
+    {
+      "at": "2026-10-13T15:16:09+00:00",
+      "event": "loop build-F-004 started (max 3)"
+    },
+    {
+      "at": "2026-10-13T15:20:39+00:00",
+      "event": "loop build-F-007 started (max 3)"
     }
   ],
-  "updated": "2026-10-13T15:00:16+00:00",
+  "updated": "2026-10-13T15:20:39+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
