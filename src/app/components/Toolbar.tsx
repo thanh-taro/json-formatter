@@ -76,7 +76,8 @@ export function Toolbar({ app }: { app: AppController }) {
         </button>
       </div>
       <div class="tk-toolbar__group">
-        <button type="button" class="tk-button" disabled={off}>
+        <button type="button" class="tk-button" disabled={off} onClick={() => app.find.show()}>
+          <Icon name="search" />
           {t('action.find')}
         </button>
       </div>
