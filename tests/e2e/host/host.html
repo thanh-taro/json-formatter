@@ -30,16 +30,18 @@
       // behaves like the portal after its theme change request: theme in the address, a
       // taro:theme message with the tool's exact origin, the current theme in reply to ready.
       // Query: tool=<origin> (default http://localhost:4173), theme=light|dark|none, w, h,
-      // sibling=1 (adds a frame from the unlisted origin that can post into the tool frame).
+      // sibling=1 (adds a frame from the unlisted origin that can post into the tool frame),
+      // clip=0 (no clipboard-write permission for the frame: copying is refused, F-007.AC4).
       const q = new URLSearchParams(location.search);
-      const TOOL = q.get('tool') || 'http://localhost:4173';
+      const PORT = Number(location.port);
+      const TOOL = q.get('tool') || `http://localhost:${PORT - 1}`;
       let theme = q.get('theme') || 'dark';
       window.__host = { received: [], loads: 0 };
       const f = document.createElement('iframe');
       f.name = 'tool';
       f.title = 'JSON Formatter';
       f.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-downloads');
-      f.setAttribute('allow', 'clipboard-write');
+      if (q.get('clip') !== '0') f.setAttribute('allow', 'clipboard-write');
       f.setAttribute('referrerpolicy', 'strict-origin');
       if (q.get('w')) f.style.width = q.get('w') + 'px';
       if (q.get('h')) f.style.height = q.get('h') + 'px';
@@ -69,7 +71,7 @@
         s.name = 'sibling';
         s.className = 'sibling';
         s.title = 'Unlisted sibling';
-        s.src = 'http://localhost:4175/sibling.html';
+        s.src = `http://localhost:${PORT + 1}/sibling.html`;
         document.body.append(s);
         window.fireSibling = (msg) => s.contentWindow.postMessage({ cmd: 'fire', msg }, '*');
       }

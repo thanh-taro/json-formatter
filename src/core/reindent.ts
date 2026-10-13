@@ -5,25 +5,7 @@
 // line is ever rewritten; every other character, and every line break, is passed through as is.
 // Implements: F-004.R1, F-004.R2, F-004.R3, F-004.R5; RULE-09.
 
-/** ENT-IndentStyle (RULE-01): 1–8 spaces, or one tab. */
-export type IndentStyle = { kind: 'spaces'; width: number } | { kind: 'tab' };
-
-/** Widths of a spaces indent (RULE-01). */
-export const MIN_INDENT_WIDTH = 1;
-export const MAX_INDENT_WIDTH = 8;
-const DEFAULT_INDENT_WIDTH = 2;
-
-/**
- * Implements: RULE-01 — a valid ENT-IndentStyle from any input: a spaces width that is not a
- * number falls back to the default 2; otherwise it is truncated to an integer and clamped to 1–8.
- * Every re-indent entry point goes through this (a width of NaN would strip all indentation).
- */
-export function indentStyle(style: IndentStyle): IndentStyle {
-  if (style.kind === 'tab') return { kind: 'tab' };
-  const w = Number(style.width);
-  if (!Number.isFinite(w)) return { kind: 'spaces', width: DEFAULT_INDENT_WIDTH };
-  return { kind: 'spaces', width: Math.min(MAX_INDENT_WIDTH, Math.max(MIN_INDENT_WIDTH, Math.trunc(w))) };
-}
+import { indentStyle, type IndentStyle } from './indent';
 
 /** The detected source unit of RULE-09. */
 export interface SourceUnit {

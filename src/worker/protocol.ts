@@ -2,7 +2,7 @@
 // thread and the worker, a document version and/or job id on every message. Hand-written, no
 // RPC library. New operations (validate, format, re-indent, tree queries) plug in by adding a
 // `JobSpec` kind with its worker handler and, where needed, a result message.
-import type { BreakCounts, IndentStyle, LineEnding, SourceUnit, ValidationResult } from '../core';
+import type { BreakCounts, FormatMode, IndentStyle, LineEnding, SourceUnit, ValidationResult } from '../core';
 
 /** `ChangeSet.toJSON()` of @codemirror/state. */
 export type ChangeSetJSON = readonly (number | readonly [number, ...string[]])[];
@@ -28,6 +28,11 @@ export type JobSpec = { supersedes?: string } &
     | { kind: 'reindentPlan'; version: number; target: IndentStyle }
     /** Re-indent pass 2: convert the mirror at `version` into a pending mirror → `loaded`. */
     | { kind: 'reindent'; version: number; target: IndentStyle; unit: SourceUnit }
+    /** Beautify or minify the mirror at `version` (F-002, F-003) into a pending mirror, streaming
+     * the result as `chunk`s; refused with `failed(invalid)` when the document is not valid.
+     * `lineEnding` is the document's (breaks are reported in it, RULE-07); `nonBreakBytes` is the
+     * UTF-8 size of the document without its line breaks (for the result's facts). */
+    | { kind: 'format'; version: number; mode: FormatMode; lineEnding: LineEnding; nonBreakBytes: number }
   );
 
 export type JobKind = JobSpec['kind'];
@@ -65,6 +70,8 @@ export type FromWorker =
   | { type: 'chunk'; jobId: number; text: string }
   /** A load or insert job finished; its pending mirror waits for `adopt`. */
   | { type: 'loaded'; jobId: number; facts: TextFacts }
+  /** A format job finished; its pending mirror waits for `adopt` (MOD-Worker `formatted`). */
+  | { type: 'formatted'; jobId: number; facts: TextFacts }
   | { type: 'blob'; jobId: number; blob: Blob }
   /** The result of a `validate` job for `version` (MOD-Worker `validation(version, result)`). */
   | { type: 'validation'; jobId: number; version: number; result: ValidationResult }

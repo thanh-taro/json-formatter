@@ -1,10 +1,12 @@
 // Shared e2e helpers: tool/host origins and CSP-violation recording.
 import type { Page } from '@playwright/test';
 
-export const TOOL = 'http://localhost:4173';
-export const HOST = 'http://localhost:4174';
-export const UNLISTED = 'http://localhost:4175';
-export const ADMIN = 'http://localhost:4179';
+// Same port scheme as tests/e2e/server.mjs (E2E_PORT_BASE, default 4173).
+const BASE = Number(process.env.E2E_PORT_BASE ?? 4173);
+export const TOOL = `http://localhost:${BASE}`;
+export const HOST = `http://localhost:${BASE + 1}`;
+export const UNLISTED = `http://localhost:${BASE + 2}`;
+export const ADMIN = `http://localhost:${BASE + 6}`;
 
 /** Token values from tokens.json, as computed colours. */
 export const BG = { dark: 'rgb(15, 11, 22)', light: 'rgb(251, 250, 254)' } as const;

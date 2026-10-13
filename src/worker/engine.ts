@@ -17,6 +17,7 @@ import {
   positionsOf,
   resultOf,
   Validator,
+  type FormatMode,
   type IndentStyle,
   type LineEnding,
   type SkipTable,
@@ -32,6 +33,8 @@ export const SLICE_UNITS = 1 << 20;
 export const READ_BYTES = 1 << 20;
 /** Text forwarded to the main thread per message, at most. */
 const FORWARD_UNITS = 1 << 20;
+/** First input piece of a format job; it adapts to the work each piece takes. */
+const FORMAT_PIECE_MIN = 1 << 10;
 /** ADR-0005 §2: validation is immediate below ~1 MB, debounced by idle time above. */
 export const VALIDATE_IMMEDIATE_UNITS = 1 << 20;
 export const VALIDATE_DEBOUNCE_MS = 200;
@@ -43,6 +46,8 @@ class Cancelled extends Error {}
 class Superseded extends Cancelled {}
 /** The fatal decoder rejected the bytes (RULE-13); only this is reported as `encoding`. */
 class EncodingError extends Error {}
+/** Beautify/minify refused an invalid document (F-002.R4, F-003.R3). */
+class InvalidDocument extends Error {}
 
 /** Yields to the event loop without the 4 ms timer clamp, so `cancel`/`edit` get through. */
 /** `chunk` in pieces of at most one slice of input (mirror chunks may reach 4 M units). */
@@ -153,6 +158,7 @@ function reasonOf(e: unknown): FailReason {
   if (e instanceof Cancelled) return 'cancelled';
   // Implements: RULE-13 — only failures of the fatal decoder itself (security review MINOR-2).
   if (e instanceof EncodingError) return 'encoding';
+  if (e instanceof InvalidDocument) return 'invalid';
   // Implements: F-001.R9 — allocation failures become "too large" instead of a crash.
   if (e instanceof RangeError) return 'too-large';
   if (e instanceof Error && /memory|allocation/i.test(e.message)) return 'too-large';
@@ -325,6 +331,9 @@ export class WorkerEngine {
         break;
       case 'reindent':
         run = () => this.reindent(jobId, job.version, job.target, job.unit);
+        break;
+      case 'format':
+        run = () => this.format(jobId, job.version, job.mode, job.lineEnding, job.nonBreakBytes);
         break;
     }
     const key = job.supersedes;
@@ -554,6 +563,82 @@ export class WorkerEngine {
       const mirror = builder.finish();
       this.pending = { jobId, mirror };
       this.post({ type: 'loaded', jobId, facts: factsOf(scan, mirror.length) });
+    } catch (e) {
+      this.fail(jobId, e);
+    }
+  }
+
+  /**
+   * Implements: F-002.R1, F-002.R6, F-003.R1, F-003.R5 (ADR-0005 §2) — beautifies or minifies the
+   * mirror at `version` with MOD-Core's formatting validator, in ≤ 16 ms slices that yield so
+   * `cancel` gets through. The input is fed in pieces whose size adapts to the time they take, so
+   * a slice stays short even when output expands enormously (10,000 levels deep: 20 KB → 200 MB).
+   * Output chunks (flat strings) build the pending mirror — adopted on commit, never sent back —
+   * and are forwarded at the end of each slice. An invalid document fails with `invalid` and
+   * leaves nothing pending (INV-03).
+   */
+  private async format(
+    jobId: number,
+    version: number,
+    mode: FormatMode,
+    lineEnding: LineEnding,
+    nonBreakBytes: number,
+  ): Promise<void> {
+    try {
+      this.pending = null;
+      const stale = () => this.version !== version;
+      if (stale()) throw new Superseded('document changed');
+      const doc = this.mirror;
+      const total = Math.max(1, doc.length);
+      const builder = new MirrorBuilder();
+      const fwd = new Forwarder(this, jobId);
+      const validator = new Validator({
+        warnings: false,
+        format: {
+          mode,
+          // the mirror and the editor hold one '\n' per break; the document keeps its line ending
+          eol: '\n',
+          chunkUnits: FORWARD_UNITS,
+          emit: (chunk) => {
+            builder.push(chunk);
+            fwd.add(chunk);
+          },
+        },
+      });
+      const slicer = new Slicer(this, jobId, () => fwd.flush(), stale);
+      let piece = FORMAT_PIECE_MIN;
+      let done = 0;
+      outer: for (const chunk of doc.chunks) {
+        for (let at = 0; at < chunk.length;) {
+          const part = at === 0 && piece >= chunk.length ? chunk : chunk.slice(at, at + piece);
+          const t0 = performance.now();
+          if (!validator.feed(part)) break outer;
+          const ms = performance.now() - t0;
+          // ~1–4 ms of work per piece: expansion-heavy input gets small pieces
+          if (ms > 4) piece = Math.max(1, piece >> 1);
+          else if (ms < 1 && piece < SLICE_UNITS) piece <<= 1;
+          at += part.length;
+          done += part.length;
+          await slicer.step(part.length, () => done / total);
+        }
+      }
+      const outcome = validator.end();
+      if (outcome.validity !== 'valid' || !outcome.output) throw new InvalidDocument(outcome.error?.code ?? 'invalid');
+      fwd.flush();
+      const mirror = builder.finish();
+      const out = outcome.output;
+      this.pending = { jobId, mirror };
+      this.post({
+        type: 'formatted',
+        jobId,
+        facts: {
+          length: mirror.length,
+          breaks: lineEnding === 'crlf' ? { lf: 0, crlf: out.breaks, cr: 0 } : { lf: out.breaks, crlf: 0, cr: 0 },
+          // tokens keep their bytes, blanks are dropped, generated indentation is ASCII
+          nonBreakBytes: nonBreakBytes - (outcome.layout?.blanks ?? 0) + out.generated,
+          endsWithLineBreak: mode.kind === 'beautify' && (outcome.layout?.endsWithLineBreak ?? false),
+        },
+      });
     } catch (e) {
       this.fail(jobId, e);
     }

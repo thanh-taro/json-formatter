@@ -277,4 +277,27 @@ test.describe('F-004 re-indent', () => {
     await expect(page.locator('.cm-line').nth(1)).toHaveText('    [');
     await expect(page.locator('.cm-line').nth(4)).toHaveText('                "abcdefg",');
   });
+
+  test('F-004.R7 RULE-02 a document already over 100 MB is re-indented without a second confirmation', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'documents over 100 MB are best effort (RULE-02); measured in Chromium only');
+    test.setTimeout(300_000);
+    const file = largeFixture('vlreindent', 101 * MB);
+    await start(page);
+    await openFile(page, file);
+    const dialog = page.getByRole('dialog', { name: COPY['confirm.title'] });
+    await dialog.getByRole('button', { name: COPY['action.continue'] }).click();
+    await waitIdle(page);
+    await expect(app(page)).toHaveAttribute('data-tier', 'very-large', { timeout: 120_000 });
+    // the result grows (2 → 4 spaces) and stays over 100 MB: no confirmation this time
+    await reindent(page, '4');
+    await expect(page.locator('.cm-line').nth(1)).toHaveText('    {"fixture": "vlreindent"},', { timeout: 120_000 });
+    await waitIdle(page);
+    await expect(dialog).toBeHidden();
+    await expect
+      .poll(async () => Number(await app(page).getAttribute('data-bytes')), { timeout: 60_000 })
+      .toBeGreaterThan(101 * MB);
+  });
 });

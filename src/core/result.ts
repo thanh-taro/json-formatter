@@ -3,7 +3,7 @@
 import { severityOf, type Issue, type RawIssue } from './issues';
 import { PositionResolver, type Position } from './positions';
 import type { LineEnding } from './text';
-import { Validator, type ValidationOutcome, type ValidatorOptions } from './validate';
+import { Validator, type LayoutFacts, type ValidationOutcome, type ValidatorOptions } from './validate';
 
 /** What the UI needs to show about a validated document (ENT-Document `validity`, `issues`). */
 export interface ValidationResult {
@@ -12,6 +12,8 @@ export interface ValidationResult {
   issues: Issue[];
   /** RULE-05: warnings beyond the first 1,000. */
   warningOverflow: number;
+  /** Valid documents: facts for predicting the beautified size (RULE-02, F-002.R7). */
+  layout?: LayoutFacts | null;
 }
 
 /** The editor positions that must be resolved for an outcome (issue, then any opening bracket). */
@@ -49,6 +51,7 @@ export function resultOf(outcome: ValidationOutcome, resolved: readonly Position
     validity: outcome.validity,
     issues: outcome.warnings.map((w, i) => toIssue(w, resolved[i]!)),
     warningOverflow: outcome.warningOverflow,
+    layout: outcome.layout,
   };
 }
 

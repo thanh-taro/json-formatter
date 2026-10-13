@@ -27,3 +27,5 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - F-005 build clarifications: RULE-04 (control characters in strings, lone slash, BOM-only), RULE-05 duplicate keys compared decoded; location numbers grouped.
 - F-005 shipped (3 review rounds).
 - RULE-09 clarified: leading-space count includes spaces on lines that also contain tabs (F-004 build).
+- RULE-02 clarified: no second very-large confirmation when the document is already over 100 MB (F-002 build).
+- F-002, F-003 shipped. Test infra: E2E_PORT_BASE makes e2e ports configurable for parallel worktrees.

@@ -21,9 +21,10 @@ export interface JobHooks {
   onProgress?: (fraction: number) => void;
 }
 
-/** Result of a job: facts for load/insert jobs, a Blob for export jobs, a validation result. */
+/** Result of a job: facts for load/insert/format jobs, a Blob for export jobs, a validation result. */
 export type JobResult =
   | { type: 'loaded'; facts: TextFacts }
+  | { type: 'formatted'; facts: TextFacts }
   | { type: 'blob'; blob: Blob }
   | { type: 'validation'; version: number; result: ValidationResult }
   /** Re-indent detection (F-004): the unit and the change in length, or nothing indented. */
@@ -62,7 +63,8 @@ interface Running {
 function resultOf(msg: Extract<FromWorker, { type: JobResult['type'] }>): JobResult {
   switch (msg.type) {
     case 'loaded':
-      return { type: 'loaded', facts: msg.facts };
+    case 'formatted':
+      return { type: msg.type, facts: msg.facts };
     case 'blob':
       return { type: 'blob', blob: msg.blob };
     case 'validation':
@@ -164,6 +166,7 @@ export class WorkerClient {
         return;
       }
       case 'loaded':
+      case 'formatted':
       case 'blob':
       case 'validation':
       case 'reindentPlan':
