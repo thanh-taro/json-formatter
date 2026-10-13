@@ -26,7 +26,7 @@ import {
 } from '../core';
 import { t } from '../copy';
 import { textChunks } from './builder';
-import { UndoHistory, type DocFacts, type Entry, type Snapshot, type ToolKind } from './history';
+import { toolAfter, UndoHistory, type DocFacts, type Entry, type Snapshot, type ToolKind } from './history';
 import { ColumnIndex } from './column';
 import { issueMarks, issuePosition, issuesEffect, type IssueMark } from './issues';
 import { createPending, type Pending } from './pending';
@@ -119,6 +119,8 @@ export interface EditorHandle {
   readonly lineCount: number;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
+  /** RULE-10 — the most recent tool operation committed (`beginReplace` kind or clear), if any. */
+  readonly lastTool: ToolKind | null;
   setBusy(busy: boolean): void;
   setHidden(hidden: boolean): void;
   focus(): void;
@@ -134,6 +136,8 @@ export interface EditorHandle {
   setIssues(marks: readonly IssueMark[], invalid: boolean): void;
   /** Implements: F-005.R5 — moves the cursor to `pos` and scrolls it into view, both ways. */
   goTo(pos: number): void;
+  /** Implements: F-007.R3, CMP-Editor all-selected — selects the whole document and focuses it. */
+  selectAll(): void;
   /** Where issue `index` of the marked result is now (mapped through later edits, INV-05). */
   issuePosition(index: number): number | null;
   destroy(): void;
@@ -204,6 +208,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   let tier: Tier = 'normal';
   let narrow = false;
   let activePending = 0;
+  let lastTool: ToolKind | null = null;
   /** Line ending to adopt with the next paste/drop transaction the engine dispatches (RULE-17). */
   let incomingEol: LineEnding | null = null;
   /** A drag that started inside the editor (moving text): left to the engine. */
@@ -220,7 +225,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   }
 
   const bytesOf = (doc: Text) => documentBytes(nonBreakBytes, doc.lines - 1, lineEnding);
-  const facts = (): DocFacts => ({ lineEnding, sourceName, nonBreakBytes });
+  const facts = (): DocFacts => ({ lineEnding, sourceName, nonBreakBytes, lastTool });
   const snapshotNow = (): Snapshot => ({ blob: observed(options.snapshot()), facts: facts() });
 
   const historyKeys = keymap.of([
@@ -376,6 +381,8 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     lineEnding = next.lineEnding;
     sourceName = next.sourceName;
     nonBreakBytes = next.nonBreakBytes;
+    // Implements: RULE-10 — undo/redo restore the most recent tool operation with the text.
+    lastTool = toolAfter(lastTool, next);
     const nextTier = tierOf(documentBytes(nonBreakBytes, nextDoc.lines - 1, lineEnding));
     const effects = nextTier !== tier ? [tierConf.reconfigure(tierExtension(nextTier, narrow))] : [];
     tier = nextTier;
@@ -541,6 +548,9 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     get canRedo() {
       return history.canRedo;
     },
+    get lastTool() {
+      return lastTool;
+    },
     // Implements: D-005 busy policy — read-only while a tool operation runs; scrolling stays.
     setBusy(busy) {
       view.dispatch({
@@ -579,6 +589,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
           'tool',
         );
         record(entry);
+        lastTool = kind;
         options.onChange?.({ version, changes, sync: 'adopt' });
       });
     },
@@ -613,6 +624,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
       const entry = undoEntryFor('clear', changes);
       applyTool(changes, { lineEnding: 'lf', sourceName: null, nonBreakBytes: 0 }, 'tool');
       record(entry);
+      lastTool = 'clear';
       options.onChange?.({ version, changes, sync: 'edit' });
     },
     undo: () => historyStep('undo'),
@@ -629,6 +641,10 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
         selection: { anchor: at },
         effects: EditorView.scrollIntoView(at, { y: 'center', x: 'center' }),
       });
+      view.focus();
+    },
+    selectAll() {
+      view.dispatch({ selection: { anchor: 0, head: view.state.doc.length } });
       view.focus();
     },
     destroy() {

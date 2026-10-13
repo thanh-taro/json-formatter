@@ -1,7 +1,7 @@
 ---
 id: F-007
 title: Copy and download the document
-status: ready
+status: building
 milestone: M-1
 priority: P0
 personas: [PER-01]

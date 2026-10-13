@@ -53,6 +53,13 @@ export interface Validation {
   version: number;
 }
 
+/** A CMP-Notice toast (e.g. COPY-toast.copied): auto-dismissed, at most 2 stacked. */
+export interface Toast {
+  seq: number;
+  id: Extract<MessageId, `toast.${string}`>;
+  text: string;
+}
+
 export interface Confirm {
   bytes: number;
   answer: (proceed: boolean) => void;
@@ -68,6 +75,10 @@ export function createAppState() {
     /** The worker mirror is being re-seeded (ADR-0005 §4): operations wait, the editor is read-only. */
     seeding: signal(false),
     dragging: signal(false),
+    /** Newest last (F-007.R1). */
+    toasts: signal<readonly Toast[]>([]),
+    /** The main area's view (SCR-Formatter; the tree view arrives with F-006). */
+    view: signal<'text' | 'tree'>('text'),
     validation: signal<Validation>({ state: 'empty', result: null, version: 0 }),
     /** Text of the polite status region: validity changes and each new error, once (SCR-Formatter). */
     announcement: signal(t('status.empty')),

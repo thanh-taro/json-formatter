@@ -1,7 +1,7 @@
 // Implements: CMP-Toolbar — load group wired (F-001: COPY-action.open, COPY-action.clear);
 // "empty document" and "busy" states; toolbar keyboard model (WAI-ARIA APG: one Tab stop,
-// Left/Right arrows move between enabled controls, Home/End go to the first/last). The other
-// actions arrive with F-002…F-010.
+// Left/Right arrows move between enabled controls, Home/End go to the first/last). Export group
+// wired by F-007 (COPY-action.copy, COPY-action.download). The other actions arrive with F-002…F-010.
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../../copy';
 import type { AppController } from '../controller';
@@ -108,10 +108,12 @@ export function Toolbar({ app }: { app: AppController }) {
         </button>
       </div>
       <div class="tk-toolbar__group tk-toolbar__group--end">
-        <button type="button" class="tk-button" disabled={off}>
+        <button type="button" class="tk-button" disabled={off} onClick={() => app.copy()}>
+          <Icon name="copy" />
           {t('action.copy')}
         </button>
-        <button type="button" class="tk-button" disabled={off}>
+        <button type="button" class="tk-button" disabled={off} onClick={() => app.download()}>
+          <Icon name="download" />
           {t('action.download')}
         </button>
       </div>
