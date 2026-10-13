@@ -593,6 +593,13 @@
       "started": "2026-10-13T15:27:22+00:00",
       "outcome": "converged",
       "ended": "2026-10-13T15:39:47+00:00"
+    },
+    "build-F-010": {
+      "round": 1,
+      "max": 3,
+      "active": true,
+      "started": "2026-10-13T15:43:10+00:00",
+      "outcome": null
     }
   },
   "log": [
@@ -1159,9 +1166,13 @@
     {
       "at": "2026-10-13T15:39:47+00:00",
       "event": "loop build-F-002 ended: converged"
+    },
+    {
+      "at": "2026-10-13T15:43:10+00:00",
+      "event": "loop build-F-010 started (max 3)"
     }
   ],
-  "updated": "2026-10-13T15:39:47+00:00",
+  "updated": "2026-10-13T15:43:10+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
