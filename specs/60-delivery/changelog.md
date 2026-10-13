@@ -23,3 +23,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - F-001 build: added COPY-progress.inserting and COPY-progress.restoring (spec gap from implementation).
 - NFR-01 clarified: browser may page large in-memory data (undo snapshots) to its own temporary files (D-028).
 - F-001 build: added COPY-error.unreadable and COPY-error.failed.
+- F-001 shipped (3 review rounds; security + code review converged).

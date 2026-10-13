@@ -556,11 +556,12 @@
       "ended": "2026-10-13T11:23:31+00:00"
     },
     "build-F-001": {
-      "round": 1,
+      "round": 2,
       "max": 3,
-      "active": true,
+      "active": false,
       "started": "2026-10-13T13:18:03+00:00",
-      "outcome": null
+      "outcome": "converged",
+      "ended": "2026-10-13T14:01:41+00:00"
     }
   },
   "log": [
@@ -1067,9 +1068,17 @@
     {
       "at": "2026-10-13T13:27:08+00:00",
       "event": "decision D-028 answered: Accept; clarify NFR-01"
+    },
+    {
+      "at": "2026-10-13T13:47:26+00:00",
+      "event": "loop build-F-001 round 2"
+    },
+    {
+      "at": "2026-10-13T14:01:41+00:00",
+      "event": "loop build-F-001 ended: converged"
     }
   ],
-  "updated": "2026-10-13T13:27:08+00:00",
+  "updated": "2026-10-13T14:01:41+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
