@@ -58,11 +58,11 @@ let started = false;
 
 /**
  * Starts offline support once, after the page has loaded (call after the first render).
- * No-op without service-worker support, in development, or when registration is refused
- * (storage partitioning, sandboxing).
+ * No-op without service-worker support, in development, in a kill-switch build
+ * (`SW_KILL=1`, MOD-Build), or when registration is refused (storage partitioning, sandboxing).
  */
 export function startOffline(): void {
-  if (started || import.meta.env.DEV) return;
+  if (started || !__TK_OFFLINE__) return;
   started = true;
   try {
     if (!('serviceWorker' in navigator)) return;

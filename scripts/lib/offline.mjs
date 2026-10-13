@@ -1,16 +1,18 @@
 // MOD-Build — the offline service worker in the build (ADR-0012):
 // - emits src/host/sw.ts as the stable, unhashed /sw.js (its headers: scripts/gen-headers.mjs);
-// - stamps it with a build id derived from the hashed output, so each build has its own cache
-//   and a changed app is a changed /sw.js;
 // - lists the build's JS/CSS chunks in a <meta> of index.html, so the page can name the worker
-//   (and any lazy) chunk in its seed list (MOD-Host `startOffline`).
-import crypto from 'node:crypto';
+//   (and any lazy) chunk in its seed list (MOD-Host `startOffline`);
+// - kill switch: `SW_KILL=1` emits src/host/sw-kill.ts as /sw.js instead (deletes the tool's
+//   caches and unregisters itself) and compiles the page without registration (`__TK_OFFLINE__`).
 import { abs } from './util.mjs';
 
 export const SW_SOURCE = 'src/host/sw.ts';
+export const SW_KILL_SOURCE = 'src/host/sw-kill.ts';
 export const SW_FILE = 'sw.js';
-export const BUILD_ID_PLACEHOLDER = '__TK_BUILD_ID__';
 export const CHUNKS_META = 'tk-chunks';
+
+/** True when the deploy ships the kill switch. */
+export const swKill = (env = process.env) => env.SW_KILL === '1';
 
 /** Hashed JS/CSS chunks of a bundle (keys are output file names), as absolute paths. */
 export function chunkList(fileNames) {
@@ -20,41 +22,36 @@ export function chunkList(fileNames) {
     .map((f) => '/' + f);
 }
 
-/** A short id of a build: the hashed file names plus the bytes of the files without a hash. */
-export function buildId(fileNames, unhashedSources = []) {
-  const h = crypto.createHash('sha256');
-  for (const f of [...fileNames].sort()) h.update(f + '\n');
-  for (const s of unhashedSources) h.update(s);
-  return h.digest('hex').slice(0, 12);
-}
-
 /** @returns {import('vite').Plugin} */
 export function offline() {
+  const kill = swKill();
+  let build = false;
   return {
     name: 'tk-offline',
-    apply: 'build',
     enforce: 'post',
+    config: (_config, { command }) => {
+      build = command === 'build';
+      return { define: { __TK_OFFLINE__: JSON.stringify(build && !kill) } };
+    },
     buildStart() {
-      this.emitFile({ type: 'chunk', id: abs(SW_SOURCE), fileName: SW_FILE });
+      if (!build) return;
+      this.emitFile({ type: 'chunk', id: abs(kill ? SW_KILL_SOURCE : SW_SOURCE), fileName: SW_FILE });
     },
     transformIndexHtml: {
       order: 'post',
       handler(html, ctx) {
-        const chunks = chunkList(Object.keys(ctx.bundle ?? {}));
+        if (!build || !ctx.bundle || kill) return html;
+        const chunks = chunkList(Object.keys(ctx.bundle));
         return html.replace('</head>', `  <meta name="${CHUNKS_META}" content="${chunks.join(' ')}" />\n  </head>`);
       },
     },
     generateBundle(_options, bundle) {
+      if (!build) return;
       const sw = bundle[SW_FILE];
       if (!sw || sw.type !== 'chunk') throw new Error(`offline: ${SW_FILE} was not emitted`);
       if (/^\s*(import|export)\b/m.test(sw.code)) {
         throw new Error(`offline: ${SW_FILE} must be a classic script (it imports code shared with the page)`);
       }
-      const names = Object.keys(bundle).filter((f) => f.startsWith('assets/') && !f.endsWith('.map'));
-      const html = bundle['index.html'];
-      const id = buildId(names, [sw.code, html && html.type === 'asset' ? String(html.source) : '']);
-      if (!sw.code.includes(BUILD_ID_PLACEHOLDER)) throw new Error('offline: build id placeholder missing');
-      sw.code = sw.code.replaceAll(BUILD_ID_PLACEHOLDER, id);
     },
   };
 }

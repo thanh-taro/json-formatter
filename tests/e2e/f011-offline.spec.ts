@@ -22,6 +22,7 @@ test.beforeEach(async ({ page, request }) => {
 test.afterEach(async ({ request }) => {
   await request.get(`${ADMIN}/offline?on=0`);
   await request.get(`${ADMIN}/publish?on=0`);
+  await request.get(`${ADMIN}/sw-expired?on=0`);
 });
 
 const admin = async (request: APIRequestContext, p: string) => (await request.get(`${ADMIN}${p}`)).json();
@@ -57,20 +58,26 @@ async function paste(s: Scope, text: string) {
   }, text);
 }
 
-/** Waits until the worker has stored the page and every build chunk (the seed finished). */
+/** The one cache of ADR-0012 (MOD-Host `CACHE_NAME`). */
+const CACHE = 'json-formatter-v1';
+
+/**
+ * Waits until the worker has stored, in the one cache, every build chunk of this document and
+ * then this very page (the seed finished; the page is stored last).
+ */
 async function seeded(s: Scope) {
   await expect
     .poll(
       () =>
-        s.evaluate(async () => {
+        s.evaluate(async (name) => {
           const meta = document.querySelector('meta[name="tk-chunks"]')?.getAttribute('content') ?? '';
-          const want = ['/', ...meta.split(/\s+/).filter(Boolean)];
-          const have = new Set<string>();
-          for (const name of await caches.keys()) {
-            for (const r of await (await caches.open(name)).keys()) have.add(new URL(r.url).pathname);
-          }
-          return want.filter((w) => !have.has(w));
-        }),
+          const cache = await caches.open(name);
+          const have = new Set((await cache.keys()).map((r) => new URL(r.url).pathname));
+          const missing = meta.split(/\s+/).filter((w) => w && !have.has(w));
+          const page = await (await cache.match('/'))?.text();
+          if (!page?.includes(meta)) missing.push('/ (this version)');
+          return missing;
+        }, CACHE),
       { timeout: 15_000 },
     )
     .toEqual([]);
@@ -215,5 +222,74 @@ test.describe('F-011 offline', () => {
     await opened(next);
     await expect(next.locator('meta[name="tk-test-version"]')).toHaveAttribute('content', '2');
     await useTheTool(next);
+  });
+
+  test('F-011.AC3 F-011.AC1 after a deploy with a changed /sw.js and new asset hashes, one online opening makes the new version work offline', async ({
+    playwright,
+    browserName,
+    request,
+  }, info) => {
+    // A persistent profile: WebKit's ephemeral contexts lose Cache Storage when a worker is
+    // replaced, which no real browser profile does.
+    const context = await playwright[browserName].launchPersistentContext(info.outputPath('profile'), {
+      baseURL: test.info().project.use.baseURL!,
+    });
+    await admin(request, '/sw-expired?on=1');
+    const first = await context.newPage();
+    await first.goto('/?theme=dark');
+    await opened(first);
+    await seeded(first);
+
+    await admin(request, '/publish?on=1');
+    const mark = (await serverLog(request)).now;
+    const second = await context.newPage();
+    await second.goto('/?theme=dark');
+    await opened(second);
+    await expect(second.locator('meta[name="tk-test-version"]')).toHaveAttribute('content', '2');
+    await seeded(second);
+    // The browser's update check installs the changed worker; it waits while sessions are open.
+    await expect
+      .poll(
+        () =>
+          second.evaluate(async () => {
+            const reg = await navigator.serviceWorker.getRegistration();
+            await reg?.update().catch(() => undefined);
+            return !!reg?.waiting;
+          }),
+        { timeout: 15_000 },
+      )
+      .toBe(true);
+    const { log } = await serverLog(request);
+    expect(log.some((e) => e.t > mark && e.path === '/sw.js')).toBe(true);
+    // Every session closes, so the new worker takes over; then the connection is gone.
+    await first.close();
+    await second.close();
+    await admin(request, '/offline?on=1');
+    const third = await context.newPage();
+    await third.goto('/?theme=light');
+    await opened(third);
+    await expect(third.locator('meta[name="tk-test-version"]')).toHaveAttribute('content', '2');
+    await expect
+      .poll(() =>
+        third.evaluate(async () => {
+          const reg = await navigator.serviceWorker.getRegistration();
+          return {
+            active: reg?.active?.state ?? null,
+            waiting: !!reg?.waiting,
+            controlled: !!navigator.serviceWorker.controller,
+          };
+        }),
+      )
+      .toEqual({ active: 'activated', waiting: false, controlled: true });
+    // The page and all its assets loaded: styles, fonts, and the worker chunk (the tool works).
+    expect(
+      await third.evaluate(async () => {
+        await document.fonts.ready;
+        return [...document.fonts].filter((f) => f.status === 'error').length;
+      }),
+    ).toBe(0);
+    await expect(third.locator('.tk-statusbar')).toBeVisible();
+    await useTheTool(third);
+    await context.close();
   });
 });

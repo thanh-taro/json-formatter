@@ -4,41 +4,46 @@ import { readFileSync } from 'node:fs';
 import { ESLint } from 'eslint';
 import { describe, expect, it } from 'vitest';
 import {
+  CACHE_NAME,
   cacheKey,
-  cacheName,
   MAX_SEED_URLS,
   prunable,
   routeOf,
-  seedTargets,
+  seedPlan,
   staleCaches,
 } from '../../src/host/offline-policy';
 import { seedList } from '../../src/host/offline';
 // @ts-expect-error -- plain ESM build script without type declarations
-import { buildId, chunkList } from '../../scripts/lib/offline.mjs';
+import { chunkList, swKill } from '../../scripts/lib/offline.mjs';
 // @ts-expect-error -- plain ESM build script without type declarations
 import { SW_CSP } from '../../scripts/gen-headers.mjs';
 
 const O = 'https://json.tarokit.app';
+const seed = (urls: unknown[]) => seedPlan({ type: 'seed', urls }, O);
 
 describe('offline worker routing', () => {
-  it('F-011.R1 pages are network first with an offline fallback; hashed assets cache first', () => {
+  it('F-011.R1 the app page is network first with an offline fallback; hashed assets cache first', () => {
     expect(routeOf({ method: 'GET', url: `${O}/?theme=dark`, mode: 'navigate' }, O)).toBe('page');
+    expect(routeOf({ method: 'GET', url: `${O}/index.html`, mode: 'navigate' }, O)).toBe('page');
     expect(routeOf({ method: 'GET', url: `${O}/assets/index-abc.js`, mode: 'cors' }, O)).toBe('asset');
     expect(routeOf({ method: 'GET', url: `${O}/assets/font-x.woff2`, mode: 'cors' }, O)).toBe('asset');
   });
 
-  it('F-011.R2 the worker leaves everything else alone', () => {
+  it('F-011.R2 the worker leaves everything else alone, including other navigated paths', () => {
     expect(routeOf({ method: 'POST', url: `${O}/`, mode: 'navigate' }, O)).toBeNull();
     expect(routeOf({ method: 'GET', url: 'https://tarokit.app/assets/a.js', mode: 'cors' }, O)).toBeNull();
     expect(routeOf({ method: 'GET', url: `${O}/sw.js`, mode: 'same-origin' }, O)).toBeNull();
-    expect(routeOf({ method: 'GET', url: `${O}/third-party-notices.txt`, mode: 'no-cors' }, O)).toBeNull();
+    expect(routeOf({ method: 'GET', url: `${O}/third-party-notices.txt`, mode: 'navigate' }, O)).toBeNull();
+    expect(routeOf({ method: 'GET', url: `${O}/anything`, mode: 'navigate' }, O)).toBeNull();
     expect(routeOf({ method: 'GET', url: `${O}/assets/`, mode: 'cors' }, O)).toBeNull();
+    expect(routeOf({ method: 'GET', url: `${O}/assets/a.js?x=1`, mode: 'cors' }, O)).toBeNull();
+    expect(routeOf({ method: 'GET', url: `blob:${O}/0b8e`, mode: 'cors' }, O)).toBeNull();
   });
 
-  it('F-011.R1 a page is cached and matched without its query (the portal adds ?theme=)', () => {
-    expect(cacheKey(new URL(`${O}/?theme=dark`))).toBe(`${O}/`);
-    expect(cacheKey(new URL(`${O}/?theme=light#x`))).toBe(`${O}/`);
-    expect(cacheKey(new URL(`${O}/assets/a.js?v=1`))).toBe(`${O}/assets/a.js`);
+  it('F-011.R1 the page has one key, matched without its query (the portal adds ?theme=)', () => {
+    expect(cacheKey(new URL(`${O}/?theme=dark`), O)).toBe(`${O}/`);
+    expect(cacheKey(new URL(`${O}/index.html?theme=light#x`), O)).toBe(`${O}/`);
+    expect(cacheKey(new URL(`${O}/assets/a.js`), O)).toBe(`${O}/assets/a.js`);
   });
 });
 
@@ -60,47 +65,79 @@ describe('seeding', () => {
     ]);
   });
 
-  it('NFR-01 the worker stores only the tool’s own files from a well-formed seed message', () => {
-    expect(seedTargets({ type: 'seed', urls: ['/?theme=dark', '/', '/assets/a.js', '/sw.js'] }, O)).toEqual([
-      { href: `${O}/?theme=dark`, key: `${O}/` },
-      { href: `${O}/assets/a.js`, key: `${O}/assets/a.js` },
-    ]);
-    for (const bad of [
-      null,
-      'seed',
-      { type: 'other', urls: ['/'] },
-      { type: 'seed', urls: '/' },
-      { type: 'seed', urls: ['https://evil.example/x', '//evil.example/y', 42] },
-    ]) {
-      expect(seedTargets(bad, O)).toEqual([]);
-    }
+  it('F-011.R1 the worker stores the assets first and the page last', () => {
+    expect(seed(['/?theme=dark', '/assets/a.js', '/', '/assets/b.css', '/assets/a.js'])).toEqual({
+      assets: [
+        { href: `${O}/assets/a.js`, key: `${O}/assets/a.js` },
+        { href: `${O}/assets/b.css`, key: `${O}/assets/b.css` },
+      ],
+      page: { href: `${O}/?theme=dark`, key: `${O}/` },
+    });
     const many = Array.from({ length: 200 }, (_, i) => `/assets/${i}.js`);
-    expect(seedTargets({ type: 'seed', urls: many }, O)).toHaveLength(MAX_SEED_URLS);
+    expect(seed(many).assets).toHaveLength(MAX_SEED_URLS);
   });
 
-  it('F-011.R3 after seeding, assets the current page does not use are pruned; pages are kept', () => {
-    const cached = [`${O}/`, `${O}/assets/old.js`, `${O}/assets/new.js`, `${O}/assets/font.woff2`];
-    expect(prunable(cached, [`${O}/`, `${O}/assets/new.js`, `${O}/assets/font.woff2`])).toEqual([`${O}/assets/old.js`]);
+  it('PRN-01 NFR-01 hostile seed lists: only allow-listed http(s) tool files are ever stored', () => {
+    for (const bad of [null, 'seed', { type: 'other', urls: ['/'] }, { type: 'seed', urls: '/' }]) {
+      expect(seedPlan(bad, O)).toEqual({ assets: [], page: null });
+    }
+    expect(
+      seed([
+        `blob:${O}/7f3c-document-content`,
+        `data:application/json,{"secret":1}`,
+        `filesystem:${O}/temporary/doc.json`,
+        'https://evil.example/assets/a.js',
+        '//evil.example/assets/a.js',
+        `http://json.tarokit.app/assets/a.js`, // other origin (scheme)
+        '/sw.js',
+        '/third-party-notices.txt',
+        '/random',
+        '/assets/',
+        '/assets/sub/dir.js',
+        '/assets/%2e%2e/secret.js',
+        '/assets/..%2fsecret.js',
+        '/assets/a.js?content=secret',
+        '/assets/a.js/../../x',
+        42,
+      ]),
+    ).toEqual({ assets: [], page: null });
+    // `../` is resolved by the URL parser: it can only land on an allowed path or be dropped.
+    expect(seed(['/assets/../index.html']).page).toEqual({ href: `${O}/index.html`, key: `${O}/` });
+    // A page query other than the theme is not fetched (content never reaches a URL).
+    expect(seed(['/?doc=secret']).page).toEqual({ href: `${O}/`, key: `${O}/` });
+    expect(seed(['/?theme=dark&doc=secret']).page).toEqual({ href: `${O}/`, key: `${O}/` });
+  });
+
+  it('F-011.R3 after a seed, unused assets and anything off the allow-list are pruned; the page stays', () => {
+    const cached = [
+      `${O}/`,
+      `${O}/assets/old.js`,
+      `${O}/assets/new.js`,
+      `${O}/assets/font.woff2`,
+      `${O}/third-party-notices.txt`,
+      `${O}/assets/a.js?x=1`,
+    ];
+    expect(prunable(cached, [`${O}/assets/new.js`, `${O}/assets/font.woff2`], O)).toEqual([
+      `${O}/assets/old.js`,
+      `${O}/third-party-notices.txt`,
+      `${O}/assets/a.js?x=1`,
+    ]);
   });
 });
 
-describe('versioned caches', () => {
-  it('F-011.R3 each build has its own cache; other builds’ caches are stale, foreign caches untouched', () => {
-    expect(cacheName('abc123')).toBe('json-formatter-abc123');
-    expect(
-      staleCaches(['json-formatter-old', 'json-formatter-abc123', 'someone-else'], 'json-formatter-abc123'),
-    ).toEqual(['json-formatter-old']);
+describe('one cache for every worker version', () => {
+  it('F-011.R3 the cache name is fixed (schema version); activate removes only other schema caches', () => {
+    expect(CACHE_NAME).toBe('json-formatter-v1');
+    expect(staleCaches(['json-formatter-v0', CACHE_NAME, 'someone-else'])).toEqual(['json-formatter-v0']);
   });
 
-  it('F-011.R3 the build id follows the output and the chunk list names JS/CSS only', () => {
-    const a = buildId(['assets/index-a.js', 'assets/x.css'], ['sw']);
-    expect(a).toMatch(/^[0-9a-f]{12}$/);
-    expect(buildId(['assets/x.css', 'assets/index-a.js'], ['sw'])).toBe(a);
-    expect(buildId(['assets/index-b.js', 'assets/x.css'], ['sw'])).not.toBe(a);
+  it('F-011.R2 the chunk list names JS/CSS only; the kill switch is a build flag', () => {
     expect(chunkList(['assets/b.js', 'assets/a.css', 'assets/f.woff2', 'sw.js', 'assets/b.js.map'])).toEqual([
       '/assets/a.css',
       '/assets/b.js',
     ]);
+    expect(swKill({ SW_KILL: '1' })).toBe(true);
+    expect(swKill({})).toBe(false);
   });
 });
 
@@ -143,5 +180,6 @@ describe('lint: Cache Storage and fetch only in the worker', { timeout: 30_000 }
   it('NFR-01 the worker may use them, but no other storage', async () => {
     expect(await errors('void fetch("/x"); void caches.open("x");', 'src/host/sw.ts')).toEqual([]);
     expect(await errors('void indexedDB.open("x");', 'src/host/sw.ts')).toContain('no-restricted-globals');
+    expect(await errors('void caches.open("x");', 'src/host/sw-kill.ts')).toEqual([]);
   });
 });
