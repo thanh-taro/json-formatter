@@ -1,7 +1,7 @@
 ---
 id: F-004
 title: Change indentation without reflow
-status: ready
+status: building
 milestone: M-1
 priority: P1
 personas: [PER-01]

@@ -5,7 +5,7 @@
 | F-001 | Load a document | M-1 | P0 | shipped |
 | F-002 | Beautify a document | M-1 | P0 | shipped |
 | F-003 | Minify a document | M-1 | P0 | shipped |
-| F-004 | Change indentation without reflow | M-1 | P1 | ready |
+| F-004 | Change indentation without reflow | M-1 | P1 | building |
 | F-005 | Validate and pinpoint problems | M-1 | P0 | shipped |
 | F-006 | Explore the document as a tree | M-1 | P1 | ready |
 | F-007 | Copy and download the document | M-1 | P0 | building |

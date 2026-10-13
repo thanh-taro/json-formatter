@@ -40,6 +40,7 @@ export {
   DEFAULT_INDENT,
   MIN_CUSTOM_WIDTH,
   MAX_CUSTOM_WIDTH,
+  indentStyle,
   indentText,
   type IndentStyle,
   type FormatMode,
@@ -48,3 +49,13 @@ export {
 export { beautifiedBytes, formatText } from './format';
 export { PositionResolver, resolvePositions, type Position } from './positions';
 export { positionsOf, resultOf, validateText, type ValidationResult } from './result';
+export {
+  IndentScanner,
+  Reindenter,
+  detectUnit,
+  reindentDelta,
+  reindentIsNoop,
+  reindentText,
+  type IndentStats,
+  type SourceUnit,
+} from './reindent';
