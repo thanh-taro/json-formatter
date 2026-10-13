@@ -66,6 +66,9 @@ COPY-tree.kind_number, COPY-tree.kind_boolean, COPY-tree.kind_null), child count
 state offers COPY-action.go_to_error. Copy confirmation: COPY-toast.copied. Building progress: COPY-progress.tree with COPY-action.cancel.
 
 ## Edge cases
+- Cancelling the checking bar → the text view is shown (the stale tree is not left on screen).
+- Undo and redo work while the tree has focus.
+- After the document changes, nodes that still exist at the same path stay expanded; everything else follows RULE-12.
 - Top-level scalar → tree shows a single root row.
 - Duplicate keys → each occurrence is its own row; paths are identical (warning already shown by F-005).
 - Very long string values → truncated in the row with full value available via copy value.

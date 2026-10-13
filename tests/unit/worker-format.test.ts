@@ -6,9 +6,9 @@ import { describe, expect, it } from 'vitest';
 import { WorkerEngine } from '../../src/worker/engine';
 import type { FromWorker, JobSpec } from '../../src/worker/protocol';
 
-function harness() {
+function harness(now?: () => number) {
   const out: FromWorker[] = [];
-  const engine = new WorkerEngine((m) => out.push(m));
+  const engine = new WorkerEngine((m) => out.push(m), now);
   let id = 0;
   const start = (job: JobSpec) => {
     const jobId = ++id;
@@ -130,7 +130,10 @@ describe('MOD-Worker format', () => {
   });
 
   it('F-002.AC10 ADR-0005 a 10,000-level document streams in bounded chunks with yields in between', async () => {
-    const h = harness();
+    // A fake clock that advances 1 ms per reading makes the ~16 ms slices (and the adaptive
+    // piece size) independent of machine speed, so the number of slices is deterministic.
+    let ms = 0;
+    const h = harness(() => ms++);
     const input = '['.repeat(10_000) + ']'.repeat(10_000);
     h.setText(input, 1);
     const id = h.start({
@@ -140,12 +143,25 @@ describe('MOD-Worker format', () => {
       lineEnding: 'lf',
       nonBreakBytes: input.length,
     });
+    // the job yields to the event loop at the end of its first slice, with that slice's output posted
+    while (!h.of(id).some((m) => m.type === 'progress')) await Promise.resolve();
+    expect(h.of(id).filter((m) => m.type === 'progress')).toHaveLength(1);
+    expect(h.of(id).some((m) => m.type === 'chunk')).toBe(true);
+    expect(h.end(id)).toBeUndefined();
     await h.engine.idle();
-    const chunks = h.of(id).filter((m) => m.type === 'chunk');
+    const msgs = h.of(id);
+    const chunks = msgs.filter((m) => m.type === 'chunk');
     expect(chunks.length).toBeGreaterThan(50);
     for (const m of chunks) if (m.type === 'chunk') expect(m.text.length).toBeLessThanOrEqual(2 << 20);
-    expect(h.of(id).filter((m) => m.type === 'progress').length).toBeGreaterThan(1);
+    // every slice ends by posting its output, then reporting progress and yielding
+    const progress = msgs.flatMap((m, i) => (m.type === 'progress' ? [i] : []));
+    expect(progress.length).toBeGreaterThan(1);
+    for (let k = 0; k < progress.length; k++) {
+      const from = k ? progress[k - 1]! : 0;
+      expect(msgs.slice(from, progress[k]).some((m) => m.type === 'chunk')).toBe(true);
+    }
     expect(h.end(id)).toMatchObject({ type: 'formatted', facts: { breaks: { lf: 19_998 } } });
+    expect(h.text(id)).toHaveLength(Number((h.end(id) as { facts: { length: number } }).facts.length));
   });
 
   it('INV-05 a format request for a version that is no longer current is dropped', async () => {

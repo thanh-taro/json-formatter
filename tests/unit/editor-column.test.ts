@@ -10,15 +10,9 @@ function oracle(line: string, offset: number): number {
   return [...line.slice(0, offset)].length + 1;
 }
 
-/** Runs the index's background build synchronously, returning the longest slice in ms. */
-function buildAll(index: ColumnIndex): number {
-  let longest = 0;
-  for (;;) {
-    const t0 = performance.now();
-    const done = index.step();
-    longest = Math.max(longest, performance.now() - t0);
-    if (done) return longest;
-  }
+/** Runs the index's background build synchronously. */
+function buildAll(index: ColumnIndex): void {
+  while (!index.step());
 }
 
 const manual = () => new ColumnIndex(undefined, () => 0 as unknown as ReturnType<typeof setTimeout>);
@@ -34,38 +28,28 @@ describe('MOD-Editor cursor column', () => {
     }
   });
 
-  it('NFR-02 review F-005 M1 on a 50 MB single line, a cursor move stays far below 50 ms of main-thread work', () => {
-    const size = 50_000_000;
+  it('NFR-02 review F-005 M1 on a long single line, a cursor query answers from the block index once built', () => {
+    // The wall-clock budget (≤ 50 ms per query and per slice on 50 MB) is measured in
+    // tests/bench/column.bench.test.ts; this checks the behaviour, independent of machine load.
+    const size = 5_000_000;
     const emoji = '😀';
     // One emoji every ~1 MB, the rest ASCII.
     const part = 'x'.repeat(1_000_000 - emoji.length) + emoji;
     const line = part.repeat(size / 1_000_000);
     const doc = Text.of([line]);
     const index = manual();
-    const near = (head: number) => {
-      const t0 = performance.now();
-      const col = index.column(doc, 0, line.length, head);
-      return { col, ms: performance.now() - t0 };
-    };
-    // Before the index reaches the cursor: no answer yet (UTF-16 shown), and no long task.
-    const first = near(line.length - 3);
-    expect(first.col).toBeNull();
-    expect(first.ms).toBeLessThan(50);
-    // The build runs in slices that each stay short.
-    expect(buildAll(index)).toBeLessThan(50);
-    for (const head of [0, 1, 999_998, 1_000_000, 25_000_001, line.length - 3, line.length]) {
-      const r = near(head);
-      expect(r.ms).toBeLessThan(50);
-      expect(r.col, String(head)).toBe(head - Math.floor(head / 1_000_000) + 1);
+    // Before the index reaches the cursor: no answer yet (UTF-16 shown).
+    expect(index.column(doc, 0, line.length, line.length - 3)).toBeNull();
+    buildAll(index);
+    for (const head of [0, 1, 999_998, 1_000_000, 2_500_001, line.length - 3, line.length]) {
+      expect(index.column(doc, 0, line.length, head), String(head)).toBe(head - Math.floor(head / 1_000_000) + 1);
     }
     // Typing near the end keeps the blocks before it: a query before the edit answers at once.
     const edit = ChangeSet.of({ from: line.length - 10, insert: 'y' }, line.length);
     const next = edit.apply(doc);
     index.update(edit, next);
-    const t0 = performance.now();
-    expect(index.column(next, 0, line.length + 1, 25_000_001)).toBe(25_000_001 - 25 + 1);
-    expect(performance.now() - t0).toBeLessThan(50);
-  }, 60_000);
+    expect(index.column(next, 0, line.length + 1, 2_500_001)).toBe(2_500_001 - 2 + 1);
+  });
 
   it('ENT-Issue the indexed column matches the oracle around surrogate pairs and block edges', () => {
     const block = 1 << 16;
