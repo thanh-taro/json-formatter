@@ -504,6 +504,22 @@
       "answer": "Approved; ADRs accepted incl. spike amendments",
       "asked": "2026-10-13T10:36:56+00:00",
       "answered": "2026-10-13T10:36:56+00:00"
+    },
+    {
+      "id": "D-028",
+      "question": "Large undo Blobs may page to browser temp files vs NFR-01",
+      "options": [
+        "accept+clarify",
+        "memory only 1 step",
+        "no undo"
+      ],
+      "recommendation": "accept+clarify",
+      "kind": "legal",
+      "phase": "build",
+      "status": "answered",
+      "answer": "Accept; clarify NFR-01",
+      "asked": "2026-10-13T13:27:08+00:00",
+      "answered": "2026-10-13T13:27:08+00:00"
     }
   ],
   "loops": {
@@ -538,6 +554,13 @@
       "started": "2026-10-13T11:14:39+00:00",
       "outcome": "converged",
       "ended": "2026-10-13T11:23:31+00:00"
+    },
+    "build-F-001": {
+      "round": 1,
+      "max": 3,
+      "active": true,
+      "started": "2026-10-13T13:18:03+00:00",
+      "outcome": null
     }
   },
   "log": [
@@ -1032,9 +1055,21 @@
     {
       "at": "2026-10-13T11:24:04+00:00",
       "event": "F-008/F-009 merged (review converged); F-009 shipped, F-008 building pending AC6/AC7 re-run"
+    },
+    {
+      "at": "2026-10-13T13:18:03+00:00",
+      "event": "loop build-F-001 started (max 3)"
+    },
+    {
+      "at": "2026-10-13T13:27:08+00:00",
+      "event": "decision D-028 opened: Large undo Blobs may page to browser temp files vs NFR-01"
+    },
+    {
+      "at": "2026-10-13T13:27:08+00:00",
+      "event": "decision D-028 answered: Accept; clarify NFR-01"
     }
   ],
-  "updated": "2026-10-13T11:24:04+00:00",
+  "updated": "2026-10-13T13:27:08+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
