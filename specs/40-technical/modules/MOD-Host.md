@@ -42,3 +42,6 @@ failures are silent (online-only).
 F-008.R1, F-008.R2, F-008.R4 (message side), F-008.R5, F-008.R6 (standalone path);
 F-011.R1, F-011.R2, F-011.R3; RULE-16; INV-02 (never sends content); NFR-01 (D-021
 exception only), NFR-09 (message-origin side), NFR-07 (embedded and standalone).
+
+## Notes
+- The offline worker matches cached pages ignoring the query string (`ignoreSearch`), because the portal opens the tool with `?theme=` (portal ADR-0011).

@@ -24,3 +24,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - NFR-01 clarified: browser may page large in-memory data (undo snapshots) to its own temporary files (D-028).
 - F-001 build: added COPY-error.unreadable and COPY-error.failed.
 - F-001 shipped (3 review rounds; security + code review converged).
+- F-005 build clarifications: RULE-04 (control characters in strings, lone slash, BOM-only), RULE-05 duplicate keys compared decoded; location numbers grouped.
