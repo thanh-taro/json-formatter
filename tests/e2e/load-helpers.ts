@@ -55,6 +55,15 @@ export function largeFixture(label: string, bytes: number): string {
   return p;
 }
 
+/**
+ * Report screenshot under `.build-my-app/reports/build/<name>`, only when `SCREENSHOTS` is set
+ * (`SCREENSHOTS=1 pnpm test:e2e`), so ordinary runs never rewrite committed files.
+ */
+export async function reportShot(page: Page, name: string): Promise<void> {
+  if (!process.env['SCREENSHOTS']) return;
+  await page.screenshot({ path: path.join(ROOT, '.build-my-app/reports/build', name), caret: 'initial' });
+}
+
 /** The editor content element (inside the editor's open shadow root). */
 export const content = (page: Page) => page.locator('.cm-content');
 /** The app root with the document facts as data attributes. */

@@ -100,6 +100,9 @@ function split(s: string): string[] {
 /** Collects text pieces into ~1 M-unit flat chunks, normalising CRLF and lone CR to '\n'
  * (the editor splits on the same three, ADR-0006 §3). A CRLF split across pieces is one break. */
 export class MirrorBuilder {
+  /** `onText` sees the normalised text in order (validation while reading, ADR-0005 §2). */
+  constructor(private readonly onText?: (normalised: string) => void) {}
+
   private chunks: string[] = [];
   private buf: string[] = [];
   private n = 0;
@@ -130,6 +133,7 @@ export class MirrorBuilder {
   }
 
   private pushNormalised(s: string): void {
+    this.onText?.(s);
     if (s.length >= CHUNK_UNITS && !this.n) {
       this.chunks.push(flat(s));
       return;

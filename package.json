@@ -26,7 +26,8 @@
     "check:licenses": "node scripts/check-licenses.mjs",
     "check:size": "node scripts/check-size.mjs",
     "lhci": "lhci autorun",
-    "spec:lint": "python3 tools/spec_lint.py"
+    "spec:lint": "python3 tools/spec_lint.py",
+    "bench": "vitest run --config tests/bench/vitest.config.ts"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.1",

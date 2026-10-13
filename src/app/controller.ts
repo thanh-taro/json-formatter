@@ -1,8 +1,8 @@
 // MOD-App operation controller: every operation end to end with one busy / progress / cancel /
 // undo contract (MOD-App "run(operation)"), the RULE-02 tiers and confirmation, notices shown
 // once, and the worker ↔ editor wiring (architecture.md "Load" data flow).
-import { formatSize, t } from '../copy';
-import { isLargeTier, tierOf, type Tier } from '../core';
+import { formatCount, formatSize, hintFor, t, tCount } from '../copy';
+import { isLargeTier, tierOf, type Issue, type Tier, type ValidationResult } from '../core';
 import {
   createEditor,
   LARGE_PASTE,
@@ -15,10 +15,12 @@ import {
 import { installDropTarget, pickFile, type DropKind } from '../io';
 import { JobFailure, WorkerClient, type Job, type JobResult } from '../worker/client';
 import type { FailReason } from '../worker/protocol';
-import type { AppState, Bar, Busy } from './state';
+import type { AppState, Bar, Busy, Validation } from './state';
 
 /** Progress is shown once an operation has run this long (NFR-02). */
 const PROGRESS_DELAY_MS = 500;
+/** Normal tier: "checking" is shown only when a result takes longer than this (no flicker). */
+const CHECKING_DELAY_MS = 300;
 /** Main-thread slice when streaming text to the worker (architecture.md tunables). */
 const SLICE_MS = 8;
 
@@ -54,6 +56,31 @@ const loadedFacts: FactsOf = (r) => {
   return r.facts;
 };
 
+function stateOf(result: ValidationResult): Validation['state'] {
+  return result.validity;
+}
+
+/** COPY-issue.location of an issue, with the locale's digit grouping. */
+export function locationOf(issue: Pick<Issue, 'line' | 'column'>): string {
+  return t('issue.location', { line: formatCount(issue.line), column: formatCount(issue.column) });
+}
+
+/** The validity text of CMP-StatusBar (F-005.R2). */
+export function validityText(v: Validation): string {
+  switch (v.state) {
+    case 'empty':
+      return t('status.empty');
+    case 'checking':
+      return t('status.checking');
+    case 'invalid':
+      return t('status.invalid');
+    case 'valid': {
+      const n = (v.result?.issues.length ?? 0) + (v.result?.warningOverflow ?? 0);
+      return n ? tCount('status.valid_warnings', n) : t('status.valid');
+    }
+  }
+}
+
 export class AppController {
   editor: EditorHandle | null = null;
   readonly worker: WorkerClient;
@@ -66,6 +93,10 @@ export class AppController {
   private seeding: Promise<void> | null = null;
   private seedAgain = false;
   private progressFrame = 0;
+  /** The last error and validity kind announced (SCR-Formatter: errors once per new error). */
+  private announcedError = '';
+  private announcedKind = 'empty';
+  private checkingTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(readonly state: AppState) {
     this.worker = new WorkerClient({ onRestart: () => void this.reseed() });
@@ -84,6 +115,7 @@ export class AppController {
       onHistoryTrimmed: () => this.toldTrimmed(),
     });
     this.editor = editor;
+    this.requestValidation();
     this.removeDrop = installDropTarget(window, {
       isInEditor: (e) => e.composedPath().includes(host),
       onDrop: (d) => this.drop(d),
@@ -105,9 +137,99 @@ export class AppController {
   }
 
   private sync(how: MirrorSync, version: number, changes: { toJSON(): unknown }): void {
-    if (how === 'edit') this.worker.edit(version, changes.toJSON() as Parameters<WorkerClient['edit']>[1]);
-    else if (how === 'reseed') void this.reseed();
-    // 'adopt': the operation that produced the text adopts its job
+    if (how === 'edit') {
+      this.worker.edit(version, changes.toJSON() as Parameters<WorkerClient['edit']>[1]);
+      this.requestValidation();
+    } else if (how === 'reseed') void this.reseed();
+    // 'adopt': the operation that produced the text adopts its job, then asks for validation
+  }
+
+  // ---- validation (F-005) -------------------------------------------------------------------
+
+  /**
+   * Implements: F-005.R1, F-005.R7, INV-05 — after every change the document is re-validated in
+   * the worker without blocking input; meanwhile the state is `checking` and the previous result
+   * stays, marked out of date. Results for a version that is no longer shown are dropped.
+   * In the normal tier, where results arrive within milliseconds, `checking` is shown only once
+   * the wait exceeds CHECKING_DELAY_MS (no flicker per keystroke); in the large tiers at once.
+   */
+  requestValidation(retry = true): void {
+    const ed = this.editor;
+    if (!ed) return;
+    const version = ed.version;
+    clearTimeout(this.checkingTimer);
+    if (ed.isEmpty) {
+      // RULE-03 / F-005.AC9: zero characters is empty — no issue, nothing to compute.
+      this.showValidation({ state: 'empty', result: null, version });
+      return;
+    }
+    const large = isLargeTier(tierOf(ed.bytes));
+    const prev = this.state.validation.value;
+    if (large || !prev.result) this.state.validation.value = { ...prev, state: 'checking', version };
+    else
+      this.checkingTimer = setTimeout(() => {
+        const cur = this.state.validation.value;
+        if (this.editor?.version === version && cur.version !== version)
+          this.state.validation.value = { ...cur, state: 'checking', version };
+      }, CHECKING_DELAY_MS);
+    const restarts = this.worker.restarts;
+    // ADR-0007 §1: the skip table is built in the large tiers (RULE-02 bytes).
+    this.worker.validate(version, ed.lineEnding, large).then(
+      ({ version: v, result }) => {
+        if (this.editor?.version !== v) return;
+        clearTimeout(this.checkingTimer);
+        this.showValidation({ state: stateOf(result), result, version: v });
+      },
+      (e: unknown) => {
+        // Superseded or stale: a newer request owns the state. A restart re-seeds and asks again.
+        if (reasonOf(e) === 'cancelled' || this.worker.restarts !== restarts || this.editor?.version !== version)
+          return;
+        // Review F-005 m1 / round 3 (INV-05): any other failure is retried once, then reported
+        // with COPY-error.failed. The state stays "checking" with the previous result marked
+        // out of date — it never describes the current text — until the next change validates.
+        if (retry) return this.requestValidation(false);
+        clearTimeout(this.checkingTimer);
+        this.state.validation.value = { ...this.state.validation.value, state: 'checking', version };
+        this.showFailure(reasonOf(e), false);
+      },
+    );
+  }
+
+  private showValidation(v: Validation): void {
+    const error = v.state === 'invalid' ? v.result?.issues[0] : undefined;
+    // Same error as before (its marked position followed the edits)? Then it is not new.
+    const prevPos = this.announcedKind === 'invalid' ? this.editor?.issuePosition(0) : null;
+    const sameError = !!error && error.code === this.announcedError && prevPos === error.pos;
+    this.state.validation.value = v;
+    this.editor?.setIssues(v.result?.issues ?? [], v.state === 'invalid');
+    this.announce(v, sameError);
+  }
+
+  /** SCR-Formatter accessibility: validity changes are announced politely; each new error once. */
+  private announce(v: Validation, sameError: boolean): void {
+    const error = v.state === 'invalid' ? v.result?.issues[0] : undefined;
+    if (error) {
+      if (sameError) return;
+      this.announcedError = error.code;
+      this.announcedKind = 'invalid';
+      this.state.announcement.value = [t('status.invalid'), locationOf(error), hintFor(error)].join('. ');
+      return;
+    }
+    this.announcedError = '';
+    if (v.state === this.announcedKind) return;
+    this.announcedKind = v.state;
+    this.state.announcement.value = validityText(v);
+  }
+
+  /**
+   * Implements: F-005.R5 — moves the cursor to issue `index` of the shown result and scrolls it
+   * into view; while re-checking, the position follows the edits made since (review F-005 m3).
+   */
+  jumpTo(index: number): void {
+    const ed = this.editor;
+    const issue = this.state.validation.value.result?.issues[index];
+    if (!ed || !issue) return;
+    ed.goTo(ed.issuePosition(index) ?? issue.pos);
   }
 
   // ---- facts, tiers, notices --------------------------------------------------------------
@@ -244,6 +366,7 @@ export class AppController {
       const facts = factsOf(await job.result);
       const version = await pending.commit({ ...facts, ...extra });
       this.worker.adopt(job.jobId, version);
+      this.requestValidation();
     } catch (e) {
       pending.discard();
       job.cancel(); // releases the worker's pending mirror
@@ -445,6 +568,7 @@ export class AppController {
         this.state.seeding.value = false;
         this.unlock();
       }
+      this.requestValidation();
     })();
     return this.seeding;
   }

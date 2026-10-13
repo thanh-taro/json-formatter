@@ -1,11 +1,13 @@
-// Implements: SCR-Formatter — layout regions (toolbar · notice bar · main area · status bar) and
-// the states of F-001: default, empty, loading, large, confirm and file errors. Signals are read
+// Implements: SCR-Formatter — layout regions (toolbar · notice bar · main area · issue panel ·
+// status bar) and the states of F-001 (default, empty, loading, large, confirm, file errors) and
+// F-005 (error: marked in the editor, issue panel open, COPY-status.invalid). Signals are read
 // in the leaf components; the root only mirrors the document facts into data attributes (no
 // re-render of the tree on every keystroke, review m7).
 import { useSignalEffect } from '@preact/signals';
 import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { EditorArea } from './components/EditorArea';
+import { IssuePanel } from './components/IssuePanel';
 import { NoticeBar } from './components/NoticeBar';
 import { StatusBar } from './components/StatusBar';
 import { Toolbar } from './components/Toolbar';
@@ -35,7 +37,8 @@ export function Formatter() {
       <main class="tk-main">
         <EditorArea app={app} />
       </main>
-      <StatusBar doc={app.state.doc} cursor={app.state.cursor} />
+      <IssuePanel app={app} />
+      <StatusBar app={app} />
       <ConfirmDialog app={app} />
     </div>
   );

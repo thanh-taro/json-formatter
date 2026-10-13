@@ -14,6 +14,7 @@ import {
   openFile,
   paste,
   recordNotices,
+  reportShot,
   seamWorker,
   smallFixture,
   killWorker,
@@ -211,7 +212,7 @@ test.describe('F-001 failures keep the previous document (INV-03)', () => {
     await expect.poll(() => docText(page)).toBe('{"keep": 1}');
     await expect(alert.getByRole('button', { name: COPY['action.open'] })).toBeVisible();
     expect((await axe(page)).violations.map((v) => v.id)).toEqual([]);
-    await page.screenshot({ path: '.build-my-app/reports/build/F-001/error-encoding.png', caret: 'initial' });
+    await reportShot(page, 'F-001/error-encoding.png');
   });
 
   test('F-001.AC10 INV-03 when the device cannot hold the file, COPY-error.too_large is shown and nothing changes', async ({
@@ -237,7 +238,7 @@ test.describe('F-001 failures keep the previous document (INV-03)', () => {
     await expect(bar).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('progressbar')).toBeVisible();
     await expect(content(page)).toHaveAttribute('aria-readonly', 'true');
-    await page.screenshot({ path: '.build-my-app/reports/build/F-001/loading.png', caret: 'initial' });
+    await reportShot(page, 'F-001/loading.png');
     await bar.getByRole('button', { name: COPY['action.cancel'] }).click();
     await waitIdle(page);
     await expect(bar).toBeHidden();
@@ -264,7 +265,7 @@ test.describe('F-001 size tiers (RULE-02)', () => {
     await expect(page.locator('.cm-line').first()).toHaveText('[');
     expect(await page.evaluate(() => window.__csp)).toEqual([]);
     expect((await axe(page)).violations.map((v) => v.id)).toEqual([]);
-    await page.screenshot({ path: '.build-my-app/reports/build/F-001/large-notice.png', caret: 'initial' });
+    await reportShot(page, 'F-001/large-notice.png');
   });
 
   test('F-001.AC5 RULE-02 a 150 MB file asks first and replaces nothing until Continue', async ({ page }) => {
@@ -279,7 +280,7 @@ test.describe('F-001 size tiers (RULE-02)', () => {
     await expect(dialog.getByRole('button', { name: COPY['action.cancel'] })).toBeFocused();
     await expect.poll(() => docText(page)).toBe('{"small": true}');
     expect((await axe(page)).violations.map((v) => v.id)).toEqual([]);
-    await page.screenshot({ path: '.build-my-app/reports/build/F-001/confirm.png', caret: 'initial' });
+    await reportShot(page, 'F-001/confirm.png');
     // Cancel (Escape) changes nothing
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
@@ -384,7 +385,7 @@ test.describe('F-001 size tiers (RULE-02)', () => {
     }
     await expect(page.locator('.cm-line').nth(1)).toHaveText('  {"fixture": "undoE"},');
     await expect(page.getByRole('status').filter({ hasText: COPY['notice.undo_trimmed'] })).toBeVisible();
-    await page.screenshot({ path: '.build-my-app/reports/build/F-001/undo-trimmed.png', caret: 'initial' });
+    await reportShot(page, 'F-001/undo-trimmed.png');
     for (const label of ['D', 'C', 'B']) {
       await content(page).focus();
       await page.keyboard.press('ControlOrMeta+z');
@@ -601,11 +602,11 @@ test.describe('F-001 states', () => {
     );
     // checked before screenshots and axe: in WebKit both inject <style> elements of their own
     expect(await page.evaluate(() => window.__csp)).toEqual([]);
-    await page.screenshot({ path: '.build-my-app/reports/build/F-001/loaded.png', caret: 'initial' });
+    await reportShot(page, 'F-001/loaded.png');
     expect((await axe(page)).violations.map((v) => v.id)).toEqual([]);
     await page.getByRole('toolbar').getByRole('button', { name: COPY['action.clear'] }).click();
     expect((await axe(page)).violations.map((v) => v.id)).toEqual([]);
-    await page.screenshot({ path: '.build-my-app/reports/build/F-001/empty.png', caret: 'initial' });
+    await reportShot(page, 'F-001/empty.png');
   });
 
   test('F-001.R2 the editor stays laid out (never display:none) while a document commits', async ({ page }) => {

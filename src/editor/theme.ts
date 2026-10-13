@@ -45,6 +45,33 @@ export const editorTheme = EditorView.theme({
   },
   // CMP-Editor "loading" / busy: read-only, text muted (design: `.ro`).
   '&.tk-busy .cm-content': { color: v('color.muted') },
+  // CMP-Editor "error" (F-005.R3): wavy indicator at the position, tinted line with an inline
+  // start rule, gutter mark on the line. The line marking wins over the current-line tint.
+  '.tk-error-mark': {
+    textDecoration: `underline wavy ${v('color.danger')}`,
+    textDecorationSkipInk: 'none',
+    textUnderlineOffset: v('space.1'),
+  },
+  '.tk-error-mark--eol::after': { content: '"\\00a0\\00a0"' },
+  '.cm-line.tk-error-line': {
+    backgroundColor: v('color.dangerBg'),
+    boxShadow: `inset ${v('border.width.focus')} 0 0 ${v('color.danger')}`,
+  },
+  '.cm-gutterElement.tk-gutter-error': {
+    color: v('color.danger'),
+    backgroundColor: v('color.dangerBg'),
+    fontWeight: v('font.weight.semibold'),
+  },
+  // CMP-Editor "warning" (F-005.R4): dotted underline at each warning; gutter marks its lines.
+  '.tk-warning-mark': {
+    textDecoration: `underline dotted ${v('color.accent2Fg')}`,
+    textDecorationSkipInk: 'none',
+    textUnderlineOffset: v('space.1'),
+  },
+  '.cm-gutterElement.tk-gutter-warning': {
+    color: v('color.accent2Fg'),
+    backgroundColor: v('color.warnBg'),
+  },
 });
 
 /** Normal-tier syntax colours (RULE-02: dropped in the large tiers). */

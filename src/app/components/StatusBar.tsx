@@ -1,30 +1,55 @@
-// Implements: CMP-StatusBar (empty state, cursor; privacy statement and details),
-// F-009.R1 (privacy statement always visible), F-009.R2 (details popover, dismissible),
-// F-009 edge case "narrow" (icon labelled COPY-privacy.badge_label).
-// Validity, size and lines arrive with F-005.
-import type { Signal } from '@preact/signals';
-import { t } from '../../copy';
-import type { DocState } from '../state';
+// Implements: CMP-StatusBar — validity indicator (F-005.R2: valid / valid with warnings /
+// invalid with jump to the error / checking / empty), size and line count (F-005.R6), cursor
+// position, privacy statement and details (F-009.R1, F-009.R2); narrow variant: cursor hidden,
+// COPY-status.size_lines_short, privacy statement as its icon (COPY-privacy.badge_label).
+// Validity changes are announced through one polite status region (SCR-Formatter).
+import { formatCount, formatSize, t, tCount } from '../../copy';
+import type { AppController } from '../controller';
+import { validityText } from '../controller';
 import { Icon } from './Icon';
 
 const DETAILS_ID = 'tk-privacy-details';
 const LABEL_ID = 'tk-privacy-label';
 const TITLE_ID = 'tk-privacy-title';
 
-interface Props {
-  doc: Signal<DocState>;
-  cursor: Signal<{ line: number; column: number }>;
-}
-
-export function StatusBar({ doc, cursor }: Props) {
+export function StatusBar({ app }: { app: AppController }) {
+  const { doc, cursor } = app.state;
+  const size = formatSize(doc.value.bytes);
   return (
     <footer class="tk-statusbar">
-      <span class="tk-statusbar__validity" role="status">
-        {doc.value.empty ? t('status.empty') : ''}
+      <Validity app={app} />
+      <span class="tk-statusbar__size">{tCount('status.size_lines', doc.value.lines, size)}</span>
+      <span class="tk-statusbar__size-short">{tCount('status.size_lines_short', doc.value.lines, size)}</span>
+      <span class="tk-statusbar__cursor">
+        {t('status.cursor', { line: formatCount(cursor.value.line), column: formatCount(cursor.value.column) })}
       </span>
-      <span class="tk-statusbar__facts">{t('status.cursor', cursor.value)}</span>
+      <span class="tk-visually-hidden" role="status">
+        {app.state.announcement.value}
+      </span>
       <PrivacyStatement />
     </footer>
+  );
+}
+
+/** Implements: F-005.R2, CMP-StatusBar "valid / invalid / checking / empty"; invalid jumps (F-005.R5). */
+function Validity({ app }: { app: AppController }) {
+  const v = app.state.validation.value;
+  const text = validityText(v);
+  const error = v.state === 'invalid' ? v.result?.issues[0] : undefined;
+  return (
+    <span class="tk-statusbar__validity" data-validity={v.state}>
+      {error ? (
+        <button type="button" class="tk-statusbar__jump" onClick={() => app.jumpTo(0)}>
+          <span class="tk-statusbar__dot" aria-hidden="true" />
+          {text}
+        </button>
+      ) : (
+        <>
+          <span class="tk-statusbar__dot" aria-hidden="true" />
+          {text}
+        </>
+      )}
+    </span>
   );
 }
 

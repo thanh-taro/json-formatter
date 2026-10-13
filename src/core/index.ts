@@ -13,3 +13,26 @@ export {
   type LineEnding,
   type BreakCounts,
 } from './text';
+export {
+  WARNING_CAP,
+  severityOf,
+  type ErrorCode,
+  type WarningCode,
+  type IssueCode,
+  type Bracket,
+  type RawIssue,
+  type Issue,
+  type IssueParams,
+} from './issues';
+export { classifyNumber } from './numbers';
+export {
+  Validator,
+  MAX_DEPTH,
+  SKIP_THRESHOLD,
+  decodeKey,
+  type SkipTable,
+  type ValidatorOptions,
+  type ValidationOutcome,
+} from './validate';
+export { PositionResolver, resolvePositions, type Position } from './positions';
+export { positionsOf, resultOf, validateText, type ValidationResult } from './result';

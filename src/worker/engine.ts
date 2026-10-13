@@ -3,7 +3,18 @@
 // reading in 1 MB `slice().arrayBuffer()` windows, export Blobs. DOM-free and transport-free
 // (`post` is injected) so it runs under Vitest in Node as well as in the module worker.
 import { ChangeSet } from '@codemirror/state';
-import { LineBreakScanner } from '../core';
+import {
+  isLargeTier,
+  LineBreakScanner,
+  tierOf,
+  PositionResolver,
+  positionsOf,
+  resultOf,
+  Validator,
+  type LineEnding,
+  type SkipTable,
+  type ValidationOutcome,
+} from '../core';
 import { Mirror, MirrorBuilder } from './mirror';
 import type { FailReason, FromWorker, JobSpec, TextFacts, ToWorker } from './protocol';
 
@@ -13,14 +24,27 @@ export const SLICE_UNITS = 1 << 20;
 export const READ_BYTES = 1 << 20;
 /** Text forwarded to the main thread per message, at most. */
 const FORWARD_UNITS = 1 << 20;
+/** ADR-0005 §2: validation is immediate below ~1 MB, debounced by idle time above. */
+export const VALIDATE_IMMEDIATE_UNITS = 1 << 20;
+export const VALIDATE_DEBOUNCE_MS = 200;
 
 type Post = (msg: FromWorker, transfer?: Transferable[]) => void;
 
 class Cancelled extends Error {}
+/** The document changed while the job ran: its result would describe stale text (INV-05). */
+class Superseded extends Cancelled {}
 /** The fatal decoder rejected the bytes (RULE-13); only this is reported as `encoding`. */
 class EncodingError extends Error {}
 
 /** Yields to the event loop without the 4 ms timer clamp, so `cancel`/`edit` get through. */
+/** `chunk` in pieces of at most one slice of input (mirror chunks may reach 4 M units). */
+function* pieces(chunks: Iterable<string>): Generator<string> {
+  for (const c of chunks) {
+    if (c.length <= SLICE_UNITS) yield c;
+    else for (let i = 0; i < c.length; i += SLICE_UNITS) yield c.slice(i, i + SLICE_UNITS);
+  }
+}
+
 function yieldTick(): Promise<void> {
   return new Promise((resolve) => {
     const ch = new MessageChannel();
@@ -40,6 +64,7 @@ class Slicer {
     private readonly engine: WorkerEngine,
     private readonly jobId: number,
     private readonly onSliceEnd: () => void,
+    private readonly stale: () => boolean = () => false,
   ) {}
 
   /** Call after each unit of work; yields at the end of a slice (≤ 16 ms or ≤ 1 MB of input). */
@@ -50,6 +75,7 @@ class Slicer {
     this.engine.post({ type: 'progress', jobId: this.jobId, fraction: fraction() });
     await yieldTick();
     this.engine.throwIfCancelled(this.jobId);
+    if (this.stale()) throw new Superseded('document changed');
     this.start = performance.now();
     this.units = 0;
   }
@@ -138,8 +164,15 @@ interface QueuedJob {
 export class WorkerEngine {
   mirror: Mirror = Mirror.empty;
   version = 0;
-  /** The result of the last finished load/insert job, until `adopt` or `cancel`. */
-  private pending: { jobId: number; mirror: Mirror } | null = null;
+  /** The result of the last finished load/insert job, until `adopt` or `cancel`; a load also
+   * carries the validation done while reading (ADR-0005 §2). */
+  private pending: { jobId: number; mirror: Mirror; outcome?: ValidationOutcome } | null = null;
+  /** The last validation outcome and the mirror it describes (reused when nothing changed). */
+  private validated: { mirror: Mirror; outcome: ValidationOutcome } | null = null;
+  /** ADR-0007 §1: the skip table of the current mirror, built during validation (for the tree). */
+  skipTable: { mirror: Mirror; table: SkipTable } | null = null;
+  /** A validation waiting out its debounce before it joins the queue (it holds no job slot). */
+  private delayed: { jobId: number; timer: ReturnType<typeof setTimeout> } | null = null;
   private seedBuilder: MirrorBuilder | null = null;
   private readonly cancelled = new Set<number>();
   private readonly inboxes = new Map<number, TextInbox>();
@@ -157,7 +190,7 @@ export class WorkerEngine {
 
   /** Test helper: resolves when the job queue is empty. */
   async idle(): Promise<void> {
-    while (this.running || this.queue.length) await yieldTick();
+    while (this.running || this.queue.length || this.delayed) await yieldTick();
   }
 
   handle(msg: ToWorker): void {
@@ -182,6 +215,7 @@ export class WorkerEngine {
         const queued = this.queue.some((j) => j.jobId === msg.jobId);
         // Remembered only while the job still has to see it (review m9: no unbounded set).
         if (queued || this.runningJob === msg.jobId) this.cancelled.add(msg.jobId);
+        if (this.delayed?.jobId === msg.jobId) this.dropDelayed();
         if (this.pending?.jobId === msg.jobId) {
           this.pending = null;
           this.post({ type: 'failed', jobId: msg.jobId, reason: 'cancelled' });
@@ -192,6 +226,7 @@ export class WorkerEngine {
         try {
           this.mirror = this.mirror.apply(ChangeSet.fromJSON(msg.changes));
           this.version = msg.version;
+          this.forgetDocument();
         } catch (e) {
           // Out of sync (or out of memory): the client restarts and re-seeds (ADR-0005 §4).
           this.post({ type: 'failed', jobId: -1, reason: 'internal', detail: String(e) });
@@ -204,6 +239,12 @@ export class WorkerEngine {
           break;
         }
         this.mirror = this.pending.mirror;
+        this.forgetDocument();
+        if (this.pending.outcome) {
+          this.validated = { mirror: this.mirror, outcome: this.pending.outcome };
+          if (this.pending.outcome.skipTable)
+            this.skipTable = { mirror: this.mirror, table: this.pending.outcome.skipTable };
+        }
         this.pending = null;
         this.version = msg.version;
         this.post({ type: 'adopted', jobId: msg.jobId, version: msg.version });
@@ -217,6 +258,7 @@ export class WorkerEngine {
         else if (this.seedBuilder) {
           this.mirror = this.seedBuilder.finish();
           this.version = msg.version;
+          this.forgetDocument();
           this.seedBuilder = null;
           const later = this.deferred;
           this.deferred = [];
@@ -224,6 +266,27 @@ export class WorkerEngine {
         }
         break;
     }
+  }
+
+  /**
+   * Review F-005 M2 (NFR-04): results that describe an earlier mirror are dropped as soon as the
+   * mirror changes, so a replaced document is never kept alive through them.
+   */
+  private forgetDocument(): void {
+    this.validated = null;
+    this.skipTable = null;
+  }
+
+  private dropDelayed(detail?: string): void {
+    const d = this.delayed;
+    if (!d) return;
+    clearTimeout(d.timer);
+    this.delayed = null;
+    this.post(
+      detail === undefined
+        ? { type: 'failed', jobId: d.jobId, reason: 'cancelled' }
+        : { type: 'failed', jobId: d.jobId, reason: 'cancelled', detail },
+    );
   }
 
   private enqueue(jobId: number, job: JobSpec): void {
@@ -246,6 +309,9 @@ export class WorkerEngine {
         run = () => this.exportMirror(jobId, doc, job.eol);
         break;
       }
+      case 'validate':
+        run = () => this.validate(jobId, job.version, job.lineEnding, job.skipTable ?? false);
+        break;
     }
     const key = job.supersedes;
     if (key !== undefined) {
@@ -255,8 +321,27 @@ export class WorkerEngine {
         this.inboxes.delete(stale.jobId);
         this.post({ type: 'failed', jobId: stale.jobId, reason: 'cancelled', detail: 'superseded' });
       }
+      if (job.kind === 'validate') this.dropDelayed('superseded');
     }
-    this.queue.push({ jobId, key, run });
+    const entry = { jobId, key, run };
+    // ADR-0005 §2: validation above ~1 MB waits for ~200 ms of quiet first — on a timer, so it
+    // never holds the job slot that tool operations need (review F-005 m4).
+    if (
+      job.kind === 'validate' &&
+      this.mirror.length > VALIDATE_IMMEDIATE_UNITS &&
+      this.validated?.mirror !== this.mirror
+    ) {
+      this.delayed = {
+        jobId,
+        timer: setTimeout(() => {
+          this.delayed = null;
+          this.queue.push(entry);
+          void this.drain();
+        }, VALIDATE_DEBOUNCE_MS),
+      };
+      return;
+    }
+    this.queue.push(entry);
     void this.drain();
   }
 
@@ -295,9 +380,11 @@ export class WorkerEngine {
       // ignoreBOM keeps a leading byte-order mark as the first character (RULE-03, RULE-13).
       const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
       const scan = new LineBreakScanner();
-      const builder = new MirrorBuilder();
-      const fwd = new Forwarder(this, jobId);
       const total = source.size;
+      // ADR-0005 §2: validate while reading (with the skip table in the large tiers).
+      const validator = new Validator({ skipTable: isLargeTier(tierOf(total)), lengthHint: total });
+      const builder = new MirrorBuilder((text) => validator.feed(text));
+      const fwd = new Forwarder(this, jobId);
       let offset = 0;
       const slicer = new Slicer(this, jobId, () => fwd.flush());
       const decode = (bytes?: Uint8Array): string => {
@@ -324,8 +411,49 @@ export class WorkerEngine {
       take(decode());
       fwd.flush();
       const mirror = builder.finish();
-      this.pending = { jobId, mirror };
+      this.pending = { jobId, mirror, outcome: validator.end() };
       this.post({ type: 'loaded', jobId, facts: factsOf(scan, mirror.length) });
+    } catch (e) {
+      this.fail(jobId, e);
+    }
+  }
+
+  /**
+   * Implements: F-005.R1, F-005.R7 — validates the mirror at `version` in ≤ 16 ms / 1 MB slices
+   * (debounced above ~1 MB before it is queued), then resolves the reported positions (ENT-Issue). Dropped as soon
+   * as the document changes (INV-05: a result always describes the text it was computed for);
+   * the outcome of an unchanged mirror (e.g. validated while loading) is reused.
+   */
+  private async validate(jobId: number, version: number, lineEnding: LineEnding, skipTable: boolean): Promise<void> {
+    try {
+      const stale = () => this.version !== version;
+      if (stale()) throw new Superseded('document changed');
+      const doc = this.mirror;
+      const total = Math.max(1, doc.length);
+      const slicer = new Slicer(this, jobId, () => undefined, stale);
+      let outcome = this.validated?.mirror === doc ? this.validated.outcome : null;
+      if (!outcome) {
+        const validator = new Validator({ skipTable, lengthHint: doc.length });
+        let done = 0;
+        for (const piece of pieces(doc.chunks)) {
+          if (!validator.feed(piece)) break;
+          done += piece.length;
+          await slicer.step(piece.length, () => (0.9 * done) / total);
+        }
+        outcome = validator.end();
+        this.validated = { mirror: doc, outcome };
+      }
+      this.skipTable = outcome.skipTable ? { mirror: doc, table: outcome.skipTable } : null;
+      const resolver = new PositionResolver(positionsOf(outcome), lineEnding);
+      let done = 0;
+      if (!resolver.done) {
+        for (const piece of pieces(doc.chunks)) {
+          if (resolver.feed(piece)) break;
+          done += piece.length;
+          await slicer.step(piece.length, () => 0.9 + (0.1 * done) / total);
+        }
+      }
+      this.post({ type: 'validation', jobId, version, result: resultOf(outcome, resolver.end()) });
     } catch (e) {
       this.fail(jobId, e);
     }

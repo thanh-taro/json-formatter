@@ -1,0 +1,244 @@
+/* F-005: CMP-StatusBar validity, size/lines and cursor; CMP-IssuePanel. Tokens only (ADR-0011).
+   Design: design/canvas/CMP-StatusBar, CMP-IssuePanel, FLOW-02 boards, SCR-Formatter error/narrow. */
+@layer components {
+  /* ---- CMP-StatusBar --------------------------------------------------------------------- */
+  .tk-statusbar {
+    position: relative; /* containing block of the visually hidden status region */
+    gap: var(--tk-space-4);
+  }
+  .tk-statusbar__validity {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    color: var(--tk-color-fg);
+  }
+  .tk-statusbar__validity[data-validity='empty'] {
+    color: var(--tk-color-muted);
+  }
+  .tk-statusbar__dot {
+    flex: none;
+    inline-size: var(--tk-space-2);
+    block-size: var(--tk-space-2);
+    border-radius: var(--tk-radius-pill);
+    box-sizing: border-box;
+  }
+  [data-validity='valid'] .tk-statusbar__dot {
+    background: var(--tk-color-success);
+  }
+  [data-validity='checking'] .tk-statusbar__dot {
+    border: var(--tk-border-width-focus) solid var(--tk-color-muted);
+  }
+  [data-validity='empty'] .tk-statusbar__dot {
+    border: var(--tk-border-width-focus) solid var(--tk-color-line-strong);
+  }
+  [data-validity='invalid'] .tk-statusbar__dot {
+    background: var(--tk-color-danger);
+  }
+  /* Invalid: the indicator is a button that jumps to the error (CMP-StatusBar behavior). */
+  .tk-statusbar__jump {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    min-block-size: var(--tk-statusbar-target);
+    padding-inline: var(--tk-space-2);
+    margin-inline-start: calc(-1 * var(--tk-space-2));
+    border: 0;
+    border-radius: var(--tk-radius-sm);
+    background: var(--tk-color-danger-bg);
+    color: var(--tk-color-danger);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-semibold);
+    cursor: pointer;
+  }
+  .tk-statusbar__size-short {
+    display: none;
+  }
+
+  /* Narrow (CMP-StatusBar "narrow", under 600 px): cursor hidden, short size form. */
+  @container tk-statusbar (width < 600px) {
+    .tk-statusbar {
+      gap: var(--tk-space-2);
+    }
+    .tk-statusbar__size,
+    .tk-statusbar__cursor {
+      display: none;
+    }
+    .tk-statusbar__size-short {
+      display: inline;
+    }
+  }
+
+  /* ---- CMP-IssuePanel -------------------------------------------------------------------- */
+  .tk-issues-slot {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+    overflow: hidden;
+  }
+  .tk-issues {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+    border-block-start: var(--tk-border-width-hairline) solid var(--tk-color-line);
+    background: var(--tk-color-surface);
+    container: tk-issues / inline-size;
+    --tk-issues-target: var(--tk-size-target-min);
+    --tk-issues-row: var(--tk-size-panel-header);
+  }
+  @media (pointer: coarse) {
+    .tk-issues {
+      --tk-issues-target: var(--tk-size-touch-target);
+      --tk-issues-row: var(--tk-size-touch-target);
+    }
+  }
+  .tk-issues__header {
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    flex: none;
+    min-block-size: var(--tk-issues-row);
+    padding-inline: var(--tk-space-1);
+  }
+  .tk-issues[data-expanded='true'] .tk-issues__header {
+    border-block-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
+  }
+  .tk-issues__tabs {
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    flex: 1;
+  }
+  .tk-issues__tab {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--tk-issues-row);
+    padding-inline: var(--tk-space-2);
+    border: 0;
+    background: none;
+    color: var(--tk-color-muted);
+    font-family: var(--tk-font-family-body);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-semibold);
+    cursor: pointer;
+  }
+  .tk-issues__tab[aria-selected='true'] {
+    color: var(--tk-color-fg);
+    box-shadow: inset 0 calc(-1 * var(--tk-border-width-focus)) 0 var(--tk-color-accent);
+  }
+  .tk-issues__tab:focus-visible,
+  .tk-issue:focus-visible {
+    outline-offset: calc(-1 * var(--tk-border-width-focus));
+  }
+  .tk-issues__toggle {
+    inline-size: var(--tk-issues-target);
+    block-size: var(--tk-issues-target);
+  }
+  .tk-issues__body {
+    flex: 1;
+    min-block-size: 0;
+    overflow-y: auto;
+  }
+  .tk-issues__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tk-issues__item {
+    border-block-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
+  }
+  .tk-issues__item:last-child {
+    border-block-end: 0;
+  }
+  .tk-issue {
+    display: grid;
+    grid-template-columns: calc(var(--tk-space-16) + var(--tk-space-3)) 1fr auto;
+    gap: var(--tk-space-1) var(--tk-space-3);
+    align-items: baseline;
+    inline-size: 100%;
+    padding: var(--tk-space-2) var(--tk-space-3);
+    border: 0;
+    background: none;
+    color: var(--tk-color-fg);
+    text-align: start;
+    font-family: var(--tk-font-family-body);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-medium);
+    line-height: var(--tk-space-5);
+    cursor: pointer;
+  }
+  .tk-issue:hover {
+    background: var(--tk-color-surface2);
+  }
+  .tk-issue__severity {
+    justify-self: start;
+    padding-inline: var(--tk-space-2);
+    border-radius: var(--tk-radius-pill);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-semibold);
+    line-height: var(--tk-space-5);
+  }
+  .tk-issue__severity--error {
+    background: var(--tk-color-danger-bg);
+    color: var(--tk-color-danger);
+  }
+  .tk-issue__severity--warning {
+    background: var(--tk-color-warn-bg);
+    color: var(--tk-color-accent2-fg);
+  }
+  .tk-issue__location,
+  .tk-issue__code {
+    color: var(--tk-color-muted);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-regular);
+  }
+  .tk-issue__location {
+    white-space: nowrap;
+  }
+  .tk-issue__code {
+    grid-column: 2 / -1;
+  }
+  .tk-issues__more {
+    padding-block: var(--tk-space-2);
+    padding-inline: calc(var(--tk-space-16) + var(--tk-space-3) + 2 * var(--tk-space-3)) var(--tk-space-3);
+    color: var(--tk-color-muted);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-medium);
+    line-height: var(--tk-space-5);
+  }
+  /* INV-05: while re-checking, the listed result is out of date. */
+  .tk-issues--stale .tk-issue__hint {
+    color: var(--tk-color-muted);
+  }
+
+  /* Narrow: severity and location on one row, the hint and code below (SCR-Formatter error/narrow). */
+  @container tk-issues (width < 600px) {
+    .tk-issue {
+      grid-template-columns: auto 1fr;
+      grid-template-areas: 'sev loc' 'msg msg' 'code code';
+    }
+    .tk-issue__severity {
+      grid-area: sev;
+    }
+    .tk-issue__hint {
+      grid-area: msg;
+    }
+    .tk-issue__location {
+      grid-area: loc;
+      justify-self: end;
+    }
+    .tk-issue__code {
+      grid-area: code;
+    }
+    .tk-issues__more {
+      padding-inline: var(--tk-space-3);
+    }
+  }
+  @media (pointer: coarse) {
+    .tk-issue {
+      padding: var(--tk-space-3);
+    }
+  }
+}

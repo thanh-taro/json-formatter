@@ -1,5 +1,5 @@
 // MOD-Editor — editor engine in a shadow root, tiers, chunked commit, undo history (ADR-0004,
-// ADR-0006). Find (F-010) and issue markers (F-005) plug in later.
+// ADR-0006), issue marks and jump to a position (F-005). Find (F-010) plugs in later.
 import { bracketMatching, syntaxHighlighting } from '@codemirror/language';
 import { json } from '@codemirror/lang-json';
 import { defaultKeymap } from '@codemirror/commands';
@@ -27,10 +27,13 @@ import {
 import { t } from '../copy';
 import { textChunks } from './builder';
 import { UndoHistory, type DocFacts, type Entry, type Snapshot, type ToolKind } from './history';
+import { ColumnIndex } from './column';
+import { issueMarks, issuePosition, issuesEffect, type IssueMark } from './issues';
 import { createPending, type Pending } from './pending';
 import { editorTheme, jsonHighlight } from './theme';
 
 export type { DocFacts, Snapshot, ToolKind } from './history';
+export type { IssueMark } from './issues';
 export { DiscardedError } from './pending';
 
 /** Typed input on lines at least this long is applied directly (ADR-0004 direct-input handler). */
@@ -127,6 +130,12 @@ export interface EditorHandle {
   redo(): HistoryStep | null;
   /** The document as strings of ~1 M units with '\n' breaks (worker re-seed). */
   chunks(): Iterable<string>;
+  /** Implements: F-005.R3, F-005.R4 — marks the latest validation's issues (marks follow edits). */
+  setIssues(marks: readonly IssueMark[], invalid: boolean): void;
+  /** Implements: F-005.R5 — moves the cursor to `pos` and scrolls it into view, both ways. */
+  goTo(pos: number): void;
+  /** Where issue `index` of the marked result is now (mapped through later edits, INV-05). */
+  issuePosition(index: number): number | null;
   destroy(): void;
 }
 
@@ -199,6 +208,16 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   let incomingEol: LineEnding | null = null;
   /** A drag that started inside the editor (moving text): left to the engine. */
   let internalDrag = false;
+  // Implements: COPY-status.cursor in code points without long main-thread tasks (NFR-02).
+  const columns = new ColumnIndex(() => reportCursor(view.state));
+
+  /** Reports the cursor (status bar); long lines use the sliced column index. */
+  function reportCursor(state: EditorState): void {
+    const head = state.selection.main.head;
+    const line = state.doc.lineAt(head);
+    const column = columns.column(state.doc, line.from, line.to, head);
+    options.onCursor?.(line.number, column ?? head - line.from + 1);
+  }
 
   const bytesOf = (doc: Text) => documentBytes(nonBreakBytes, doc.lines - 1, lineEnding);
   const facts = (): DocFacts => ({ lineEnding, sourceName, nonBreakBytes });
@@ -290,12 +309,10 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
         EditorView.contentAttributes.of({ 'aria-label': t('label.editor'), tabindex: '0' }),
         tierConf.of(tierExtension('normal', false)),
         busyConf.of([]),
+        issueMarks,
         EditorView.updateListener.of((u) => {
-          if (u.docChanged || u.selectionSet) {
-            const head = u.state.selection.main.head;
-            const line = u.state.doc.lineAt(head);
-            options.onCursor?.(line.number, head - line.from + 1);
-          }
+          if (u.docChanged) columns.update(u.changes, u.state.doc);
+          if (u.docChanged || u.selectionSet) reportCursor(u.state);
         }),
       ],
     }),
@@ -601,7 +618,21 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     undo: () => historyStep('undo'),
     redo: () => historyStep('redo'),
     chunks: () => textChunks(view.state.doc),
+    setIssues(marks, invalid) {
+      view.dispatch({ effects: issuesEffect(marks, invalid) });
+    },
+    issuePosition: (index) => issuePosition(view.state, index),
+    goTo(pos) {
+      const at = Math.min(Math.max(0, pos), view.state.doc.length);
+      // CMP-Editor: scrolls vertically and horizontally (centred), soft-wrap aware.
+      view.dispatch({
+        selection: { anchor: at },
+        effects: EditorView.scrollIntoView(at, { y: 'center', x: 'center' }),
+      });
+      view.focus();
+    },
     destroy() {
+      columns.reset();
       resize.disconnect();
       view.destroy();
     },
