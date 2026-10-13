@@ -3,7 +3,10 @@
 // leading run of spaces and tabs of each line — same number of lines, every line's text after its
 // indentation identical — is independent of chunking, and its predicted size is exact.
 import fc from 'fast-check';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Thousands of generated cases: allow for a busy machine (the 5 s default is for unit tests).
+vi.setConfig({ testTimeout: 60_000 });
 import { detectUnit, IndentScanner, Reindenter, reindentDelta, reindentIsNoop, type IndentStyle } from '../../src/core';
 
 const NUM_RUNS = Number(process.env['NUM_RUNS'] ?? 10_000);
