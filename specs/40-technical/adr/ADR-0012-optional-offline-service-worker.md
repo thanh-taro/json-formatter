@@ -1,6 +1,6 @@
 ---
 id: ADR-0012
-title: Optional offline support via a cache-only service worker that never fetches on its own
+title: Offline support via a cache-only service worker that never fetches on its own (D-014)
 status: proposed
 date: 2026-10-13
 supersedes: []
@@ -17,7 +17,7 @@ log shows zero requests after load"). The page CSP has `connect-src 'none'`; a s
 worker's own `fetch` is governed by the CSP of the worker script's response.
 
 ## Decision
-**Optional — build only if the user wants offline use in M-1 (then add a spec item for it).**
+**In scope for M-1 (D-014, F-011).**
 - A hand-written service worker (~60 lines, no dependency) with **cache-on-fetch only**:
   - it never calls `fetch` on its own initiative: no precache, no install-time downloads, no
     periodic update checks;

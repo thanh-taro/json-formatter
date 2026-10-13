@@ -5,7 +5,7 @@ current desktop browser.
 
 | ID | Requirement | Measure |
 |---|---|---|
-| **NFR-01** | Privacy: after the initial load (all of the tool's own code and assets fetched), the tool makes no network requests; no analytics; no document content persisted anywhere (memory only). The tool's content policy forbids outgoing connections. | Network log during a full M-1 session shows zero requests after load; policy header present. |
+| **NFR-01** | Privacy: after the initial load (all of the tool's own code and assets fetched, including registering the offline cache and the browser checking it for a new version while the page opens), the tool makes no network requests; no analytics; no document content persisted anywhere (memory only). The tool's content policy forbids outgoing connections. | Network log during a full M-1 session shows zero requests after load; policy header present. |
 | **NFR-02** | Responsiveness: user input (typing, scrolling, clicking) gets visible feedback within 100 ms at every size tier; operations longer than 0.5 s show progress, longer than 1 s are cancellable. | Interaction latency traces on 1 MB, 10 MB, 100 MB documents. |
 | **NFR-03** | Throughput on the reference machine: validate, beautify or minify 10 MB in ≤ 1 s and 100 MB in ≤ 10 s. | Benchmark suite in CI-comparable conditions. |
 | **NFR-04** | Large documents: a 100 MB document opens, scrolls with no frame longer than 50 ms, and is editable; peak memory stays below 1.5 GB. Above 100 MB, best effort per RULE-02. | Manual + automated runs with generated 10/50/100/200 MB fixtures. |

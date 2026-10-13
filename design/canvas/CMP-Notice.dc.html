@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notice variants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--danger:#FF8595;--success:#5BD6A0;--dangerBg:#3A1622;color-scheme:dark}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--danger:#C0243B;--success:#13744C;--dangerBg:#FCE8EC;color-scheme:light}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.lab{font:500 12px 'JetBrains Mono',ui-monospace,monospace;color:var(--muted)}
+.grp{display:flex;flex-direction:column;gap:8px}
+.bar{display:flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;padding:4px 4px 4px 12px;border:1px solid var(--line);font:500 13px/20px Manrope,system-ui,sans-serif;color:var(--fg)}
+.bar.info,.bar.progress{background:var(--surface2)}
+.bar.error{background:var(--dangerBg)}
+.bar > svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;flex:none}
+.msg{flex:1}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.track{width:160px;height:4px;border-radius:999px;background:var(--line);overflow:hidden;display:inline-block}
+.btn{display:inline-flex;align-items:center;height:28px;padding:0 12px;border:1px solid var(--lineStrong);border-radius:7px;background:none;color:var(--fg);font:500 13px Manrope,system-ui,sans-serif}
+.ibtn{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:7px;background:none;color:var(--muted)}
+.ibtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round}
+.toast{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--lineStrong);border-radius:10px;background:var(--surface);font:500 13px Manrope,system-ui,sans-serif;color:var(--fg)}
+.toast svg{width:16px;height:16px;stroke:var(--success);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</helmet>
+<div style="width:1280px;box-sizing:border-box;padding:40px;display:flex;flex-direction:column;gap:48px;background:#0B0810">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="tk-{{t.id}}" style="display:flex;flex-direction:column;gap:24px;padding:24px;border-radius:12px;background:var(--bg);color:var(--fg)">
+  <span id="nt-d-{{t.id}}" class="vh" data-copy="COPY-action.dismiss">Dismiss</span>
+
+  <div class="grp">
+    <span class="lab">CMP-Notice / progress bar (loading · formatting · exporting) / {{t.id}}</span>
+    <div class="bar progress" role="status"><span class="msg mono" data-copy="COPY-progress.loading">Reading file… 18%</span><span class="track" role="progressbar" aria-valuenow="18" aria-valuemin="0" aria-valuemax="100" aria-label="Reading file… 18%"><span style="display:block;width:18%;height:4px;background:var(--accent)"></span></span><button type="button" class="btn" data-copy="COPY-action.cancel">Cancel</button></div>
+    <div class="bar progress" role="status"><span class="msg mono" data-copy="COPY-progress.formatting">Formatting… 42%</span><span class="track" role="progressbar" aria-valuenow="42" aria-valuemin="0" aria-valuemax="100" aria-label="Formatting… 42%"><span style="display:block;width:42%;height:4px;background:var(--accent)"></span></span><button type="button" class="btn" data-copy="COPY-action.cancel">Cancel</button></div>
+    <div class="bar progress" role="status"><span class="msg mono" data-copy="COPY-progress.exporting">Preparing… 76%</span><span class="track" role="progressbar" aria-valuenow="76" aria-valuemin="0" aria-valuemax="100" aria-label="Preparing… 76%"><span style="display:block;width:76%;height:4px;background:var(--accent)"></span></span><button type="button" class="btn" data-copy="COPY-action.cancel">Cancel</button></div>
+  </div>
+
+  <div class="grp">
+    <span class="lab">CMP-Notice / info bar / {{t.id}}</span>
+    <div class="bar info" role="status"><svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--muted)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span class="msg" data-copy="COPY-notice.large">Large document (34.2 MB): some highlighting is turned off to keep things fast.</span><button type="button" class="ibtn" aria-labelledby="nt-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="bar info" role="status"><svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--muted)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span class="msg" data-copy="COPY-notice.undo_trimmed">Large document: only the last 3 operations can be undone.</span><button type="button" class="ibtn" aria-labelledby="nt-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="bar info" role="status"><svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--muted)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span class="msg" data-copy="COPY-notice.no_indent">No indentation found to change. Try Beautify instead.</span><button type="button" class="ibtn" aria-labelledby="nt-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="bar info" role="status"><svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--muted)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span class="msg" data-copy="COPY-notice.multiple_files">Only the first file was opened.</span><button type="button" class="ibtn" aria-labelledby="nt-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  </div>
+
+  <div class="grp">
+    <span class="lab">CMP-Notice / error bar / {{t.id}}</span>
+    <div class="bar error" role="alert"><svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span class="msg" data-copy="COPY-error.encoding">This file isn't UTF-8 text, so it wasn't opened.</span><button type="button" class="ibtn" aria-labelledby="nt-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="bar error" role="alert"><svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span class="msg" data-copy="COPY-error.too_large">This file is too large for this device's memory. Your previous document is unchanged.</span><button type="button" class="ibtn" aria-labelledby="nt-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="bar error" role="alert"><svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span class="msg" data-copy="COPY-error.not_a_file">Only files can be dropped here.</span><button type="button" class="ibtn" aria-labelledby="nt-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="bar error" role="alert"><svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span class="msg" data-copy="COPY-error.download">Downloads aren't allowed here. Use Copy instead, or open the tool on its own.</span><button type="button" class="btn" data-copy="COPY-action.copy">Copy</button><button type="button" class="ibtn" aria-labelledby="nt-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="bar error" role="alert"><svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span class="msg" data-copy="COPY-error.clipboard">Copying isn't allowed here. The text is selected — press your copy shortcut.</span><button type="button" class="ibtn" aria-labelledby="nt-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  </div>
+
+  <div class="grp">
+    <span class="lab">CMP-Notice / toast · single and stacked (max 2) / {{t.id}}</span>
+    <div style="display:flex;justify-content:flex-end;gap:24px;padding:12px;border:1px dashed var(--line)">
+      <div class="toast" role="status"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span data-copy="COPY-toast.copied">Copied</span></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div class="toast" role="status"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span data-copy="COPY-toast.copied">Copied</span></div>
+        <div class="toast" role="status"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span data-copy="COPY-toast.copied">Copied</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { themes: [{ id: 'dark' }, { id: 'light' }] };
+  }
+}
+</script>
+</body>
+</html>

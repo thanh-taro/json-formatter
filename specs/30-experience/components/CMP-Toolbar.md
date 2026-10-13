@@ -16,7 +16,7 @@ switch (text/tree) · Export group (copy, download).
 | Variant / state | Description |
 |---|---|
 | default | all actions available |
-| empty document | format, export and view switch disabled |
+| empty document | clear, find, format, export and view switch disabled; open stays enabled |
 | busy | actions disabled except cancel; the editor is read-only |
 | narrow | groups collapse into an overflow menu (COPY-action.more) |
 
@@ -24,4 +24,4 @@ switch (text/tree) · Export group (copy, download).
 Actions apply to the whole document. The indent selector applies to both beautify and re-indent.
 
 ## Accessibility
-Toolbar role with arrow-key navigation; each button labelled by its COPY- string.
+Toolbar role (COPY-label.toolbar) with arrow-key navigation; each button labelled by its COPY- string; the view switch is labelled COPY-label.view.

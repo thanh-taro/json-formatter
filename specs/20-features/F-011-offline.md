@@ -1,7 +1,7 @@
 ---
 id: F-011
 title: Work offline
-status: draft
+status: ready
 milestone: M-1
 priority: P2
 personas: [PER-01, PER-02]
@@ -34,7 +34,7 @@ connection, like the portal promises for offline-capable tools (PRN-05).
 ## Acceptance criteria
 - **AC1** Given the tool was opened once online, when it is opened with no connection, then it loads and the user can paste, beautify and validate a document. (R1)
 - **AC2** Given the tool is open, when the user works for a whole session, then the network log shows no requests after the page finished opening. (R2)
-- **AC3** Given a new version was published, when the user has the tool open, then nothing reloads; when the user opens it again online and then once more, then the new version is used. (R3)
+- **AC3** Given a new version was published, when the user has the tool open, then nothing reloads; when the user opens it again online, then the new version is used. (R3)
 
 ## UX notes
 No visible UI.

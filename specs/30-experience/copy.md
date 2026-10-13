@@ -23,8 +23,16 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-action.find_next** | Next match | |
 | **COPY-action.find_prev** | Previous match | |
 | **COPY-action.close** | Close | |
+| **COPY-action.dismiss** | Dismiss | |
+| **COPY-action.go_to_error** | Go to error | |
+| **COPY-action.collapse_issues** | Hide issues | |
+| **COPY-action.expand_issues** | Show issues | |
 | **COPY-label.indent** | Indent | |
 | **COPY-label.editor** | JSON document | Accessible name of the editor |
+| **COPY-label.toolbar** | Document actions | Accessible name of the toolbar |
+| **COPY-label.view** | View | Accessible name of the text/tree switch |
+| **COPY-label.issues** | Issues | Accessible name of the issue panel |
+| **COPY-label.tree** | Document tree | Accessible name of the tree |
 | **COPY-indent.spaces2** | 2 spaces | Default |
 | **COPY-indent.spaces4** | 4 spaces | |
 | **COPY-indent.tab** | Tab | |
@@ -39,9 +47,15 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-status.invalid** | Invalid JSON | |
 | **COPY-status.checking** | Checking… | |
 | **COPY-status.empty** | Empty | |
-| **COPY-status.size_lines** | {size} · {lines} lines | size in B/KB/MB |
+| **COPY-status.size_lines** | {size} · {lines} lines | size in B/KB/MB; numbers use the locale's grouping; singular line when lines is 1 |
+| **COPY-status.valid_warnings** | Valid JSON · {count} warnings | when warnings exist; singular warning when count is 1 |
+| **COPY-status.cursor** | Ln {line}, Col {column} | |
+| **COPY-issue.error** | Error | severity badge |
+| **COPY-issue.warning** | Warning | severity badge |
+| **COPY-issue.tab_problems** | Problems ({count}) | |
+| **COPY-issue.tab_warnings** | Warnings ({count}) | |
 | **COPY-issue.location** | Line {line}, column {column} | |
-| **COPY-issue.more** | …and {count} more warnings | |
+| **COPY-issue.more** | …and {count} more warnings | singular warning when count is 1 |
 
 ## Empty, progress, notices, errors
 | ID | Text | Notes |
@@ -66,6 +80,15 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-toast.copied** | Copied | |
 | **COPY-tree.checking** | Updating tree… | |
 | **COPY-tree.too_large** | This document is too large for the tree view on this device. Use the text view. | |
+| **COPY-tree.kind_object** | object | |
+| **COPY-tree.kind_array** | array | |
+| **COPY-tree.kind_string** | string | |
+| **COPY-tree.kind_number** | number | |
+| **COPY-tree.kind_boolean** | boolean | |
+| **COPY-tree.kind_null** | null | |
+| **COPY-tree.count_keys** | {count} keys | 1 key when count is 1 |
+| **COPY-tree.count_items** | {count} items | 1 item when count is 1 |
+| **COPY-tree.group** | [{from} … {to}] | group row label |
 | **COPY-tree.invalid** | The tree needs valid JSON. Fix the error first. | Action: jump to error |
 
 ## Find

@@ -12,11 +12,15 @@ tokens so the tool looks native when embedded (PRN-05).
 
 ## Principles
 1. **Content first.** Toolbar (`size.toolbar`) and status bar (`size.statusbar`) are thin strips
-   on `surface`; the document area takes everything else. Hairlines (`line`) separate regions;
-   no cards, no shadows, no glow inside the tool.
+   on `surface`; the document area takes everything else. Hairlines (`line`) separate regions; borders
+   that identify controls use `lineStrong`; no cards, no shadows, no glow inside the tool —
+   floating menus and dialogs are set apart by a `lineStrong` border on `surface`.
 2. **One filled button.** Beautify is the only filled control (`accent` / `onAccent`). Every other
    action is a quiet text+icon button that fills with `surface2` on hover.
-3. **Dense but targetable.** 13 px mono text on 20 px lines (`font.size.code`, `size.codeLine`);
+3. **Dense but targetable.** Tree rows are `size.treeRow`; every interactive element is at least
+   `size.targetMin`, and at least `size.touchTarget` when the primary pointer is coarse (phones).
+   Disabled controls use `muted` text, not opacity. Text never goes below `font.size.xs`.
+   Text: 13 px mono on 20 px lines (`font.size.code`, `size.codeLine`);
    controls are `size.control` high with at least `size.targetMin` hit areas, growing to
    `size.touchTarget` when the primary pointer is coarse.
 4. **State in form, not only color.** Validity shows a dot plus words; errors get a wavy underline,

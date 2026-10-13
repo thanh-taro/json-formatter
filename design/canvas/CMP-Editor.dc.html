@@ -11,112 +11,115 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;display=swap">
 <style>
 body{margin:0}
-.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--accent2Fg:#FFC48A;--selection:#2A1D47;--selectionLine:#4A3580;--danger:#FF8595;--success:#5BD6A0;--dangerBg:#3A1622;--warnBg:#33240F;--currentLine:#1C1526;--syntaxKey:#8CCBFF;--syntaxString:#7FE3B8;--syntaxNumber:#FFC48A;--syntaxLiteral:#C4A6FF;--syntaxPunct:#9C92B0;color-scheme:dark}
-.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--accent2Fg:#8F4705;--selection:#F0EAFE;--selectionLine:#CDBBF8;--danger:#C0243B;--success:#13744C;--dangerBg:#FCE8EC;--warnBg:#FDEBD8;--currentLine:#F6F3FD;--syntaxKey:#0B5A94;--syntaxString:#0B6B49;--syntaxNumber:#8F4705;--syntaxLiteral:#5B2FCC;--syntaxPunct:#5E566F;color-scheme:light}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--accent2Fg:#FFC48A;--selection:#2A1D47;--danger:#FF8595;--success:#5BD6A0;--dangerBg:#3A1622;--warnBg:#33240F;--currentLine:#1C1526;--syntaxKey:#8CCBFF;--syntaxString:#7FE3B8;--syntaxNumber:#FFC48A;--syntaxLiteral:#C4A6FF;--syntaxPunct:#9C92B0;color-scheme:dark}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--accent2Fg:#8F4705;--selection:#F0EAFE;--danger:#C0243B;--success:#13744C;--dangerBg:#FCE8EC;--warnBg:#FDEBD8;--currentLine:#F6F3FD;--syntaxKey:#0B5A94;--syntaxString:#0B6B49;--syntaxNumber:#8F4705;--syntaxLiteral:#5B2FCC;--syntaxPunct:#5E566F;color-scheme:light}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .lab{font:500 12px 'JetBrains Mono',ui-monospace,monospace;color:var(--muted)}
-.ed{display:flex;border:1px solid var(--line);background:var(--bg);font:400 13px/20px 'JetBrains Mono',ui-monospace,Menlo,monospace;overflow:hidden;height:180px}
-.gut{padding:6px 10px 6px 12px;background:var(--surface);border-right:1px solid var(--line);color:var(--muted);text-align:right;white-space:pre}
-.txt{flex:1;min-width:0;padding:6px 0;white-space:pre;overflow:hidden;color:var(--fg)}
-.txt > div{padding:0 12px}
+.ed{display:flex;border:1px solid var(--line);background:var(--bg);font:400 13px/20px 'JetBrains Mono',ui-monospace,Menlo,monospace;overflow:hidden;height:184px}
+.gut{padding:4px 0;min-width:48px;box-sizing:border-box;background:var(--surface);border-right:1px solid var(--line);color:var(--muted);text-align:right}
+.gl{display:block;padding:0 8px 0 12px;white-space:pre}
+.gl.cur{color:var(--fg)}
+.gl.err{color:var(--danger);background:var(--dangerBg);font-weight:600}
+.gl.warn{color:var(--accent2Fg);background:var(--warnBg)}
+.txt{flex:1;min-width:0;padding:4px 0;white-space:pre;overflow:hidden;color:var(--fg)}
+.tl{display:block;padding:0 12px}
 .k{color:var(--syntaxKey)}.s{color:var(--syntaxString)}.n{color:var(--syntaxNumber)}.l{color:var(--syntaxLiteral)}.p{color:var(--syntaxPunct)}
 .plain .k,.plain .s,.plain .n,.plain .l,.plain .p{color:var(--fg)}
-.squig{text-decoration:underline wavy var(--danger);text-underline-offset:3px}
-.warnmark{text-decoration:underline dotted var(--accent2Fg);text-underline-offset:3px}
-.caret{display:inline-block;width:2px;height:16px;background:var(--accent);vertical-align:-3px;margin-left:-1px}
+.squig{text-decoration:underline wavy var(--danger);text-underline-offset:4px}
+.warnmark{text-decoration:underline dotted var(--accent2Fg);text-underline-offset:4px}
+.caret{display:inline-block;width:2px;height:16px;background:var(--accent);vertical-align:-3px}
+.allsel .tl{background:var(--selection)}
+.bar{display:flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;padding:4px 4px 4px 12px;border:1px solid var(--line);border-bottom:0;font:500 13px Manrope,system-ui,sans-serif;color:var(--fg)}
+.bar.info{background:var(--surface2)}
+.bar.error{background:var(--dangerBg)}
+.bar svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;flex:none}
+.ibtn{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:7px;background:none;color:var(--muted)}
+.ibtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:28px;padding:0 12px;box-sizing:border-box;border:1px solid var(--lineStrong);border-radius:7px;background:none;color:var(--fg);font:500 13px Manrope,system-ui,sans-serif}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </helmet>
 <div style="width:1280px;box-sizing:border-box;padding:40px;display:flex;flex-direction:column;gap:48px;background:#0B0810">
 <sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
-<div class="tk-{{t.id}}" style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:24px;padding:24px;border-radius:12px;background:var(--bg);color:var(--fg)">
+<div class="tk-{{t.id}}" style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:24px;padding:24px;border-radius:12px;background:var(--bg);color:var(--fg);align-items:start">
+  <span id="ed-l-{{t.id}}" class="vh" data-copy="COPY-label.editor">JSON document</span>
+  <span id="ed-d-{{t.id}}" class="vh" data-copy="COPY-action.dismiss">Dismiss</span>
 
   <div style="display:flex;flex-direction:column;gap:8px">
-    <span class="lab">CMP-Editor / normal tier + current line / {{t.id}}</span>
-    <div class="ed" aria-label="JSON document" data-copy="COPY-label.editor">
-      <div class="gut" aria-hidden="true">1
-2
-3
-4
-5
-6
-7</div>
-      <div class="txt">
-<div><span class="p">{</span></div>
-<div>  <span class="k">"order"</span><span class="p">: {</span></div>
-<div style="background:var(--currentLine)">    <span class="k">"status"</span><span class="p">: </span><span class="s">"shipped"</span><span class="p">,</span><span class="caret"></span></div>
-<div>    <span class="k">"total"</span><span class="p">: </span><span class="n">1499.50</span><span class="p">,</span></div>
-<div>    <span class="k">"gift"</span><span class="p">: </span><span class="l">false</span><span class="p">,</span></div>
-<div>    <span class="k">"coupon"</span><span class="p">: </span><span class="l">null</span></div>
-<div>  <span class="p">}</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div style="display:flex;flex-direction:column;gap:8px">
-    <span class="lab">CMP-Editor / large tier (reduced colouring) / {{t.id}}</span>
-    <div style="display:flex;flex-direction:column">
-      <div role="status" style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--surface2);border:1px solid var(--line);border-bottom:0;font:500 12px Manrope,system-ui,sans-serif;color:var(--fg)">
-        <svg aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:1.5;flex:none"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
-        <span data-copy="COPY-notice.large">Large document (34.2 MB): some highlighting is turned off to keep things fast.</span>
-        <div style="flex:1"></div>
-        <button type="button" aria-label="Dismiss" style="width:24px;height:24px;border:0;border-radius:7px;background:none;color:var(--muted);font:500 14px Manrope,sans-serif">×</button>
-      </div>
-      <div class="ed plain" style="height:146px">
-        <div class="gut" aria-hidden="true">812 044
-812 045
-812 046
-812 047
-812 048</div>
-        <div class="txt">
-<div>      <span class="k">"sku"</span><span class="p">: </span><span class="s">"TK-204"</span><span class="p">,</span></div>
-<div>      <span class="k">"qty"</span><span class="p">: </span><span class="n">2</span><span class="p">,</span></div>
-<div>      <span class="k">"gift"</span><span class="p">: </span><span class="l">false</span></div>
-<div>    <span class="p">},</span></div>
-<div>    <span class="p">{</span></div>
+    <span class="lab">CMP-Editor / empty / {{t.id}}</span>
+    <div class="ed" style="height:224px">
+      <div class="gut" aria-hidden="true"><span class="gl cur">1</span></div>
+      <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center">
+        <div role="textbox" aria-multiline="true" aria-labelledby="ed-l-{{t.id}}" tabindex="0" style="position:absolute;inset:0"><span class="caret" style="position:absolute;left:12px;top:6px"></span></div>
+        <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:16px;font-family:Manrope,system-ui,sans-serif">
+          <span style="font-size:14px;font-weight:600;color:var(--fg)" data-copy="COPY-empty.title">Paste JSON, drop a file, or open one</span>
+          <span style="font-size:13px;color:var(--muted)" data-copy="COPY-empty.body">Everything runs in your browser. Nothing is uploaded.</span>
+          <button type="button" class="btn" style="margin-top:8px"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg><span data-copy="COPY-action.open">Open file</span></button>
         </div>
       </div>
     </div>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:8px">
-    <span class="lab">CMP-Editor / error marker / {{t.id}}</span>
-    <div class="ed">
-      <div class="gut" aria-hidden="true">6
-7
-8
-9
-10
-11
-12</div>
-      <div class="txt">
-<div>    <span class="k">"items"</span><span class="p">: [</span></div>
-<div>      <span class="p">{ </span><span class="k">"sku"</span><span class="p">: </span><span class="s">"TK-204"</span><span class="p">, </span><span class="k">"qty"</span><span class="p">: </span><span class="n">2</span><span class="p"> },</span></div>
-<div style="background:var(--dangerBg);box-shadow:inset 2px 0 0 var(--danger)">      <span class="p">{ </span><span class="k">"sku"</span><span class="p">: </span><span class="s">"TK-311"</span><span class="p">, </span><span class="k">"qty"</span><span class="p">: </span><span class="n">1</span><span class="p"> }</span><span class="p squig">,</span><span class="caret"></span></div>
-<div>    <span class="p">],</span></div>
-<div>    <span class="k">"coupon"</span><span class="p">: </span><span class="l">null</span><span class="p">,</span></div>
-<div>    <span class="k">"customer"</span><span class="p">: </span><span class="s">"Mai Tran"</span></div>
-<div>  <span class="p">}</span></div>
+    <span class="lab">CMP-Editor / normal tier / {{t.id}}</span>
+    <div class="ed" style="height:224px">
+      <div class="gut" aria-hidden="true"><span class="gl">1</span><span class="gl">2</span><span class="gl cur">3</span><span class="gl">4</span><span class="gl">5</span><span class="gl">6</span><span class="gl">7</span><span class="gl">8</span><span class="gl">9</span><span class="gl">10</span></div>
+      <div class="txt" role="textbox" aria-multiline="true" aria-labelledby="ed-l-{{t.id}}" tabindex="0">
+<span class="tl"><span class="p">{</span></span><span class="tl">  <span class="k">"order"</span><span class="p">: {</span></span><span class="tl" style="background:var(--currentLine)">    <span class="k">"status"</span><span class="p">: </span><span class="s">"shipped"</span><span class="p">,</span><span class="caret"></span></span><span class="tl">    <span class="k">"total"</span><span class="p">: </span><span class="n">1499.50</span><span class="p">,</span></span><span class="tl">    <span class="k">"gift"</span><span class="p">: </span><span class="l">false</span><span class="p">,</span></span><span class="tl">    <span class="k">"coupon"</span><span class="p">: </span><span class="l">null</span><span class="p">,</span></span><span class="tl">    <span class="k">"tags"</span><span class="p">: [</span><span class="s">"gift"</span><span class="p">, </span><span class="s">"express"</span><span class="p">]</span></span><span class="tl">  <span class="p">}</span></span><span class="tl"><span class="p">}</span></span><span class="tl"> </span>
       </div>
     </div>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:8px">
-    <span class="lab">CMP-Editor / warning marker / {{t.id}}</span>
-    <div class="ed">
-      <div class="gut" aria-hidden="true">1
-2
-3
-4
-5
-6
-7</div>
-      <div class="txt">
-<div><span class="p">{</span></div>
-<div>  <span class="k">"a"</span><span class="p">: </span><span class="n">1</span><span class="p">,</span></div>
-<div>  <span class="k warnmark">"a"</span><span class="p">: </span><span class="n">2</span><span class="p">,</span></div>
-<div>  <span class="k">"id"</span><span class="p">: </span><span class="n warnmark">9007199254740993</span><span class="p">,</span></div>
-<div>  <span class="k">"note"</span><span class="p">: </span><span class="s">"duplicate key and 64-bit id"</span></div>
-<div><span class="p">}</span></div>
-<div> </div>
+    <span class="lab">CMP-Editor / large tier · with CMP-Notice info bar / {{t.id}}</span>
+    <div>
+      <div class="bar info" role="status">
+        <svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--muted)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <span style="flex:1" data-copy="COPY-notice.large">Large document (34.2 MB): some highlighting is turned off to keep things fast.</span>
+        <button type="button" class="ibtn" aria-labelledby="ed-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="ed plain" style="height:184px">
+        <div class="gut" aria-hidden="true" style="min-width:72px"><span class="gl">812044</span><span class="gl">812045</span><span class="gl cur">812046</span><span class="gl">812047</span><span class="gl">812048</span><span class="gl">812049</span><span class="gl">812050</span><span class="gl">812051</span></div>
+        <div class="txt" role="textbox" aria-multiline="true" aria-labelledby="ed-l-{{t.id}}" tabindex="0">
+<span class="tl">      <span class="k">"sku"</span><span class="p">: </span><span class="s">"TK-204"</span><span class="p">,</span></span><span class="tl">      <span class="k">"qty"</span><span class="p">: </span><span class="n">2</span><span class="p">,</span></span><span class="tl" style="background:var(--currentLine)">      <span class="k">"gift"</span><span class="p">: </span><span class="l">false</span><span class="caret"></span></span><span class="tl">    <span class="p">},</span></span><span class="tl">    <span class="p">{</span></span><span class="tl">      <span class="k">"sku"</span><span class="p">: </span><span class="s">"TK-311"</span><span class="p">,</span></span><span class="tl">      <span class="k">"qty"</span><span class="p">: </span><span class="n">1</span><span class="p">,</span></span><span class="tl">      <span class="k">"gift"</span><span class="p">: </span><span class="l">true</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-Editor / error / {{t.id}}</span>
+    <div class="ed" style="height:224px">
+      <div class="gut" aria-hidden="true"><span class="gl">5</span><span class="gl">6</span><span class="gl">7</span><span class="gl err cur">8</span><span class="gl">9</span><span class="gl">10</span><span class="gl">11</span><span class="gl">12</span><span class="gl">13</span><span class="gl">14</span></div>
+      <div class="txt" role="textbox" aria-multiline="true" aria-labelledby="ed-l-{{t.id}}" aria-invalid="true" tabindex="0">
+<span class="tl">    <span class="k">"total"</span><span class="p">: </span><span class="n">1499.50</span><span class="p">,</span></span><span class="tl">    <span class="k">"items"</span><span class="p">: [</span></span><span class="tl">      <span class="p">{ </span><span class="k">"sku"</span><span class="p">: </span><span class="s">"TK-204"</span><span class="p">, </span><span class="k">"qty"</span><span class="p">: </span><span class="n">2</span><span class="p"> },</span></span><span class="tl" style="background:var(--dangerBg);box-shadow:inset 2px 0 0 var(--danger)">      <span class="p">{ </span><span class="k">"sku"</span><span class="p">: </span><span class="s">"TK-311"</span><span class="p">, </span><span class="k">"qty"</span><span class="p">: </span><span class="n">1</span><span class="p"> }</span><span class="p squig">,</span><span class="caret"></span></span><span class="tl">    <span class="p">],</span></span><span class="tl">    <span class="k">"coupon"</span><span class="p">: </span><span class="l">null</span><span class="p">,</span></span><span class="tl">    <span class="k">"customer"</span><span class="p">: </span><span class="s">"Mai Tran"</span></span><span class="tl">  <span class="p">}</span></span><span class="tl"><span class="p">}</span></span><span class="tl"> </span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-Editor / warning / {{t.id}}</span>
+    <div class="ed" style="height:224px">
+      <div class="gut" aria-hidden="true"><span class="gl">1</span><span class="gl">2</span><span class="gl warn cur">3</span><span class="gl warn">4</span><span class="gl">5</span><span class="gl">6</span><span class="gl">7</span><span class="gl">8</span><span class="gl">9</span><span class="gl">10</span></div>
+      <div class="txt" role="textbox" aria-multiline="true" aria-labelledby="ed-l-{{t.id}}" tabindex="0">
+<span class="tl"><span class="p">{</span></span><span class="tl">  <span class="k">"a"</span><span class="p">: </span><span class="n">1</span><span class="p">,</span></span><span class="tl" style="background:var(--currentLine)">  <span class="k warnmark">"a"</span><span class="p">: </span><span class="n">2</span><span class="p">,</span><span class="caret"></span></span><span class="tl">  <span class="k">"id"</span><span class="p">: </span><span class="n warnmark">9007199254740993</span><span class="p">,</span></span><span class="tl">  <span class="k">"note"</span><span class="p">: </span><span class="s">"duplicate key and 64-bit id"</span></span><span class="tl"><span class="p">}</span></span><span class="tl"> </span><span class="tl"> </span><span class="tl"> </span><span class="tl"> </span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-Editor / all-selected · copy fallback with CMP-Notice error bar / {{t.id}}</span>
+    <div>
+      <div class="bar error" role="alert">
+        <svg aria-hidden="true" viewBox="0 0 24 24" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <span style="flex:1" data-copy="COPY-error.clipboard">Copying isn't allowed here. The text is selected — press your copy shortcut.</span>
+        <button type="button" class="ibtn" aria-labelledby="ed-d-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="ed allsel" style="height:184px">
+        <div class="gut" aria-hidden="true"><span class="gl">1</span><span class="gl">2</span><span class="gl">3</span><span class="gl">4</span><span class="gl">5</span><span class="gl">6</span><span class="gl">7</span><span class="gl">8</span></div>
+        <div class="txt" role="textbox" aria-multiline="true" aria-labelledby="ed-l-{{t.id}}" tabindex="0">
+<span class="tl"><span class="p">{</span></span><span class="tl">  <span class="k">"order"</span><span class="p">: {</span></span><span class="tl">    <span class="k">"status"</span><span class="p">: </span><span class="s">"shipped"</span><span class="p">,</span></span><span class="tl">    <span class="k">"total"</span><span class="p">: </span><span class="n">1499.50</span><span class="p">,</span></span><span class="tl">    <span class="k">"gift"</span><span class="p">: </span><span class="l">false</span></span><span class="tl">  <span class="p">}</span></span><span class="tl"><span class="p">}</span></span>
+        </div>
       </div>
     </div>
   </div>
@@ -125,7 +128,7 @@ body{margin:0}
 </sc-for>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1180}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2000}}'>
 class Component extends DCLogic {
   renderVals() {
     return { themes: [{ id: 'dark' }, { id: 'light' }] };

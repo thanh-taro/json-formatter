@@ -22,4 +22,4 @@ Header with counts · list of issues (severity, location, message, hint).
 Activating an item jumps to its position in the text.
 
 ## Accessibility
-List role; each item announces severity, location, and hint.
+Region labelled COPY-label.issues; list role; each item announces severity, location, and hint.

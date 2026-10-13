@@ -25,4 +25,4 @@ Header (collapse all) · rows (expander, key/index, kind, value or child count, 
 Expand/collapse by click or keyboard. Row actions: copy path, copy value, reveal in text.
 
 ## Accessibility
-Tree role; arrow keys move/expand/collapse; row actions reachable by keyboard.
+Tree role labelled COPY-label.tree; arrow keys move/expand/collapse; row actions reachable by keyboard.

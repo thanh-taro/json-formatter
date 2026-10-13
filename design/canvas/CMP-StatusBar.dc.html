@@ -11,72 +11,104 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;display=swap">
 <style>
 body{margin:0}
-.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--accent2Fg:#FFC48A;--danger:#FF8595;--success:#5BD6A0;--dangerBg:#3A1622;color-scheme:dark}
-.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--accent2Fg:#8F4705;--danger:#C0243B;--success:#13744C;--dangerBg:#FCE8EC;color-scheme:light}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--danger:#FF8595;--success:#5BD6A0;--dangerBg:#3A1622;color-scheme:dark}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--danger:#C0243B;--success:#13744C;--dangerBg:#FCE8EC;color-scheme:light}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .lab{font:500 12px 'JetBrains Mono',ui-monospace,monospace;color:var(--muted)}
-.sb{height:26px;box-sizing:border-box;display:flex;align-items:center;gap:16px;padding:0 12px;background:var(--surface);border:1px solid var(--line);font:500 12px 'JetBrains Mono',ui-monospace,monospace;color:var(--muted);position:relative}
-.st{display:inline-flex;align-items:center;gap:6px;color:var(--fg)}
+.sb{height:28px;box-sizing:border-box;display:flex;align-items:center;gap:16px;padding:0 4px 0 12px;background:var(--surface);border:1px solid var(--line);font:500 12px 'JetBrains Mono',ui-monospace,monospace;color:var(--muted);position:relative}
+.st{display:inline-flex;align-items:center;gap:8px;color:var(--fg)}
 .dot{width:8px;height:8px;border-radius:50%;flex:none}
-.badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 6px;border:0;border-radius:7px;background:none;color:var(--success);font:500 12px 'JetBrains Mono',monospace}
-.badge svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5}
-.jump{display:inline-flex;align-items:center;height:22px;padding:0 6px;border:0;border-radius:7px;background:var(--dangerBg);color:var(--danger);font:600 12px 'JetBrains Mono',monospace}
+.badge{display:inline-flex;align-items:center;gap:8px;height:24px;min-width:24px;padding:0 8px;box-sizing:border-box;border:0;border-radius:7px;background:none;color:var(--success);font:500 12px 'JetBrains Mono',monospace}
+.badge svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5}
+.jump{display:inline-flex;align-items:center;gap:8px;height:24px;padding:0 8px;margin-left:-8px;border:0;border-radius:7px;background:var(--dangerBg);color:var(--danger);font:600 12px 'JetBrains Mono',monospace}
+.ibtn{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:7px;background:none;color:var(--muted)}
+.ibtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round}
+.coarse .badge{height:44px;min-width:44px;padding:0;justify-content:center}
+.coarse .sb{height:44px}
+.coarse .jump{height:44px}
 </style>
 </helmet>
 <div style="width:1280px;box-sizing:border-box;padding:40px;display:flex;flex-direction:column;gap:48px;background:#0B0810">
 <sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
-<div class="tk-{{t.id}}" style="display:flex;flex-direction:column;gap:20px;padding:24px;border-radius:12px;background:var(--bg);color:var(--fg)">
+<div class="tk-{{t.id}}" style="display:flex;flex-direction:column;gap:24px;padding:24px;border-radius:12px;background:var(--bg);color:var(--fg)">
+  <span id="sb-pl-{{t.id}}" class="vh" data-copy="COPY-privacy.badge_label">Your data stays in this browser</span>
 
   <div style="display:flex;flex-direction:column;gap:8px">
     <span class="lab">CMP-StatusBar / valid / {{t.id}}</span>
-    <div class="sb" role="status">
-      <span class="st"><span class="dot" style="background:var(--success)"></span><span data-copy="COPY-status.valid">Valid JSON</span></span>
-      <span data-copy="COPY-status.size_lines">412 B · 13 lines</span><span>Ln 3, Col 11</span>
+    <div class="sb">
+      <span class="st" role="status"><span class="dot" aria-hidden="true" style="background:var(--success)"></span><span data-copy="COPY-status.valid">Valid JSON</span></span>
+      <span data-copy="COPY-status.size_lines">412 B · 13 lines</span><span data-copy="COPY-status.cursor">Ln 3, Col 11</span>
       <div style="flex:1"></div>
-      <button type="button" class="badge" aria-label="Your data stays in this browser" data-copy="COPY-privacy.badge_label"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-StatusBar / valid · with warnings / {{t.id}}</span>
+    <div class="sb">
+      <span class="st" role="status"><span class="dot" aria-hidden="true" style="background:var(--success)"></span><span data-copy="COPY-status.valid_warnings">Valid JSON · 2 warnings</span></span>
+      <span data-copy="COPY-status.size_lines">451 B · 14 lines</span><span data-copy="COPY-status.cursor">Ln 3, Col 11</span>
+      <div style="flex:1"></div>
+      <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
     </div>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:8px">
     <span class="lab">CMP-StatusBar / invalid / {{t.id}}</span>
-    <div class="sb" role="status">
-      <button type="button" class="jump" aria-label="Invalid JSON, go to error"><span class="dot" style="background:var(--danger);margin-right:6px"></span><span data-copy="COPY-status.invalid">Invalid JSON</span></button>
-      <span data-copy="COPY-status.size_lines">414 B · 13 lines</span><span>Ln 8, Col 50</span>
+    <div class="sb">
+      <span role="status"><button type="button" class="jump"><span class="dot" aria-hidden="true" style="background:var(--danger)"></span><span data-copy="COPY-status.invalid">Invalid JSON</span></button></span>
+      <span data-copy="COPY-status.size_lines">414 B · 13 lines</span><span data-copy="COPY-status.cursor">Ln 8, Col 50</span>
       <div style="flex:1"></div>
-      <button type="button" class="badge" aria-label="Your data stays in this browser" data-copy="COPY-privacy.badge_label"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
     </div>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:8px">
     <span class="lab">CMP-StatusBar / checking / {{t.id}}</span>
-    <div class="sb" role="status">
-      <span class="st"><span class="dot" style="background:none;border:1.5px solid var(--muted);box-sizing:border-box"></span><span data-copy="COPY-status.checking">Checking…</span></span>
-      <span data-copy="COPY-status.size_lines">48.6 MB · 1 905 220 lines</span><span>Ln 812 046, Col 9</span>
+    <div class="sb">
+      <span class="st" role="status"><span class="dot" aria-hidden="true" style="border:2px solid var(--muted);box-sizing:border-box"></span><span data-copy="COPY-status.checking">Checking…</span></span>
+      <span data-copy="COPY-status.size_lines">48.6 MB · 1,905,220 lines</span><span data-copy="COPY-status.cursor">Ln 812,046, Col 9</span>
       <div style="flex:1"></div>
-      <button type="button" class="badge" aria-label="Your data stays in this browser" data-copy="COPY-privacy.badge_label"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
     </div>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:8px">
     <span class="lab">CMP-StatusBar / empty / {{t.id}}</span>
-    <div class="sb" role="status">
-      <span class="st" style="color:var(--muted)"><span class="dot" style="background:var(--line)"></span><span data-copy="COPY-status.empty">Empty</span></span>
+    <div class="sb">
+      <span class="st" role="status" style="color:var(--muted)"><span class="dot" aria-hidden="true" style="border:2px solid var(--lineStrong);box-sizing:border-box"></span><span data-copy="COPY-status.empty">Empty</span></span>
+      <span data-copy="COPY-status.size_lines">0 B · 1 line</span><span data-copy="COPY-status.cursor">Ln 1, Col 1</span>
       <div style="flex:1"></div>
-      <button type="button" class="badge" aria-label="Your data stays in this browser" data-copy="COPY-privacy.badge_label"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
     </div>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:8px">
     <span class="lab">CMP-StatusBar / privacy details open / {{t.id}}</span>
-    <div style="height:150px"></div>
-    <div class="sb" role="status">
-      <span class="st"><span class="dot" style="background:var(--success)"></span><span data-copy="COPY-status.valid">Valid JSON</span></span>
-      <span data-copy="COPY-status.size_lines">412 B · 13 lines</span>
+    <div style="height:168px"></div>
+    <div class="sb">
+      <span class="st" role="status"><span class="dot" aria-hidden="true" style="background:var(--success)"></span><span data-copy="COPY-status.valid">Valid JSON</span></span>
+      <span data-copy="COPY-status.size_lines">412 B · 13 lines</span><span data-copy="COPY-status.cursor">Ln 3, Col 11</span>
       <div style="flex:1"></div>
-      <div role="dialog" aria-label="Privacy" style="position:absolute;right:8px;bottom:32px;width:340px;box-sizing:border-box;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;box-shadow:0 12px 32px -12px rgba(0,0,0,.45);font:400 13px/1.55 Manrope,system-ui,sans-serif;color:var(--fg)">
-        <span style="display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--success)"><svg aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></span>
-        <span data-copy="COPY-privacy.details">This tool runs entirely in your browser. Your JSON is never uploaded, logged, or stored, and the tool sends no analytics. Closing the page discards it.</span>
+      <div role="dialog" id="sb-dlg-{{t.id}}" aria-labelledby="sb-pl-{{t.id}}" style="position:absolute;right:4px;bottom:32px;width:360px;box-sizing:border-box;padding:12px 8px 16px 16px;display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;font:400 13px/20px Manrope,system-ui,sans-serif;color:var(--fg)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--success);fill:none;stroke-width:1.5"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          <span style="font-weight:600;flex:1" data-copy="COPY-privacy.badge_label">Your data stays in this browser</span>
+          <button type="button" class="ibtn" aria-labelledby="sb-cl-{{t.id}}"><span id="sb-cl-{{t.id}}" class="vh" data-copy="COPY-action.close">Close</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <span style="padding-right:8px" data-copy="COPY-privacy.details">This tool runs entirely in your browser. Your JSON is never uploaded, logged, or stored, and the tool sends no analytics. Closing the page discards it.</span>
       </div>
-      <button type="button" class="badge" aria-expanded="true" aria-label="Your data stays in this browser" data-copy="COPY-privacy.badge_label" style="background:var(--surface2)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="true" aria-controls="sb-dlg-{{t.id}}" style="background:var(--surface2)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+    </div>
+  </div>
+
+  <div class="coarse" style="display:flex;flex-direction:column;gap:8px;width:390px">
+    <span class="lab">CMP-StatusBar / narrow · 390 coarse / {{t.id}}</span>
+    <div class="sb">
+      <span class="st" role="status"><span class="dot" aria-hidden="true" style="background:var(--success)"></span><span data-copy="COPY-status.valid_warnings">Valid JSON · 2 warnings</span></span>
+      <span data-copy="COPY-status.size_lines">451 B · 14 lines</span>
+      <div style="flex:1"></div>
+      <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></button>
     </div>
   </div>
 
@@ -84,7 +116,7 @@ body{margin:0}
 </sc-for>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1060}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1800}}'>
 class Component extends DCLogic {
   renderVals() {
     return { themes: [{ id: 'dark' }, { id: 'light' }] };

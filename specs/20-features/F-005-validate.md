@@ -50,7 +50,10 @@ words that suggest the fix (PRN-03).
 
 ## UX notes
 CMP-StatusBar shows COPY-status.valid / COPY-status.invalid / COPY-status.checking /
-COPY-status.empty, plus size and lines (COPY-status.size_lines). CMP-IssuePanel lists issues
+COPY-status.empty (COPY-status.valid_warnings when warnings exist), plus size and lines
+(COPY-status.size_lines) and the cursor position (COPY-status.cursor). CMP-IssuePanel tabs:
+COPY-issue.tab_problems, COPY-issue.tab_warnings; severity badges COPY-issue.error,
+COPY-issue.warning; collapse/expand COPY-action.collapse_issues / COPY-action.expand_issues. CMP-IssuePanel lists issues
 with the hint for their code (Hints in copy.md) and location (COPY-issue.location). The error position is
 marked in CMP-Editor.
 Hints per code: COPY-hint.trailing_comma, COPY-hint.comment, COPY-hint.single_quotes, COPY-hint.unquoted_key, COPY-hint.missing_comma, COPY-hint.missing_colon, COPY-hint.unclosed_string, COPY-hint.unclosed_container, COPY-hint.unexpected_closing, COPY-hint.invalid_literal, COPY-hint.invalid_number, COPY-hint.invalid_escape, COPY-hint.control_character, COPY-hint.extra_content, COPY-hint.empty_document, COPY-hint.too_deep, COPY-hint.unexpected_character, COPY-hint.duplicate_key, COPY-hint.unsafe_number, COPY-hint.byte_order_mark.

@@ -1,7 +1,7 @@
 ---
 id: CMP-SearchPanel
 title: Search panel
-status: draft
+status: ready
 tokens: [size.control, radius.sm, font.size.sm, font.size.code]
 ---
 

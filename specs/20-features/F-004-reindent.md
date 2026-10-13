@@ -6,7 +6,7 @@ milestone: M-1
 priority: P1
 personas: [PER-01]
 entities: [ENT-Document, ENT-IndentStyle]
-rules: [RULE-01, RULE-09, RULE-15]
+rules: [RULE-01, RULE-02, RULE-09, RULE-15]
 screens: [SCR-Formatter]
 components: [CMP-Toolbar, CMP-Editor]
 nfr: [NFR-02]
@@ -32,6 +32,8 @@ grouped lines) — and even when the JSON is not valid yet.
   the user is told.
 - **R6** Re-indenting a large document shows progress and can be cancelled; while it runs, the
   document cannot be edited and other actions are unavailable (PRN-04).
+- **R7** If the result would exceed 100 MB, the user confirms first (RULE-02); declining leaves
+  the document unchanged.
 
 ## Acceptance criteria
 - **AC1** Given a document indented with 4 spaces per level, when the user re-indents to tab, then each line's 4·n leading spaces become n tabs. (R1)
@@ -41,6 +43,7 @@ grouped lines) — and even when the JSON is not valid yet.
 - **AC5** Given a re-indented document, when the user undoes once, then the previous text is restored exactly. (R4)
 - **AC6** Given a minified single-line document, when the user re-indents, then the document is unchanged and COPY-notice.no_indent is shown. (R5)
 - **AC7** Given a 50 MB indented document, when the user re-indents, then then progress is shown; the user can scroll and cancel; editing and all other actions are unavailable; cancelling leaves the document unchanged. (R6)
+- **AC8** Given a 60 MB document indented with 1 space per level, when the user re-indents to 4 spaces, then COPY-confirm.very_large is shown and nothing changes until the user chooses COPY-action.continue. (R7)
 
 ## UX notes
 CMP-Toolbar: COPY-action.reindent uses the same indent selector as F-002. Progress uses

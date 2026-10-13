@@ -11,29 +11,41 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;display=swap">
 <style>
 body{margin:0}
-.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--accent2Fg:#FFC48A;--selection:#2A1D47;--selectionLine:#4A3580;--danger:#FF8595;--success:#5BD6A0;--dangerBg:#3A1622;--warnBg:#33240F;--currentLine:#1C1526;color-scheme:dark}
-.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--accent2Fg:#8F4705;--selection:#F0EAFE;--selectionLine:#CDBBF8;--danger:#C0243B;--success:#13744C;--dangerBg:#FCE8EC;--warnBg:#FDEBD8;--currentLine:#F6F3FD;color-scheme:light}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--selection:#2A1D47;--danger:#FF8595;--success:#5BD6A0;color-scheme:dark}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--selection:#F0EAFE;--danger:#C0243B;--success:#13744C;color-scheme:light}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .lab{font:500 12px 'JetBrains Mono',ui-monospace,monospace;color:var(--muted)}
-.bar{height:38px;box-sizing:border-box;display:flex;align-items:center;gap:2px;padding:0 6px;background:var(--surface);border:1px solid var(--line)}
-.btn{display:inline-flex;align-items:center;gap:6px;height:28px;min-width:28px;padding:0 8px;border:1px solid transparent;border-radius:7px;background:none;color:var(--fg);font:500 13px Manrope,system-ui,sans-serif;white-space:nowrap;box-sizing:border-box;justify-content:center}
+.bar{height:40px;box-sizing:border-box;display:flex;align-items:center;gap:4px;padding:0 8px;background:var(--surface);border:1px solid var(--line)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:28px;min-width:28px;padding:0 8px;box-sizing:border-box;border:1px solid transparent;border-radius:7px;background:none;color:var(--fg);font:500 13px Manrope,system-ui,sans-serif;white-space:nowrap}
 .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .btn.primary{background:var(--accent);color:var(--onAccent)}
-.btn[disabled]{color:var(--muted);opacity:.55}
-.btn.primary[disabled]{background:var(--surface2);color:var(--muted);opacity:1}
-.sep{width:1px;height:20px;background:var(--line);margin:0 6px}
-.sel{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px;margin-left:4px;border:1px solid var(--line);border-radius:7px;background:var(--bg);font:500 12px Manrope,system-ui,sans-serif;color:var(--fg);box-sizing:border-box}
-.views{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
-.views button{height:26px;padding:0 10px;border:0;background:none;color:var(--muted);font:600 12px Manrope,system-ui,sans-serif}
-.views button[aria-pressed="true"]{background:var(--surface2);color:var(--fg)}
-.menu{position:absolute;top:34px;left:0;min-width:180px;padding:4px;background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;box-shadow:0 12px 32px -12px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:1px;z-index:2}
-.mi{display:flex;align-items:center;gap:8px;height:28px;padding:0 8px;border-radius:7px;font:500 13px Manrope,system-ui,sans-serif;color:var(--fg);border:0;background:none;text-align:left}
+.btn.sel{border-color:var(--lineStrong);font-size:12px}
+.btn[disabled]{color:var(--muted)}
+.btn.primary[disabled]{background:var(--surface2);color:var(--muted)}
+.btn.hover{background:var(--surface2)}
+.btn.focus{outline:2px solid var(--accent);outline-offset:2px}
+.btn.pressed{background:var(--selection)}
+.sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.seg{display:inline-flex;border:1px solid var(--lineStrong);border-radius:7px;overflow:hidden}
+.seg button{height:26px;padding:0 12px;border:0;background:none;color:var(--muted);font:600 12px Manrope,system-ui,sans-serif}
+.seg button[aria-pressed="true"]{background:var(--surface2);color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+.seg button[disabled]{color:var(--muted);box-shadow:none}
+.menu{position:absolute;top:36px;left:0;min-width:220px;padding:4px;margin:0;list-style:none;background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;display:flex;flex-direction:column;gap:0;z-index:2}
+.mi{display:flex;align-items:center;gap:8px;min-height:28px;padding:0 8px;border-radius:7px;font:500 13px Manrope,system-ui,sans-serif;color:var(--fg)}
 .mi.on{background:var(--selection)}
-.mi .chk{width:14px;color:var(--accent)}
+.mi .chk{width:16px;color:var(--accent);font-weight:700}
+.coarse .bar{height:auto;padding:4px 8px}
+.coarse .btn{height:44px;min-width:44px}
+.coarse .seg button{height:44px;min-width:44px}
+.coarse .mi{min-height:44px}
+.prog{display:flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;padding:4px 4px 4px 12px;background:var(--surface2);border:1px solid var(--line);border-top:0;font:500 12px 'JetBrains Mono',monospace;color:var(--fg)}
+.track{width:160px;height:4px;border-radius:999px;background:var(--line);overflow:hidden;display:inline-block}
 </style>
 </helmet>
 <div style="width:1280px;box-sizing:border-box;padding:40px;display:flex;flex-direction:column;gap:48px;background:#0B0810">
 <sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
 <div class="tk-{{t.id}}" style="display:flex;flex-direction:column;gap:24px;padding:24px;border-radius:12px;background:var(--bg);color:var(--fg)">
+  <span id="tb-ind-{{t.id}}" class="vh" data-copy="COPY-label.indent">Indent</span>
 
   <div style="display:flex;flex-direction:column;gap:8px">
     <span class="lab">CMP-Toolbar / default / {{t.id}}</span>
@@ -41,16 +53,52 @@ body{margin:0}
       <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg><span data-copy="COPY-action.open">Open file</span></button>
       <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg><span data-copy="COPY-action.clear">Clear</span></button>
       <div class="sep"></div>
+      <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span data-copy="COPY-action.find">Find</span></button>
+      <div class="sep"></div>
       <button type="button" class="btn primary"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M8 10h12M8 14h12M4 18h16"/></svg><span data-copy="COPY-action.beautify">Beautify</span></button>
       <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg><span data-copy="COPY-action.minify">Minify</span></button>
       <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M10 12h10M10 18h10M4 10l3 2-3 2"/></svg><span data-copy="COPY-action.reindent">Re-indent</span></button>
-      <span class="sel"><span style="color:var(--muted)" data-copy="COPY-label.indent">Indent</span><span data-copy="COPY-indent.spaces2">2 spaces</span><svg aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:1.5"><path d="M7 10l5 5 5-5"/></svg></span>
+      <button type="button" class="btn sel" aria-haspopup="listbox" aria-expanded="false"><span style="color:var(--muted)" data-copy="COPY-label.indent">Indent</span><span data-copy="COPY-indent.spaces2">2 spaces</span><svg aria-hidden="true" viewBox="0 0 24 24" style="stroke:var(--muted)"><path d="M7 10l5 5 5-5"/></svg></button>
       <div class="sep"></div>
-      <div class="views" role="group" aria-label="View"><button type="button" aria-pressed="true" data-copy="COPY-view.text">Text</button><button type="button" aria-pressed="false" data-copy="COPY-view.tree">Tree</button></div>
+      <div class="seg" role="group" aria-label="View"><button type="button" aria-pressed="true" data-copy="COPY-view.text">Text</button><button type="button" aria-pressed="false" data-copy="COPY-view.tree">Tree</button></div>
       <div style="flex:1"></div>
       <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span data-copy="COPY-action.copy">Copy</span></button>
       <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-copy="COPY-action.download">Download</span></button>
     </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-Toolbar / default · interaction states (rest · hover · focus-visible · pressed · disabled) / {{t.id}}</span>
+    <div class="bar" style="gap:16px">
+      <button type="button" class="btn"><span data-copy="COPY-action.minify">Minify</span></button>
+      <button type="button" class="btn hover"><span data-copy="COPY-action.minify">Minify</span></button>
+      <button type="button" class="btn focus"><span data-copy="COPY-action.minify">Minify</span></button>
+      <button type="button" class="btn pressed"><span data-copy="COPY-action.minify">Minify</span></button>
+      <button type="button" class="btn" disabled="disabled"><span data-copy="COPY-action.minify">Minify</span></button>
+      <div class="sep"></div>
+      <button type="button" class="btn primary"><span data-copy="COPY-action.beautify">Beautify</span></button>
+      <button type="button" class="btn primary focus"><span data-copy="COPY-action.beautify">Beautify</span></button>
+      <button type="button" class="btn primary" disabled="disabled"><span data-copy="COPY-action.beautify">Beautify</span></button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-Toolbar / default · indent selector open / {{t.id}}</span>
+    <div class="bar" style="width:520px;position:relative">
+      <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M10 12h10M10 18h10M4 10l3 2-3 2"/></svg><span data-copy="COPY-action.reindent">Re-indent</span></button>
+      <div style="position:relative">
+        <button type="button" class="btn sel focus" aria-haspopup="listbox" aria-expanded="true" aria-controls="tb-list-{{t.id}}"><span style="color:var(--muted)" data-copy="COPY-label.indent">Indent</span><span data-copy="COPY-indent.spaces2">2 spaces</span><svg aria-hidden="true" viewBox="0 0 24 24" style="stroke:var(--muted)"><path d="M7 14l5-5 5 5"/></svg></button>
+        <ul class="menu" role="listbox" id="tb-list-{{t.id}}" aria-labelledby="tb-ind-{{t.id}}">
+          <li class="mi on" role="option" aria-selected="true"><span class="chk" aria-hidden="true">✓</span><span data-copy="COPY-indent.spaces2">2 spaces</span></li>
+          <li class="mi" role="option" aria-selected="false"><span class="chk" aria-hidden="true"></span><span data-copy="COPY-indent.spaces4">4 spaces</span></li>
+          <li class="mi" role="option" aria-selected="false"><span class="chk" aria-hidden="true"></span><span data-copy="COPY-indent.tab">Tab</span></li>
+          <li style="height:1px;background:var(--line);margin:4px" role="separator"></li>
+          <li class="mi" role="option" aria-selected="false"><span class="chk" aria-hidden="true"></span><span data-copy="COPY-indent.custom">Custom… (3 spaces)</span></li>
+        </ul>
+        <label class="menu" style="top:228px;flex-direction:row;align-items:center;gap:8px;padding:8px;font:500 12px Manrope,system-ui,sans-serif;color:var(--muted)"><span data-copy="COPY-indent.custom">Custom… (3 spaces)</span><input type="number" min="1" max="8" value="3" style="margin-left:auto;width:48px;height:28px;box-sizing:border-box;padding:0 4px;border:1px solid var(--lineStrong);border-radius:7px;background:var(--bg);color:var(--fg);font:400 16px 'JetBrains Mono',monospace"></label>
+      </div>
+    </div>
+    <div style="height:280px"></div>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:8px">
@@ -59,12 +107,14 @@ body{margin:0}
       <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg><span data-copy="COPY-action.open">Open file</span></button>
       <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg><span data-copy="COPY-action.clear">Clear</span></button>
       <div class="sep"></div>
+      <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span data-copy="COPY-action.find">Find</span></button>
+      <div class="sep"></div>
       <button type="button" class="btn primary" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M8 10h12M8 14h12M4 18h16"/></svg><span data-copy="COPY-action.beautify">Beautify</span></button>
       <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg><span data-copy="COPY-action.minify">Minify</span></button>
       <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M10 12h10M10 18h10M4 10l3 2-3 2"/></svg><span data-copy="COPY-action.reindent">Re-indent</span></button>
-      <span class="sel"><span style="color:var(--muted)" data-copy="COPY-label.indent">Indent</span><span data-copy="COPY-indent.spaces2">2 spaces</span><svg aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:1.5"><path d="M7 10l5 5 5-5"/></svg></span>
+      <button type="button" class="btn sel" disabled="disabled" aria-haspopup="listbox" aria-expanded="false"><span style="color:var(--muted)" data-copy="COPY-label.indent">Indent</span><span data-copy="COPY-indent.spaces2">2 spaces</span><svg aria-hidden="true" viewBox="0 0 24 24" style="stroke:var(--muted)"><path d="M7 10l5 5 5-5"/></svg></button>
       <div class="sep"></div>
-      <div class="views" role="group" aria-label="View" style="opacity:.55"><button type="button" aria-pressed="true" disabled="disabled" data-copy="COPY-view.text">Text</button><button type="button" aria-pressed="false" disabled="disabled" data-copy="COPY-view.tree">Tree</button></div>
+      <div class="seg" role="group" aria-label="View"><button type="button" aria-pressed="true" disabled="disabled" data-copy="COPY-view.text">Text</button><button type="button" aria-pressed="false" disabled="disabled" data-copy="COPY-view.tree">Tree</button></div>
       <div style="flex:1"></div>
       <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span data-copy="COPY-action.copy">Copy</span></button>
       <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-copy="COPY-action.download">Download</span></button>
@@ -72,68 +122,69 @@ body{margin:0}
   </div>
 
   <div style="display:flex;flex-direction:column;gap:8px">
-    <span class="lab">CMP-Toolbar / busy / {{t.id}}</span>
-    <div class="bar" role="toolbar" aria-label="Document actions" style="position:relative;overflow:hidden">
-      <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg><span data-copy="COPY-action.open">Open file</span></button>
-      <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg><span data-copy="COPY-action.clear">Clear</span></button>
-      <div class="sep"></div>
-      <button type="button" class="btn primary" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M8 10h12M8 14h12M4 18h16"/></svg><span data-copy="COPY-action.beautify">Beautify</span></button>
-      <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg><span data-copy="COPY-action.minify">Minify</span></button>
-      <div class="sep"></div>
-      <div role="progressbar" aria-valuenow="42" aria-valuemin="0" aria-valuemax="100" aria-label="Formatting" style="display:inline-flex;align-items:center;gap:10px;font:500 12px 'JetBrains Mono',monospace;color:var(--fg)">
-        <span data-copy="COPY-progress.formatting">Formatting… 42%</span>
-        <span style="width:160px;height:4px;border-radius:999px;background:var(--surface2);overflow:hidden;display:inline-block"><span style="display:block;width:42%;height:4px;background:var(--accent)"></span></span>
+    <span class="lab">CMP-Toolbar / busy · with CMP-Notice progress bar / {{t.id}}</span>
+    <div>
+      <div class="bar" role="toolbar" aria-label="Document actions" aria-disabled="true">
+        <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg><span data-copy="COPY-action.open">Open file</span></button>
+        <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg><span data-copy="COPY-action.clear">Clear</span></button>
+        <div class="sep"></div>
+        <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span data-copy="COPY-action.find">Find</span></button>
+        <div class="sep"></div>
+        <button type="button" class="btn primary" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M8 10h12M8 14h12M4 18h16"/></svg><span data-copy="COPY-action.beautify">Beautify</span></button>
+        <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg><span data-copy="COPY-action.minify">Minify</span></button>
+        <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M10 12h10M10 18h10M4 10l3 2-3 2"/></svg><span data-copy="COPY-action.reindent">Re-indent</span></button>
+        <button type="button" class="btn sel" disabled="disabled" aria-haspopup="listbox" aria-expanded="false"><span style="color:var(--muted)" data-copy="COPY-label.indent">Indent</span><span data-copy="COPY-indent.spaces2">2 spaces</span><svg aria-hidden="true" viewBox="0 0 24 24" style="stroke:var(--muted)"><path d="M7 10l5 5 5-5"/></svg></button>
+        <div class="sep"></div>
+        <div class="seg" role="group" aria-label="View"><button type="button" aria-pressed="true" disabled="disabled" data-copy="COPY-view.text">Text</button><button type="button" aria-pressed="false" disabled="disabled" data-copy="COPY-view.tree">Tree</button></div>
+        <div style="flex:1"></div>
+        <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span data-copy="COPY-action.copy">Copy</span></button>
+        <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-copy="COPY-action.download">Download</span></button>
       </div>
-      <button type="button" class="btn" style="border-color:var(--lineStrong);margin-left:8px" data-copy="COPY-action.cancel">Cancel</button>
-      <div style="flex:1"></div>
-      <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span data-copy="COPY-action.copy">Copy</span></button>
-      <button type="button" class="btn" disabled="disabled"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-copy="COPY-action.download">Download</span></button>
+      <div class="prog" role="status">
+        <span style="flex:1" data-copy="COPY-progress.formatting">Formatting… 42%</span>
+        <span class="track" role="progressbar" aria-valuenow="42" aria-valuemin="0" aria-valuemax="100" aria-label="Formatting… 42%"><span style="display:block;width:42%;height:4px;background:var(--accent)"></span></span>
+        <button type="button" class="btn" style="border-color:var(--lineStrong)" data-copy="COPY-action.cancel">Cancel</button>
+      </div>
     </div>
   </div>
 
   <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;gap:8px;width:390px">
-      <span class="lab">CMP-Toolbar / narrow (390) / {{t.id}}</span>
-      <div class="bar" role="toolbar" aria-label="Document actions" style="position:relative">
-        <button type="button" class="btn" aria-label="Open file"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg></button>
+    <div class="coarse" style="display:flex;flex-direction:column;gap:8px;width:390px">
+      <span class="lab">CMP-Toolbar / narrow · 390 coarse / {{t.id}}</span>
+      <div class="bar" role="toolbar" aria-label="Document actions">
         <button type="button" class="btn primary"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M8 10h12M8 14h12M4 18h16"/></svg><span data-copy="COPY-action.beautify">Beautify</span></button>
-        <button type="button" class="btn" aria-label="Minify"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg></button>
-        <div class="views" role="group" aria-label="View" style="margin-left:4px"><button type="button" aria-pressed="true" data-copy="COPY-view.text">Text</button><button type="button" aria-pressed="false" data-copy="COPY-view.tree">Tree</button></div>
+        <button type="button" class="btn" aria-labelledby="tb-n1-{{t.id}}"><span id="tb-n1-{{t.id}}" class="vh" data-copy="COPY-action.minify">Minify</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg></button>
+        <div class="seg" role="group" aria-label="View" style="margin-left:4px"><button type="button" aria-pressed="true" data-copy="COPY-view.text">Text</button><button type="button" aria-pressed="false" data-copy="COPY-view.tree">Tree</button></div>
         <div style="flex:1"></div>
-        <button type="button" class="btn" aria-label="Copy"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
-        <div style="position:relative">
-          <button type="button" class="btn" aria-label="More actions" aria-expanded="true" data-copy="COPY-action.more" style="background:var(--surface2)"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
-          <div class="menu" role="menu" style="left:auto;right:0">
-            <button type="button" class="mi" role="menuitem"><span data-copy="COPY-action.reindent">Re-indent</span></button>
-            <button type="button" class="mi" role="menuitem"><span data-copy="COPY-label.indent">Indent</span><span style="margin-left:auto;color:var(--muted)" data-copy="COPY-indent.spaces2">2 spaces</span></button>
-            <div style="height:1px;background:var(--line);margin:3px 4px"></div>
-            <button type="button" class="mi" role="menuitem"><span data-copy="COPY-action.download">Download</span></button>
-            <button type="button" class="mi" role="menuitem"><span data-copy="COPY-action.clear">Clear</span></button>
-          </div>
-        </div>
+        <button type="button" class="btn" aria-labelledby="tb-n2-{{t.id}}"><span id="tb-n2-{{t.id}}" class="vh" data-copy="COPY-action.copy">Copy</span><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
+        <button type="button" class="btn" aria-haspopup="menu" aria-expanded="false" aria-labelledby="tb-n3-{{t.id}}"><span id="tb-n3-{{t.id}}" class="vh" data-copy="COPY-action.more">More actions</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
       </div>
-      <div style="height:170px"></div>
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <span class="lab">CMP-Toolbar / indent selector open / {{t.id}}</span>
-      <div class="bar" style="width:420px;position:relative">
-        <button type="button" class="btn" aria-label="Minify"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg></button>
-        <button type="button" class="btn"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M10 12h10M10 18h10M4 10l3 2-3 2"/></svg><span data-copy="COPY-action.reindent">Re-indent</span></button>
+    <div class="coarse" style="display:flex;flex-direction:column;gap:8px;width:390px">
+      <span class="lab">CMP-Toolbar / narrow · overflow menu open / {{t.id}}</span>
+      <div class="bar" role="toolbar" aria-label="Document actions" style="position:relative">
+        <button type="button" class="btn primary"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M8 10h12M8 14h12M4 18h16"/></svg><span data-copy="COPY-action.beautify">Beautify</span></button>
+        <button type="button" class="btn" aria-labelledby="tb-m1-{{t.id}}"><span id="tb-m1-{{t.id}}" class="vh" data-copy="COPY-action.minify">Minify</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg></button>
+        <div class="seg" role="group" aria-label="View" style="margin-left:4px"><button type="button" aria-pressed="true" data-copy="COPY-view.text">Text</button><button type="button" aria-pressed="false" data-copy="COPY-view.tree">Tree</button></div>
+        <div style="flex:1"></div>
+        <button type="button" class="btn" aria-labelledby="tb-m2-{{t.id}}"><span id="tb-m2-{{t.id}}" class="vh" data-copy="COPY-action.copy">Copy</span><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
         <div style="position:relative">
-          <span class="sel" style="border-color:var(--accent)"><span style="color:var(--muted)" data-copy="COPY-label.indent">Indent</span><span data-copy="COPY-indent.spaces2">2 spaces</span><svg aria-hidden="true" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:1.5"><path d="M7 14l5-5 5 5"/></svg></span>
-          <div class="menu" role="listbox" aria-label="Indent">
-            <button type="button" class="mi on" role="option" aria-selected="true"><span class="chk">✓</span><span data-copy="COPY-indent.spaces2">2 spaces</span></button>
-            <button type="button" class="mi" role="option" aria-selected="false"><span class="chk"></span><span data-copy="COPY-indent.spaces4">4 spaces</span></button>
-            <button type="button" class="mi" role="option" aria-selected="false"><span class="chk"></span><span data-copy="COPY-indent.tab">Tab</span></button>
-            <div style="height:1px;background:var(--line);margin:3px 4px"></div>
-            <div class="mi" role="option" aria-selected="false" style="gap:6px"><span class="chk"></span><span data-copy="COPY-indent.custom">Custom…</span>
-              <span style="margin-left:auto;display:inline-flex;align-items:center;gap:4px;color:var(--muted)"><span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:22px;border:1px solid var(--line);border-radius:7px;font:500 12px 'JetBrains Mono',monospace;color:var(--fg)">3</span>spaces</span>
-            </div>
-          </div>
+          <button type="button" class="btn pressed" aria-haspopup="menu" aria-expanded="true" aria-labelledby="tb-m3-{{t.id}}"><span id="tb-m3-{{t.id}}" class="vh" data-copy="COPY-action.more">More actions</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
+          <ul class="menu" role="menu" style="left:auto;right:0;top:52px">
+            <li role="none"><button type="button" class="mi" role="menuitem" style="width:100%;border:0;background:none"><span data-copy="COPY-action.open">Open file</span></button></li>
+            <li role="none"><button type="button" class="mi" role="menuitem" style="width:100%;border:0;background:none"><span data-copy="COPY-action.find">Find</span></button></li>
+            <li role="none" style="height:1px;background:var(--line);margin:4px"></li>
+            <li role="none"><button type="button" class="mi" role="menuitem" style="width:100%;border:0;background:none"><span data-copy="COPY-action.reindent">Re-indent</span></button></li>
+            <li role="none"><button type="button" class="mi" role="menuitem" aria-haspopup="listbox" style="width:100%;border:0;background:none"><span data-copy="COPY-label.indent">Indent</span><span style="margin-left:auto;color:var(--muted)" data-copy="COPY-indent.spaces2">2 spaces</span><span aria-hidden="true" style="color:var(--muted)">›</span></button></li>
+            <li role="none" style="height:1px;background:var(--line);margin:4px"></li>
+            <li role="none"><button type="button" class="mi" role="menuitem" style="width:100%;border:0;background:none"><span data-copy="COPY-action.download">Download</span></button></li>
+            <li role="none" style="height:1px;background:var(--line);margin:4px"></li>
+            <li role="none"><button type="button" class="mi" role="menuitem" style="width:100%;border:0;background:none;color:var(--danger)"><span data-copy="COPY-action.clear">Clear</span></button></li>
+          </ul>
         </div>
       </div>
-      <div style="height:170px"></div>
+      <div style="height:340px"></div>
     </div>
   </div>
 
@@ -141,7 +192,7 @@ body{margin:0}
 </sc-for>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1440}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2640}}'>
 class Component extends DCLogic {
   renderVals() {
     return { themes: [{ id: 'dark' }, { id: 'light' }] };

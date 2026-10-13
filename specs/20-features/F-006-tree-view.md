@@ -60,7 +60,10 @@ exact path or value needed for code, tests, or queries.
 ## UX notes
 CMP-Toolbar has the view switch (COPY-view.text, COPY-view.tree). CMP-TreeView rows offer
 COPY-action.copy_path, COPY-action.copy_value, COPY-action.reveal; header offers
-COPY-action.collapse_all. Copy confirmation: COPY-toast.copied. Building progress: COPY-progress.tree with COPY-action.cancel.
+COPY-action.collapse_all. Rows show kinds (COPY-tree.kind_object, COPY-tree.kind_array, COPY-tree.kind_string,
+COPY-tree.kind_number, COPY-tree.kind_boolean, COPY-tree.kind_null), child counts
+(COPY-tree.count_keys, COPY-tree.count_items) and group rows (COPY-tree.group). The invalid
+state offers COPY-action.go_to_error. Copy confirmation: COPY-toast.copied. Building progress: COPY-progress.tree with COPY-action.cancel.
 
 ## Edge cases
 - Top-level scalar → tree shows a single root row.

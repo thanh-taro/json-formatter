@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Search panel variants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--selection:#2A1D47;--danger:#FF8595;--currentLine:#1C1526;--syntaxKey:#8CCBFF;--syntaxString:#7FE3B8;--syntaxPunct:#9C92B0;color-scheme:dark}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--selection:#F0EAFE;--danger:#C0243B;--currentLine:#F6F3FD;--syntaxKey:#0B5A94;--syntaxString:#0B6B49;--syntaxPunct:#5E566F;color-scheme:light}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.lab{font:500 12px 'JetBrains Mono',ui-monospace,monospace;color:var(--muted)}
+.frame{border:1px solid var(--line);background:var(--bg)}
+.sp{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-height:40px;box-sizing:border-box;padding:4px 4px 4px 8px;background:var(--surface);border-bottom:1px solid var(--line)}
+.field{width:280px;height:28px;box-sizing:border-box;padding:0 8px;border:1px solid var(--lineStrong);border-radius:7px;background:var(--bg);color:var(--fg);font:400 13px 'JetBrains Mono',monospace}
+.field.focus{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:1px}
+.tog{height:28px;min-width:28px;padding:0 8px;box-sizing:border-box;border:1px solid var(--lineStrong);border-radius:7px;background:none;color:var(--muted);font:600 12px 'JetBrains Mono',monospace}
+.tog[aria-pressed="true"]{background:var(--selection);color:var(--fg);border-color:var(--accent)}
+.cnt{min-width:96px;font:500 12px 'JetBrains Mono',monospace;color:var(--muted)}
+.cnt.none{color:var(--danger)}
+.ibtn{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:7px;background:none;color:var(--fg)}
+.ibtn[disabled]{color:var(--muted)}
+.ibtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.code{padding:4px 12px;font:400 13px/20px 'JetBrains Mono',monospace;white-space:pre;color:var(--fg)}
+.k{color:var(--syntaxKey)}.s{color:var(--syntaxString)}.p{color:var(--syntaxPunct)}
+.hit{background:var(--selection);outline:1px solid var(--accent);border-radius:2px}
+.hit2{background:var(--selection);border-radius:2px}
+.coarse .field{height:44px;font-size:16px;width:100%}
+.coarse .tog,.coarse .ibtn{height:44px;min-width:44px;width:44px}
+</style>
+</helmet>
+<div style="width:1280px;box-sizing:border-box;padding:40px;display:flex;flex-direction:column;gap:48px;background:#0B0810">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="tk-{{t.id}}" style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:24px;padding:24px;border-radius:12px;background:var(--bg);color:var(--fg);align-items:start">
+  <span id="sp-l-{{t.id}}" class="vh" data-copy="COPY-search.placeholder">Find in document</span>
+  <span id="sp-p-{{t.id}}" class="vh" data-copy="COPY-action.find_prev">Previous match</span>
+  <span id="sp-n-{{t.id}}" class="vh" data-copy="COPY-action.find_next">Next match</span>
+  <span id="sp-c-{{t.id}}" class="vh" data-copy="COPY-action.close">Close</span>
+  <span id="sp-m-{{t.id}}" class="vh" data-copy="COPY-search.match_case">Match case</span>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-SearchPanel / closed / {{t.id}}</span>
+    <div class="frame"><div class="code"><span class="p">{</span>
+  <span class="k">"status"</span><span class="p">: </span><span class="s">"shipped"</span><span class="p">,</span>
+  <span class="k">"previous_status"</span><span class="p">: </span><span class="s">"packed"</span>
+<span class="p">}</span></div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-SearchPanel / open, empty / {{t.id}}</span>
+    <div class="frame">
+      <div class="sp" role="search">
+        <input type="search" class="field focus" aria-labelledby="sp-l-{{t.id}}" placeholder="Find in document" data-copy="COPY-search.placeholder">
+        <button type="button" class="tog" aria-pressed="false" aria-labelledby="sp-m-{{t.id}}">Aa</button>
+        <span class="cnt" role="status"></span>
+        <div style="flex:1"></div>
+        <button type="button" class="ibtn" disabled="disabled" aria-labelledby="sp-p-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg></button>
+        <button type="button" class="ibtn" disabled="disabled" aria-labelledby="sp-n-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></button>
+        <button type="button" class="ibtn" aria-labelledby="sp-c-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="code"><span class="p">{</span>
+  <span class="k">"status"</span><span class="p">: </span><span class="s">"shipped"</span>
+<span class="p">}</span></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-SearchPanel / matches / {{t.id}}</span>
+    <div class="frame">
+      <div class="sp" role="search">
+        <input type="search" class="field focus" aria-labelledby="sp-l-{{t.id}}" value="status">
+        <button type="button" class="tog" aria-pressed="false" aria-labelledby="sp-m-{{t.id}}">Aa</button>
+        <span class="cnt" role="status" data-copy="COPY-search.count">1 of 3</span>
+        <div style="flex:1"></div>
+        <button type="button" class="ibtn" aria-labelledby="sp-p-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg></button>
+        <button type="button" class="ibtn" aria-labelledby="sp-n-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></button>
+        <button type="button" class="ibtn" aria-labelledby="sp-c-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="code"><span class="p">{</span>
+<span style="background:var(--currentLine);display:block">  <span class="k">"<span class="hit">status</span>"</span><span class="p">: </span><span class="s">"shipped"</span><span class="p">,</span></span>  <span class="k">"previous_<span class="hit2">status</span>"</span><span class="p">: </span><span class="s">"packed"</span><span class="p">,</span>
+  <span class="k">"<span class="hit2">Status</span>Code"</span><span class="p">: </span><span class="s">"OK"</span>
+<span class="p">}</span></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-SearchPanel / counting / {{t.id}}</span>
+    <div class="frame">
+      <div class="sp" role="search">
+        <input type="search" class="field focus" aria-labelledby="sp-l-{{t.id}}" value="sku">
+        <button type="button" class="tog" aria-pressed="true" aria-labelledby="sp-m-{{t.id}}">Aa</button>
+        <span class="cnt" role="status" data-copy="COPY-search.counting">1 of 12,480+</span>
+        <div style="flex:1"></div>
+        <button type="button" class="ibtn" aria-labelledby="sp-p-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg></button>
+        <button type="button" class="ibtn" aria-labelledby="sp-n-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></button>
+        <button type="button" class="ibtn" aria-labelledby="sp-c-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="code"><span style="background:var(--currentLine);display:block">      <span class="k">"<span class="hit">sku</span>"</span><span class="p">: </span><span class="s">"TK-204"</span><span class="p">,</span></span>      <span class="k">"qty"</span><span class="p">: </span><span class="s">"2"</span>
+    <span class="p">},</span></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="lab">CMP-SearchPanel / no match / {{t.id}}</span>
+    <div class="frame">
+      <div class="sp" role="search">
+        <input type="search" class="field focus" aria-labelledby="sp-l-{{t.id}}" value="xyz" aria-invalid="true">
+        <button type="button" class="tog" aria-pressed="false" aria-labelledby="sp-m-{{t.id}}">Aa</button>
+        <span class="cnt none" role="status" data-copy="COPY-search.none">No matches</span>
+        <div style="flex:1"></div>
+        <button type="button" class="ibtn" disabled="disabled" aria-labelledby="sp-p-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg></button>
+        <button type="button" class="ibtn" disabled="disabled" aria-labelledby="sp-n-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></button>
+        <button type="button" class="ibtn" aria-labelledby="sp-c-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="code"><span class="p">{</span>
+  <span class="k">"status"</span><span class="p">: </span><span class="s">"shipped"</span>
+<span class="p">}</span></div>
+    </div>
+  </div>
+
+  <div class="coarse" style="display:flex;flex-direction:column;gap:8px;width:390px">
+    <span class="lab">CMP-SearchPanel / narrow · 390 coarse / {{t.id}}</span>
+    <div class="frame">
+      <div class="sp" role="search" style="padding:4px 8px">
+        <div style="display:flex;gap:4px;width:100%">
+          <input type="search" class="field focus" aria-labelledby="sp-l-{{t.id}}" value="status" style="flex:1;width:auto">
+          <button type="button" class="ibtn" aria-labelledby="sp-c-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;width:100%">
+          <button type="button" class="tog" aria-pressed="false" aria-labelledby="sp-m-{{t.id}}">Aa</button>
+          <span class="cnt" role="status" style="padding-left:8px" data-copy="COPY-search.count">1 of 3</span>
+          <div style="flex:1"></div>
+          <button type="button" class="ibtn" aria-labelledby="sp-p-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg></button>
+          <button type="button" class="ibtn" aria-labelledby="sp-n-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></button>
+        </div>
+      </div>
+      <div class="code"><span class="p">{</span>
+  <span class="k">"<span class="hit">status</span>"</span><span class="p">: </span><span class="s">"shipped"</span>
+<span class="p">}</span></div>
+    </div>
+  </div>
+
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { themes: [{ id: 'dark' }, { id: 'light' }] };
+  }
+}
+</script>
+</body>
+</html>

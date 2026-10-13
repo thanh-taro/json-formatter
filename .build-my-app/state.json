@@ -33,7 +33,7 @@
     "design": {
       "title": "2 Design",
       "status": "in_progress",
-      "step": "2.4 D1 components: audit round 1",
+      "step": "2.4 D1 done; awaiting user review",
       "gate": {
         "status": "pending",
         "at": null,
@@ -349,11 +349,12 @@
       "ended": "2026-10-13T06:35:18+00:00"
     },
     "design-D1": {
-      "round": 1,
+      "round": 3,
       "max": 3,
-      "active": true,
+      "active": false,
       "started": "2026-10-13T07:06:39+00:00",
-      "outcome": null
+      "outcome": "converged",
+      "ended": "2026-10-13T07:27:17+00:00"
     }
   },
   "log": [
@@ -640,9 +641,45 @@
     {
       "at": "2026-10-13T07:08:30+00:00",
       "event": "decision D-016 answered: Yes"
+    },
+    {
+      "at": "2026-10-13T07:10:36+00:00",
+      "event": "Spikes SP-formatter, SP-editor, SP-iframe launched in worktrees (background)"
+    },
+    {
+      "at": "2026-10-13T07:11:06+00:00",
+      "event": "design step: 2.4 D1 round 2: reworking artboards (fork)"
+    },
+    {
+      "at": "2026-10-13T07:15:16+00:00",
+      "event": "F-010, F-011 + 3 new components marked ready (user)"
+    },
+    {
+      "at": "2026-10-13T07:20:33+00:00",
+      "event": "loop design-D1 round 2"
+    },
+    {
+      "at": "2026-10-13T07:20:33+00:00",
+      "event": "design step: 2.4 D1 round 2 audit"
+    },
+    {
+      "at": "2026-10-13T07:24:19+00:00",
+      "event": "loop design-D1 round 3"
+    },
+    {
+      "at": "2026-10-13T07:24:19+00:00",
+      "event": "design step: 2.4 D1 round 3 targeted fixes (toolbar empty/busy, heights, coarse switch)"
+    },
+    {
+      "at": "2026-10-13T07:27:17+00:00",
+      "event": "loop design-D1 ended: converged"
+    },
+    {
+      "at": "2026-10-13T07:27:17+00:00",
+      "event": "design step: 2.4 D1 done; awaiting user review"
     }
   ],
-  "updated": "2026-10-13T07:08:30+00:00",
+  "updated": "2026-10-13T07:27:17+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

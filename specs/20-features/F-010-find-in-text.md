@@ -1,7 +1,7 @@
 ---
 id: F-010
 title: Find text in the document
-status: draft
+status: ready
 milestone: M-1
 priority: P1
 personas: [PER-01]
@@ -34,11 +34,15 @@ still need to jump to a key or value in a 50 MB payload in seconds.
 
 ## Acceptance criteria
 - **AC1** Given the text view has focus, when the user presses the find shortcut, then CMP-SearchPanel opens with its field focused; when the user closes it, focus returns to the editor. (R1)
-- **AC2** Given the document contains "status" three times, when the user types `status`, then the first match after the cursor is selected and COPY-search.count shows `1 of 3`. (R2, R3)
+- **AC2** Given the cursor at the start of a document containing "status" three times, when the user types `status`, then the first match after the cursor is selected and COPY-search.count shows `1 of 3`. (R2, R3)
 - **AC3** Given match 3 of 3 is selected, when the user moves to the next match, then match 1 is selected. (R3)
 - **AC4** Given the document does not contain `xyz`, when the user types it, then COPY-search.none is shown. (R4)
 - **AC5** Given the document contains `Status` and `status`, when match case is on and the user types `status`, then only `status` matches. (R5)
-- **AC6** Given a 50 MB document, when the user types a search term, then typing stays within NFR-02 and the first match appears before the total count is final. (R6)
+- **AC6** Given a 100 MB document, when the user types a search term, then typing stays within NFR-02 and the first match appears before the total count is final. (R6)
+- **AC7** Given the text view, when the user chooses COPY-action.find in the toolbar, then CMP-SearchPanel opens with its field focused. (R1)
+- **AC8** Given the document contains `Status` and `status` and match case is off, when the user types `status`, then COPY-search.count shows `1 of 2`. (R2)
+- **AC9** Given the document `aaaa`, when the user types `aa`, then COPY-search.count shows `1 of 2`. (R2)
+- **AC10** Given 3 matches are counted, when the user deletes one occurrence, then the count becomes `of 2`. (R3)
 
 ## UX notes
 CMP-Toolbar has COPY-action.find. CMP-SearchPanel: field (COPY-search.placeholder), previous
