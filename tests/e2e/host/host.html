@@ -18,15 +18,22 @@
         width: 1200px;
         height: 760px;
       }
+      iframe.sibling {
+        width: 1px;
+        height: 1px;
+      }
     </style>
   </head>
   <body>
     <script>
-      // Embeds the tool with the portal's frame attributes (architecture.md A3, ADR-0008).
-      // Query: tool=<origin> (default http://localhost:4173), theme=light|dark, w, h.
+      // Embeds the tool with the portal's frame attributes (architecture.md A3, ADR-0008) and
+      // behaves like the portal after its theme change request: theme in the address, a
+      // taro:theme message with the tool's exact origin, the current theme in reply to ready.
+      // Query: tool=<origin> (default http://localhost:4173), theme=light|dark|none, w, h,
+      // sibling=1 (adds a frame from the unlisted origin that can post into the tool frame).
       const q = new URLSearchParams(location.search);
       const TOOL = q.get('tool') || 'http://localhost:4173';
-      const theme = q.get('theme') || 'dark';
+      let theme = q.get('theme') || 'dark';
       window.__host = { received: [] };
       const f = document.createElement('iframe');
       f.name = 'tool';
@@ -36,12 +43,34 @@
       f.setAttribute('referrerpolicy', 'strict-origin');
       if (q.get('w')) f.style.width = q.get('w') + 'px';
       if (q.get('h')) f.style.height = q.get('h') + 'px';
-      f.src = TOOL + '/?theme=' + encodeURIComponent(theme);
+      f.src = TOOL + '/' + (theme === 'none' ? '' : '?theme=' + encodeURIComponent(theme));
       window.addEventListener('message', (e) => {
-        window.__host.received.push({ origin: e.origin, data: e.data, fromTool: e.source === f.contentWindow });
+        const fromTool = e.source === f.contentWindow;
+        window.__host.received.push({ origin: e.origin, data: e.data, fromTool });
+        if (fromTool && e.data && e.data.type === 'taro:ready' && theme !== 'none') {
+          f.contentWindow.postMessage({ type: 'taro:theme', value: theme }, TOOL);
+        }
       });
-      window.setTheme = (value) => f.contentWindow.postMessage({ type: 'taro:theme', value }, TOOL);
+      window.setTheme = (value) => {
+        theme = value;
+        f.contentWindow.postMessage({ type: 'taro:theme', value }, TOOL);
+      };
+      window.postRaw = (data) => f.contentWindow.postMessage(data, TOOL);
+      window.resizeTool = (w, h) => {
+        f.style.width = w + 'px';
+        f.style.height = h + 'px';
+      };
       document.body.append(f);
+      if (q.get('sibling')) {
+        // An unlisted origin inside the allowed host page reaches the tool through parent.frames.
+        const s = document.createElement('iframe');
+        s.name = 'sibling';
+        s.className = 'sibling';
+        s.title = 'Unlisted sibling';
+        s.src = 'http://localhost:4175/sibling.html';
+        document.body.append(s);
+        window.fireSibling = (msg) => s.contentWindow.postMessage({ cmd: 'fire', msg }, '*');
+      }
     </script>
   </body>
 </html>

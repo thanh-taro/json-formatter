@@ -15,6 +15,8 @@
     border-block-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
     overflow: hidden;
     container-type: inline-size;
+    /* Containing block for visually hidden labels, so they never widen the page (F-008.AC4). */
+    position: relative;
   }
   .tk-toolbar__group {
     display: flex;
@@ -99,16 +101,5 @@
     font-family: var(--tk-font-family-mono);
     font-size: var(--tk-font-size-xs);
     white-space: nowrap;
-  }
-  .tk-statusbar__privacy {
-    margin-inline-start: auto;
-    min-height: var(--tk-size-target-min);
-    padding-inline: var(--tk-space-2);
-    border: 0;
-    border-radius: var(--tk-radius-pill);
-    background: var(--tk-color-surface2);
-    color: var(--tk-color-success);
-    font-size: var(--tk-font-size-xs);
-    cursor: pointer;
   }
 }
