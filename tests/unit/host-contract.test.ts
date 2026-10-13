@@ -115,5 +115,6 @@ describe('MOD-Host ready signal', () => {
     expect(readyTargets('not a url', list)).toEqual(list);
     expect(readyTargets('https://tarokit.app/', [])).toEqual([]);
     expect(readyTargets('', list)).not.toContain('*');
+    expect(readyTargets('', ['*', HOST])).toEqual([HOST]);
   });
 });

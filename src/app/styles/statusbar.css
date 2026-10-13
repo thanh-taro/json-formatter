@@ -8,7 +8,6 @@
     .tk-formatter {
       --tk-statusbar-height: var(--tk-size-touch-target);
       --tk-statusbar-target: var(--tk-size-touch-target);
-      grid-template-rows: var(--tk-size-toolbar) minmax(0, 1fr) var(--tk-statusbar-height);
     }
   }
 
@@ -46,7 +45,7 @@
     cursor: pointer;
   }
   .tk-statusbar__privacy:hover,
-  .tk-statusbar__privacy[aria-expanded='true'] {
+  .tk-statusbar__privacy:has(~ .tk-privacy:popover-open) {
     background: var(--tk-color-surface2);
   }
   .tk-statusbar__privacy .tk-statusbar__privacy-icon-label {

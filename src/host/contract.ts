@@ -62,5 +62,7 @@ export function readyTargets(referrer: string, allowedOrigins: readonly string[]
   } catch {
     origin = null;
   }
-  return origin !== null && allowedOrigins.includes(origin) ? [origin] : [...allowedOrigins];
+  // Defence in depth: the build refuses wildcards in HOST_ORIGINS, and none is ever a target.
+  const allowed = allowedOrigins.filter((o) => o !== '*');
+  return origin !== null && allowed.includes(origin) ? [origin] : allowed;
 }

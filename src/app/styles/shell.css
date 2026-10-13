@@ -2,7 +2,8 @@
 @layer components {
   .tk-formatter {
     display: grid;
-    grid-template-rows: var(--tk-size-toolbar) minmax(0, 1fr) var(--tk-size-statusbar);
+    /* --tk-statusbar-height: statusbar.css (taller for coarse pointers). */
+    grid-template-rows: var(--tk-size-toolbar) minmax(0, 1fr) var(--tk-statusbar-height, var(--tk-size-statusbar));
     height: 100%;
   }
 

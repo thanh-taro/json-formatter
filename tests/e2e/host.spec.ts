@@ -1,13 +1,13 @@
 // F-008 host integration (RULE-16, ADR-0008, ADR-0009, NFR-09): theme, sizing, messages,
 // embedding refusal — against the production build and the stub host on a second origin.
 import { expect, test, type Frame, type Page } from '@playwright/test';
-import { BG, HOST, instrument, TOOL, UNLISTED } from './fixtures';
+import { ADMIN, BG, HOST, instrument, TOOL, UNLISTED } from './fixtures';
 
 declare global {
   interface Window {
     __inbound?: { origin: string; data: unknown }[];
     __marker?: string;
-    __host?: { received: { origin: string; data: unknown; fromTool: boolean }[] };
+    __host?: { received: { origin: string; data: unknown; fromTool: boolean }[]; loads: number };
     setTheme?: (value: unknown) => void;
     postRaw?: (data: unknown) => void;
     resizeTool?: (w: number, h: number) => void;
@@ -89,6 +89,29 @@ test.describe('embedded without a host theme', () => {
   });
 });
 
+/** Lets the tool frame run a rendering update, where media-query change events are dispatched. */
+const nextFrames = (f: Frame) =>
+  f.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+
+test.describe('embedded on a dark device', () => {
+  test.use({ colorScheme: 'dark' });
+  test('F-008.AC2 F-008.R1 a device change does not override the address or host theme', async ({ page }) => {
+    const tool = await embed(page, 'theme=dark');
+    // Address wins over the device.
+    await page.emulateMedia({ colorScheme: 'light' });
+    expect(await tool.evaluate(() => matchMedia('(prefers-color-scheme: light)').matches)).toBe(true);
+    await nextFrames(tool);
+    expect(await themeOf(tool)).toBe('dark');
+    // A host message wins over the device.
+    await page.evaluate(() => window.setTheme?.('light'));
+    await expect.poll(() => themeOf(tool)).toBe('light');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    expect(await tool.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches)).toBe(true);
+    await nextFrames(tool);
+    expect(await themeOf(tool)).toBe('light');
+  });
+});
+
 test.describe('standalone, dark device', () => {
   test.use({ colorScheme: 'dark' });
   test('F-008.AC3 standalone tool shows the dark theme of the device and follows changes', async ({ page }) => {
@@ -154,7 +177,9 @@ test('F-008.AC6 F-008.R5 INV-02 the only message to the host is one ready signal
   await expect(frame.getByRole('dialog')).toBeVisible();
   await frame.getByRole('button', { name: 'Close' }).click();
   await expect(frame.getByRole('dialog')).toBeHidden();
-  await tool.evaluate(() => new Promise((r) => setTimeout(r, 1000)));
+  // Settle: a final host message round trip; anything the tool sent before it has arrived.
+  await page.evaluate(() => window.setTheme?.('light'));
+  await expect.poll(() => themeOf(tool)).toBe('light');
   expect(await fromTool(page)).toEqual([{ origin: TOOL, data: { type: 'taro:ready' }, fromTool: true }]);
 });
 
@@ -170,13 +195,25 @@ test('F-008.AC7 F-008.R6 standalone: the tool works without a host and sends not
   expect(await page.evaluate(() => window.__csp)).toEqual([]);
 });
 
-test('F-008.AC8 NFR-09 a page on an unlisted origin cannot display the tool', async ({ page }) => {
-  await page.goto(`${UNLISTED}/host.html?theme=dark`);
-  await page.waitForTimeout(1500);
+/** Waits until the stub host's tool frame fired `load` (also for a refused frame). */
+async function frameLoaded(page: Page): Promise<boolean> {
+  await expect.poll(() => page.evaluate(() => window.__host?.loads ?? 0)).toBeGreaterThanOrEqual(1);
   const tool = page.frame({ name: 'tool' });
-  const rendered = tool
-    ? await tool.evaluate(() => !!document.querySelector('[data-screen="SCR-Formatter"]')).catch(() => false)
-    : false;
+  if (!tool) return false;
+  return tool.evaluate(() => !!document.querySelector('[data-screen="SCR-Formatter"]')).catch(() => false);
+}
+
+test('F-008.AC8 NFR-09 a page on an unlisted origin cannot display the tool', async ({ page, request }) => {
+  // Positive control: on the allowed host, the same page shape shows the tool by its load event.
+  await page.goto(`${HOST}/host.html?theme=dark`);
+  expect(await frameLoaded(page)).toBe(true);
+
+  await request.get(`${ADMIN}/reset`);
+  await page.goto(`${UNLISTED}/host.html?theme=dark`);
+  const rendered = await frameLoaded(page);
+  // The tool document was really served to the unlisted page, and the browser refused it.
+  const { log } = (await (await request.get(`${ADMIN}/log`)).json()) as { log: { path: string }[] };
+  expect(log.map((e) => e.path)).toContain('/?theme=dark');
   expect(rendered).toBe(false);
   expect(await fromTool(page)).toEqual([]);
 });

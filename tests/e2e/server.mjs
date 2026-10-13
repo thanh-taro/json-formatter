@@ -53,13 +53,27 @@ const DEPLOYED_ORIGINS = (/frame-ancestors ([^;\n]+)/.exec(builtHeaders)?.[1] ??
 const headersSrc = builtHeaders.replace(/frame-ancestors [^;\n]+/g, `frame-ancestors ${HOST_ORIGIN}`);
 
 /** The compiled-in allow-list, with each deployed origin literal replaced by the stub host. */
+const ORIGIN_LITERALS = DEPLOYED_ORIGINS.map(
+  (o) => new RegExp(`(["'\`])${o.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}\\1`, 'g'),
+);
 function rewriteAllowList(body) {
   let text = body.toString('utf8');
-  for (const o of DEPLOYED_ORIGINS) {
-    const literal = new RegExp(`(["'\`])${o.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}\\1`, 'g');
-    text = text.replace(literal, `$1${HOST_ORIGIN}$1`);
-  }
+  for (const literal of ORIGIN_LITERALS) text = text.replace(literal, `$1${HOST_ORIGIN}$1`);
   return text;
+}
+// Fail loudly when the bundle shape changes and the rewrite would silently miss the list.
+{
+  const assets = path.join(DIST, 'assets');
+  const js = fs.readdirSync(assets).filter((f) => f.endsWith('.js'));
+  const found = ORIGIN_LITERALS.map((re) =>
+    js.some((f) => new RegExp(re.source).test(fs.readFileSync(path.join(assets, f), 'utf8'))),
+  );
+  if (found.includes(false)) {
+    console.error(
+      `e2e: compiled-in allow-list not found in dist/assets/*.js for ${DEPLOYED_ORIGINS.filter((_, i) => !found[i]).join(' ')}; the stub host could not be allow-listed.`,
+    );
+    process.exit(1);
+  }
 }
 const RULES = parseHeaders(headersSrc);
 const matches = (pattern, p) => (pattern.endsWith('*') ? p.startsWith(pattern.slice(0, -1)) : p === pattern);
@@ -94,7 +108,7 @@ const t0 = Date.now();
 function serve(res, dir, urlPath, extraHeaders, transformJs) {
   const p = urlPath === '/' ? '/index.html' : urlPath;
   const file = path.join(dir, path.normalize(decodeURIComponent(p)).replace(/^(\.\.[/\\])+/, ''));
-  if (!file.startsWith(dir) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+  if (!file.startsWith(dir + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     return res.end('not found');
   }

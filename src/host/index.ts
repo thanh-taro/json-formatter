@@ -33,9 +33,7 @@ export function startHost({
   if (started) return;
   started = true;
   startTheme();
-  const embedded = isEmbedded();
-  document.documentElement.toggleAttribute('data-embedded', embedded);
-  if (!embedded || allowedOrigins.length === 0) return; // standalone only (F-008.R6)
+  if (!isEmbedded() || allowedOrigins.length === 0) return; // standalone only (F-008.R6)
 
   // Implements: F-008.R4 / AC5 — allow-listed origin and the parent window, else ignored silently.
   window.addEventListener('message', (event) => {
