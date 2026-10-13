@@ -1,7 +1,7 @@
 ---
 id: ADR-0003
 title: Language and build tooling — TypeScript, Vite, pnpm
-status: proposed
+status: accepted
 date: 2026-10-13
 supersedes: []
 ---

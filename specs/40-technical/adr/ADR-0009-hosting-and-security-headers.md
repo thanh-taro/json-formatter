@@ -1,7 +1,7 @@
 ---
 id: ADR-0009
 title: Static hosting on the portal's platform with a strict, header-delivered CSP
-status: proposed
+status: accepted
 date: 2026-10-13
 supersedes: []
 ---

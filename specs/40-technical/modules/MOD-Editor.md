@@ -19,9 +19,13 @@ while a tool operation runs (scroll stays available, D-005), and exposes documen
 versioned change sets for the worker mirror. Provides the **document builder** that appends
 incoming chunks to a pending text in ≤ ~8 ms slices and commits it as one transaction, or
 discards it on cancel (ADR-0006, INV-03). Owns the **history field** implementing RULE-15
-(≥ 100 changes in the normal tier; in large tiers keep the last 3 tool operations, trim older
-history, report trimming once) and labels each tool transaction (load, clear, beautify,
-minify, re-indent). Intercepts large pastes (> 1 MB) and routes them through the builder and
+(≥ 100 changes in the normal tier, in memory; in large tiers keep the last 3 tool operations,
+trim older history, report trimming once) and labels each tool transaction (load, clear,
+beautify, minify, re-indent). In the large tiers a tool operation's undo and redo entries hold
+the previous document **only as a worker-built UTF-8 `Blob`** (mandatory, ADR-0006), never an
+in-memory `Text` (~245 MB per copy at 100 MB, 2.45× the bytes); undoing one is a reload
+through the document builder, run by MOD-App with progress and cancel (0.4–1.1 s at 100 MB).
+Typing entries stay in-memory change sets. Intercepts large pastes (> 1 MB) and routes them through the builder and
 the very-large confirmation. Tracks cursor position for the status bar. Provides the **find
 engine** (F-010, RULE-18): windowed (~1 MB), time-sliced (≤ 8 ms) literal search over the
 current `Text` with a length-preserving case fold, first match selected and scrolled into
@@ -37,7 +41,9 @@ decorations; the stock search package is not used.
 - `createEditor(container, options)` → `EditorHandle` with: `version`, `onChange(cb)`,
   `onCursor(cb)`, `setTier(tier)`, `setBusy(bool)`, `markIssue(issue | null)`,
   `goTo(offset)`, `select(span)`, `selectAll()`, `beginReplace(kind)` → `PendingDocument`
-  { `append(chunk)`, `commit()`, `discard()` }, `clear()`, `undo()`, `redo()`,
+  { `append(chunk)`, `commit()`, `discard()` }, `clear()`, `undo()`, `redo()` (both return
+  either "done" or a reload request carrying the entry's Blob, for MOD-App to run),
+  `attachUndoBlob(blob)` (for the tool transaction being committed),
   `onHistoryTrimmed(cb)`, `lineCount`, `lineEnding` (detected on load/paste),
   `setHidden(bool)` (visibility-based),
   `find(term, { matchCase })` → `FindSession` { `onFirst(cb)`, `onCount(cb)`, `next()`,

@@ -1,7 +1,7 @@
 ---
 id: ADR-0011
 title: Plain CSS with the portal's design tokens, self-hosted fonts and icons, generated copy
-status: proposed
+status: accepted
 date: 2026-10-13
 supersedes: []
 ---

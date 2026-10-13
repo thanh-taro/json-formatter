@@ -1,7 +1,7 @@
 ---
 id: ADR-0002
 title: UI framework for the shell — Preact 10 with signals, no meta-framework
-status: proposed
+status: accepted
 date: 2026-10-13
 supersedes: []
 ---

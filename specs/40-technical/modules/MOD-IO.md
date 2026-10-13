@@ -11,9 +11,12 @@ Adapters between user gestures and browser I/O, each with the fallback the spec 
 drag-and-drop controller for the whole tool (shows CMP-DropOverlay only for file drags, takes
 the first file and reports multiple files, rejects folders and non-file content outside the
 editor); hands `File` handles to the worker (no reading on the main thread); clipboard write
-of whole documents, paths and node values (plain text for short strings, a worker-built Blob
-via a clipboard item for large ones, created inside the user gesture), reporting "blocked" so
-the caller can apply the select-and-tell fallback; download via a Blob object URL and a
+of whole documents, paths and node values (plain text for short strings; for large ones a
+clipboard item **created synchronously inside the click handler with a promise of the
+worker-built Blob**, so WebKit keeps the user activation across the worker round trip),
+reporting "blocked" so the caller can apply the select-and-tell fallback (F-007.R3) — the
+expected outcome in WebKit for documents above ~120 MB (`NotAllowedError`, SP-pipeline;
+`architecture.md` "Known limits"); download via a Blob object URL and a
 `download` link named per RULE-10, with revocation. There is no "blocked" outcome for
 downloads: no engine reports a sandbox-blocked download (SP-iframe), and F-007.R5 is
 deprecated (D-023).

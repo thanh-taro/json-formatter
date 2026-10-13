@@ -1,7 +1,7 @@
 ---
 id: ADR-0012
 title: Offline support via a hand-written service worker seeded from the HTTP cache (D-014)
-status: proposed
+status: accepted
 date: 2026-10-13
 supersedes: []
 ---

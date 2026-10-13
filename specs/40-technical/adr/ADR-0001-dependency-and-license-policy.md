@@ -1,7 +1,7 @@
 ---
 id: ADR-0001
 title: Dependency and license policy (aligned with the portal's policy)
-status: proposed
+status: accepted
 date: 2026-10-13
 supersedes: []
 ---

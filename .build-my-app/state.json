@@ -42,12 +42,12 @@
     },
     "architecture": {
       "title": "3 Architecture & spikes",
-      "status": "in_progress",
-      "step": "3.2/3.3 spikes pipeline+tree running; license audit + scaffold running",
+      "status": "done",
+      "step": "3.3 scaffold done (7df7b4a); waiting SP-pipeline + SP-tree; then G3",
       "gate": {
-        "status": "pending",
-        "at": null,
-        "note": null
+        "status": "passed",
+        "at": "2026-10-13T10:37:42+00:00",
+        "note": "Stack approved; 5 spikes ADAPT; 12 ADRs accepted; deps approved"
       }
     },
     "build": {
@@ -443,6 +443,67 @@
       "answer": "Deprecate F-007.R5/AC6; Copy fallback covers it",
       "asked": "2026-10-13T08:06:30+00:00",
       "answered": "2026-10-13T08:06:31+00:00"
+    },
+    {
+      "id": "D-024",
+      "question": "NFR-04 memory wording",
+      "options": [
+        "chromium 1.5GB+best effort",
+        "lower ceiling",
+        "3GB"
+      ],
+      "recommendation": "chromium 1.5GB+best effort",
+      "kind": "product",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "1.5 GB measured after GC on Chromium; best effort on WebKit/Gecko",
+      "asked": "2026-10-13T10:36:55+00:00",
+      "answered": "2026-10-13T10:36:55+00:00"
+    },
+    {
+      "id": "D-025",
+      "question": "WebKit limits at 100 MB",
+      "options": [
+        "accept",
+        "follow-up spike"
+      ],
+      "recommendation": "accept",
+      "kind": "product",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "Accept: scroll stutter and copy >120 MB fallback as known limits; revisit M-3",
+      "asked": "2026-10-13T10:36:55+00:00",
+      "answered": "2026-10-13T10:36:55+00:00"
+    },
+    {
+      "id": "D-026",
+      "question": "Reuse portal design tokens (DEP-14)",
+      "options": [
+        "reuse",
+        "license first"
+      ],
+      "recommendation": "reuse",
+      "kind": "legal",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "Owner's own work; reuse freely",
+      "asked": "2026-10-13T10:36:55+00:00",
+      "answered": "2026-10-13T10:36:55+00:00"
+    },
+    {
+      "id": "D-027",
+      "question": "Gate G3 stack approval",
+      "options": [
+        "approve",
+        "discuss"
+      ],
+      "recommendation": "approve",
+      "kind": "technical",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "Approved; ADRs accepted incl. spike amendments",
+      "asked": "2026-10-13T10:36:56+00:00",
+      "answered": "2026-10-13T10:36:56+00:00"
     }
   ],
   "loops": {
@@ -891,9 +952,61 @@
     {
       "at": "2026-10-13T08:29:47+00:00",
       "event": "architecture step: 3.2/3.3 spikes pipeline+tree running; license audit + scaffold running"
+    },
+    {
+      "at": "2026-10-13T08:52:02+00:00",
+      "event": "architecture step: 3.3 scaffold done (7df7b4a); waiting SP-pipeline + SP-tree; then G3"
+    },
+    {
+      "at": "2026-10-13T09:53:05+00:00",
+      "event": "SP-tree ADAPT: first group 5-32ms at 1M children, scroll max 17.9ms, copy path/value 100% exact; RULE-06/12 clarified"
+    },
+    {
+      "at": "2026-10-13T10:33:24+00:00",
+      "event": "SP-pipeline ADAPT: Chromium 1.30-1.50GB with compact mirror + Blob undo; WebKit 2.0-2.8GB, Firefox 2.6GB; WebKit scroll 78-170ms at 100MB; WebKit copy >120MB fails"
+    },
+    {
+      "at": "2026-10-13T10:36:55+00:00",
+      "event": "decision D-024 opened: NFR-04 memory wording"
+    },
+    {
+      "at": "2026-10-13T10:36:55+00:00",
+      "event": "decision D-024 answered: 1.5 GB measured after GC on Chromium; best effort on WebKit/Gecko"
+    },
+    {
+      "at": "2026-10-13T10:36:55+00:00",
+      "event": "decision D-025 opened: WebKit limits at 100 MB"
+    },
+    {
+      "at": "2026-10-13T10:36:55+00:00",
+      "event": "decision D-025 answered: Accept: scroll stutter and copy >120 MB fallback as known limits; revisit M-3"
+    },
+    {
+      "at": "2026-10-13T10:36:55+00:00",
+      "event": "decision D-026 opened: Reuse portal design tokens (DEP-14)"
+    },
+    {
+      "at": "2026-10-13T10:36:55+00:00",
+      "event": "decision D-026 answered: Owner's own work; reuse freely"
+    },
+    {
+      "at": "2026-10-13T10:36:56+00:00",
+      "event": "decision D-027 opened: Gate G3 stack approval"
+    },
+    {
+      "at": "2026-10-13T10:36:56+00:00",
+      "event": "decision D-027 answered: Approved; ADRs accepted incl. spike amendments"
+    },
+    {
+      "at": "2026-10-13T10:37:42+00:00",
+      "event": "phase architecture -> gate"
+    },
+    {
+      "at": "2026-10-13T10:37:42+00:00",
+      "event": "gate architecture passed: Stack approved; 5 spikes ADAPT; 12 ADRs accepted; deps approved"
     }
   ],
-  "updated": "2026-10-13T08:29:47+00:00",
+  "updated": "2026-10-13T10:37:42+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

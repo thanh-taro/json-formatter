@@ -1,7 +1,7 @@
 ---
 id: ADR-0004
 title: Editor engine — CodeMirror 6 at every size tier, shadow-root mounted
-status: proposed
+status: accepted
 date: 2026-10-13
 supersedes: []
 ---
@@ -29,8 +29,8 @@ MIT) for the text view at every tier.
   at 100 MB); the view renders only the viewport, uses height-map gaps for off-screen lines,
   scales very tall documents (`BigScaler`) and hides the off-screen parts of overlong lines with
   line gaps (the minified-100 MB line becomes a 2.5 M px scroll width, end reachable).
-  `@codemirror/state` has no DOM dependency, so the same `Text`/`ChangeSet` types run in the
-  worker mirror (ADR-0005).
+  `@codemirror/state` has no DOM dependency, so the worker decodes the same `ChangeSet` type
+  to keep its compact mirror in sync (ADR-0005; the mirror itself is not a `Text`).
 - **Shadow-root mount (mandatory)**: the view is created with `parent` and `root` set to a
   `ShadowRoot` on the editor host element. `style-mod` uses constructable (adopted)
   stylesheets only when its root is a shadow root; on a `Document` it inserts a `<style>`

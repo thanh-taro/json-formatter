@@ -16,3 +16,6 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - D2 design review: tree actions move to a selected-row header bar (D-018); editor soft-wraps under 600 px and jump scrolls horizontally (D-019); tree checking progress/cancel; too-large switch; confirm title; file-error recovery action.
 - D2 round 2: narrow status bar keeps size/lines via COPY-status.size_lines_short (F-005.R6).
 - Spike decisions: NFR-01 allows the browser's own offline-cache install/update fetches of the tool's own files (D-021, SP-iframe WebKit); NFR-02 exception for colouring 2–10 MB (D-022, SP-editor); F-007.R5/AC6 deprecated — sandbox download blocks are undetectable (D-023, SP-iframe).
+- SP-tree clarifications: RULE-06 paths use decoded names, minimally re-escaped; RULE-12 grouped root expands only its first group.
+- SP-pipeline decisions: NFR-04 memory measured after GC on the Chromium-based engine, best effort elsewhere (D-024); WebKit scroll and >120 MB copy limits accepted (D-025).
+- Gate G3: ADR-0001…0012 accepted; registry entries approved (D-026 for portal tokens; DEP-36/37/38 removed).

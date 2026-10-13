@@ -1,7 +1,7 @@
 ---
 id: ADR-0010
 title: Testing — Vitest, fast-check, JSONTestSuite, Playwright on three engines, axe, Lighthouse
-status: proposed
+status: accepted
 date: 2026-10-13
 supersedes: []
 ---

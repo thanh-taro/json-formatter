@@ -47,5 +47,6 @@ COPY-action.cancel.
 
 ## Edge cases
 - Empty document → copy and download are unavailable.
+- In the WebKit-based engine, copying more than about 120 MB fails; the R3 fallback applies (known limit, D-025).
 
 ## Open questions

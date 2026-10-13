@@ -1,7 +1,7 @@
 ---
 id: ADR-0008
 title: Host contract — address parameter, origin-checked messages, system fallback
-status: proposed
+status: accepted
 date: 2026-10-13
 supersedes: []
 ---

@@ -1,24 +1,33 @@
 ---
 id: MOD-Worker
-title: Worker — document mirror, jobs, file reading, export
+title: Worker — compact document mirror, jobs, file reading, export
 status: draft
 depends_on: [MOD-Core]
 ---
 
 ## Responsibility
-The single dedicated module worker (ADR-0005). Holds the **document mirror** (an editor `Text`
-kept in sync from versioned change sets; tool results adopted as the next version without a
-round trip), runs one job at a time (validate, format, re-indent, build skip table, tree
-queries, load file, export), supersedes stale validation on new edits, debounces validation
+The single dedicated module worker (ADR-0005). Holds the **compact document mirror**: a list
+of flat strings of ~1 M UTF-16 units with line breaks normalised to one unit (offsets are
+editor positions), ~1× the document bytes, kept in sync from versioned change sets (decoded
+with `@codemirror/state`'s `ChangeSet`); **never a CodeMirror `Text`** (2.45× the bytes).
+Tool results are built as a pending mirror while they stream out and adopted as the next
+version on commit, without a round trip. Runs one job at a time (validate with the skip
+table built in the same pass, format, re-indent, standalone skip-table pass when none exists,
+tree queries, background checkpoint fill, load file or undo Blob, export), supersedes stale validation on new edits, debounces validation
 by tier, executes long jobs in time slices (~16 ms or ~1 MB of input) that yield to the event
 loop through a `MessageChannel` tick so `cancel` and `edit` messages are handled within one
 slice (≤ 50 ms), posts each slice's output chunks (flat strings from MOD-Core) at the end of
-the slice, feeds MOD-Core directly from the mirror's lines (no windowed copy), and reports
+the slice, feeds MOD-Core directly from the mirror's chunks (no windowed copy), and reports
 progress (throttled) and results tagged
-with document version and job id. Reads dropped/chosen files by streaming them through a
+with document version and job id. Reads dropped/chosen files and large-tier undo Blobs in
+**1 MB `slice().arrayBuffer()` windows** (never `Blob.stream()` or a whole-Blob read: WebKit
+fails on in-memory Blobs above ~100–120 MB), decoding through a
 fatal UTF-8 decoder that keeps a leading byte-order mark (RULE-13, RULE-03), validating while
-reading and forwarding decoded chunks. Builds export `Blob`s (whole document or a node span,
-joined with the document line ending) for copy and download. Turns allocation failures into a
+reading, rebuilding the mirror and forwarding decoded chunks. Builds export `Blob`s (whole
+document or a node span, joined with the document line ending) for copy, download and
+large-tier undo/redo snapshots (ADR-0006). Answers tree child queries from the mirror using
+the skip table and per-container checkpoints, filling checkpoints in the background in ≤ 8 ms
+slices, most recently expanded container first; long cold scans yield (ADR-0007). Turns allocation failures into a
 "too large" outcome instead of crashing (RULE-02, F-001.R9).
 
 ## Not responsible for
@@ -30,7 +39,8 @@ joined with the document line ending) for copy and download. Turns allocation fa
 Typed message protocol (discriminated unions), shared by main and worker:
 - main → worker: `init`, `edit(version, changes)`, `adopt(version, jobId)`,
   `validate(version)`, `format(version, mode)`, `reindent(version, target)`,
-  `loadFile(file, jobId)`, `loadText(chunks…)` (large paste), `treeOpen(version)`,
+  `loadFile(file, jobId)`, `loadBlob(blob, jobId)` (large-tier undo/redo reload),
+  `loadText(chunks…)` (large paste), `treeOpen(version)`,
   `treeChildren(version, container, from, count)`, `export(version, span?)`, `cancel(jobId)`.
 - worker → main: `progress(jobId, fraction)`, `chunk(jobId, text)`, `validation(version,
   result)`, `formatted(jobId, facts)`, `notIndented(jobId)`, `treeRows(version, …)`,
