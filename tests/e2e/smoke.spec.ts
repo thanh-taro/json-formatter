@@ -13,8 +13,8 @@ for (const theme of ['dark', 'light'] as const) {
     await expect(page.getByRole('toolbar', { name: 'Document actions' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'JSON document' })).toBeVisible();
     await expect(page.getByRole('status')).toHaveText('Empty');
-    await expect(page.getByRole('button', { name: 'Open file' })).toBeEnabled();
-    await expect(page.getByRole('button', { name: 'Beautify' })).toBeDisabled();
+    await expect(page.getByRole('toolbar').getByRole('button', { name: 'Open file' })).toBeEnabled();
+    await expect(page.getByRole('toolbar').getByRole('button', { name: 'Beautify' })).toBeDisabled();
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

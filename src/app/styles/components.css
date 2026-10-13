@@ -1,0 +1,192 @@
+/* F-001 components: icons, button variants, CMP-Editor host and empty variant, CMP-Notice bar,
+   CMP-ConfirmDialog, CMP-DropOverlay. Tokens only (ADR-0011). */
+@layer components {
+  /* .tk-icon and .tk-icon-button base styles live in statusbar.css (F-009). */
+  .tk-icon svg {
+    stroke-width: 1.5;
+  }
+
+  .tk-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--tk-space-2);
+  }
+  .tk-button--outline {
+    padding-inline: var(--tk-space-3);
+    border-color: var(--tk-color-line-strong);
+  }
+  .tk-button--primary {
+    padding-inline: var(--tk-space-3);
+    border-color: var(--tk-color-accent);
+    background: var(--tk-color-accent);
+    color: var(--tk-color-on-accent);
+  }
+  .tk-button--primary:hover:not(:disabled) {
+    background: var(--tk-color-accent);
+  }
+  .tk-notice .tk-icon-button {
+    inline-size: var(--tk-size-target-min);
+    block-size: var(--tk-size-target-min);
+  }
+
+  /* CMP-Editor host: the engine lives in its shadow root (ADR-0004). */
+  .tk-editor {
+    position: relative;
+    block-size: 100%;
+    overflow: hidden;
+  }
+  .tk-editor-host {
+    block-size: 100%;
+  }
+  /* ADR-0004: hidden with visibility, never display:none, so commits stay viewport-bounded. */
+  .tk-editor-host--hidden {
+    visibility: hidden;
+  }
+  .tk-editor__empty {
+    position: absolute;
+    inset-block: 0;
+    inset-inline: var(--tk-space-12) 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--tk-space-2);
+    padding: var(--tk-space-4);
+    text-align: center;
+    font-family: var(--tk-font-family-body);
+    pointer-events: none;
+  }
+  .tk-editor__empty-icon svg {
+    inline-size: var(--tk-space-6);
+    block-size: var(--tk-space-6);
+    color: var(--tk-color-muted);
+  }
+  .tk-editor__empty-open {
+    margin-block-start: var(--tk-space-2);
+    pointer-events: auto;
+  }
+
+  /* CMP-Notice bar: under the toolbar, pushes the document down. */
+  .tk-notice {
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    min-block-size: var(--tk-size-toolbar);
+    padding-block: var(--tk-space-1);
+    padding-inline: var(--tk-space-3) var(--tk-space-1);
+    border-block-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
+    background: var(--tk-color-surface2);
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-medium);
+    line-height: var(--tk-size-code-line);
+  }
+  .tk-notice--error {
+    background: var(--tk-color-danger-bg);
+  }
+  .tk-notice--error .tk-button--outline {
+    border-color: var(--tk-color-fg);
+  }
+  .tk-notice__icon {
+    color: var(--tk-color-muted);
+  }
+  .tk-notice--error .tk-notice__icon {
+    color: var(--tk-color-danger);
+  }
+  .tk-notice__message,
+  .tk-notice__spacer {
+    flex: 1;
+  }
+  .tk-notice__progress-label {
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    white-space: nowrap;
+  }
+  .tk-notice__track {
+    display: inline-block;
+    inline-size: calc(var(--tk-space-10) * 4);
+    max-inline-size: 30%;
+    block-size: var(--tk-space-1);
+    border-radius: var(--tk-radius-pill);
+    background: var(--tk-color-line);
+    overflow: hidden;
+  }
+  .tk-notice__fill {
+    display: block;
+    block-size: 100%;
+    background: var(--tk-color-accent);
+  }
+
+  /* CMP-ConfirmDialog: native modal dialog over a scrim. */
+  .tk-dialog {
+    inline-size: calc(var(--tk-space-10) * 10);
+    max-inline-size: calc(100% - 2 * var(--tk-space-4));
+    padding: var(--tk-space-6);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+    color: var(--tk-color-fg);
+  }
+  .tk-dialog[open] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-space-6);
+  }
+  .tk-dialog::backdrop {
+    background: var(--tk-color-scrim);
+  }
+  .tk-dialog__title {
+    margin: 0;
+    font-size: var(--tk-font-size-lg);
+    font-weight: var(--tk-font-weight-semibold);
+    line-height: var(--tk-space-6);
+  }
+  .tk-dialog__message {
+    font-size: var(--tk-font-size-md);
+    font-weight: var(--tk-font-weight-medium);
+    line-height: var(--tk-space-5);
+  }
+  .tk-dialog__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--tk-space-2);
+  }
+
+  /* CMP-DropOverlay: covers the main area while a file is dragged over the tool. */
+  .tk-drop-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tk-color-scrim);
+    pointer-events: none;
+  }
+  .tk-drop-overlay::before {
+    content: '';
+    position: absolute;
+    inset: var(--tk-space-2);
+    border: var(--tk-border-width-focus) dashed var(--tk-color-accent);
+    border-radius: var(--tk-radius-md);
+  }
+  .tk-drop-overlay__panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--tk-space-2);
+    padding: var(--tk-space-4) var(--tk-space-6);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-md);
+    font-weight: var(--tk-font-weight-semibold);
+  }
+  .tk-drop-overlay__icon svg {
+    inline-size: var(--tk-size-icon-md);
+    block-size: var(--tk-size-icon-md);
+    color: var(--tk-color-accent);
+  }
+}

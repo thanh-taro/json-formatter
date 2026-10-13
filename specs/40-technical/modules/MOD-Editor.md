@@ -41,9 +41,13 @@ decorations; the stock search package is not used.
 - `createEditor(container, options)` → `EditorHandle` with: `version`, `onChange(cb)`,
   `onCursor(cb)`, `setTier(tier)`, `setBusy(bool)`, `markIssue(issue | null)`,
   `goTo(offset)`, `select(span)`, `selectAll()`, `beginReplace(kind)` → `PendingDocument`
-  { `append(chunk)`, `commit()`, `discard()` }, `clear()`, `undo()`, `redo()` (both return
-  either "done" or a reload request carrying the entry's Blob, for MOD-App to run),
-  `attachUndoBlob(blob)` (for the tool transaction being committed),
+  { `append(chunk)`, `commit(facts)` (checks the length the worker built), `discard()` },
+  `beginPaste(from, to, lineEnding)` (large paste or external text drop, ADR-0006 §2),
+  `clear()`, `undo()`, `redo()` (both return either "applied" or a reload request carrying the
+  entry's Blob, for MOD-App to run, with `abort` on cancel and `drop` when the Blob cannot be
+  restored), an injected `snapshot()` option instead of `attachUndoBlob(blob)` (the editor asks
+  for the Blob of the current document before the change it protects), `chunks()` (worker
+  re-seed), change events tagged with how the mirror follows (`edit`, `adopt`, `reseed`),
   `onHistoryTrimmed(cb)`, `lineCount`, `lineEnding` (detected on load/paste),
   `setHidden(bool)` (visibility-based),
   `find(term, { matchCase })` → `FindSession` { `onFirst(cb)`, `onCount(cb)`, `next()`,

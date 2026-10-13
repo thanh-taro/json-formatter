@@ -105,7 +105,8 @@ export default tseslint.config(
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [{ group: ['*', '!./*', '!../core/*'], message: 'MOD-Core imports nothing (architecture.md).' }] },
+        // only files of MOD-Core itself (same folder)
+        { patterns: [{ regex: '^(?!\\./[^/]+$)', message: 'MOD-Core imports nothing (architecture.md).' }] },
       ],
     },
   },

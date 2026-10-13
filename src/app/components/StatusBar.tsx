@@ -1,21 +1,28 @@
-// Implements: CMP-StatusBar (shell: empty state; privacy statement and details),
+// Implements: CMP-StatusBar (empty state, cursor; privacy statement and details),
 // F-009.R1 (privacy statement always visible), F-009.R2 (details popover, dismissible),
 // F-009 edge case "narrow" (icon labelled COPY-privacy.badge_label).
-// Validity, size/lines and cursor facts arrive with F-001/F-005.
+// Validity, size and lines arrive with F-005.
+import type { Signal } from '@preact/signals';
 import { t } from '../../copy';
+import type { DocState } from '../state';
 import { Icon } from './Icon';
 
 const DETAILS_ID = 'tk-privacy-details';
 const LABEL_ID = 'tk-privacy-label';
 const TITLE_ID = 'tk-privacy-title';
 
-export function StatusBar() {
+interface Props {
+  doc: Signal<DocState>;
+  cursor: Signal<{ line: number; column: number }>;
+}
+
+export function StatusBar({ doc, cursor }: Props) {
   return (
     <footer class="tk-statusbar">
       <span class="tk-statusbar__validity" role="status">
-        {t('status.empty')}
+        {doc.value.empty ? t('status.empty') : ''}
       </span>
-      <span class="tk-statusbar__facts">{t('status.cursor', { line: 1, column: 1 })}</span>
+      <span class="tk-statusbar__facts">{t('status.cursor', cursor.value)}</span>
       <PrivacyStatement />
     </footer>
   );

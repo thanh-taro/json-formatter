@@ -1,9 +1,9 @@
-/* SCR-Formatter shell: toolbar · main area · status bar (placeholders until features land). */
+/* SCR-Formatter shell: toolbar · notice bar · main area · status bar. */
 @layer components {
   .tk-formatter {
     display: grid;
     /* --tk-statusbar-height: statusbar.css (taller for coarse pointers). */
-    grid-template-rows: var(--tk-size-toolbar) minmax(0, 1fr) var(--tk-statusbar-height, var(--tk-size-statusbar));
+    grid-template-rows: var(--tk-size-toolbar) auto minmax(0, 1fr) var(--tk-statusbar-height, var(--tk-size-statusbar));
     height: 100%;
   }
 
@@ -66,29 +66,13 @@
     min-height: 0;
     background: var(--tk-color-bg);
   }
-  .tk-editor {
-    height: 100%;
-    overflow: auto;
-    font-family: var(--tk-font-family-mono);
-    font-size: var(--tk-font-size-code);
-    line-height: var(--tk-font-line-height-code);
-  }
-  .tk-editor__empty {
-    display: grid;
-    place-content: center;
-    gap: var(--tk-space-2);
-    height: 100%;
-    padding: var(--tk-space-6);
-    text-align: center;
-    font-family: var(--tk-font-family-body);
-  }
   .tk-editor__empty-title {
     font-size: var(--tk-font-size-lg);
     font-weight: var(--tk-font-weight-semibold);
   }
   .tk-editor__empty-body {
     color: var(--tk-color-muted);
-    font-size: var(--tk-font-size-md);
+    font-size: var(--tk-font-size-sm);
   }
 
   .tk-statusbar {
