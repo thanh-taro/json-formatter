@@ -4,7 +4,10 @@
 //   tool      http://localhost:4173   (dist/, headers from dist/_headers)
 //   host      http://localhost:4174   (tests/e2e/host/, allow-listed as frame ancestor)
 //   unlisted  http://localhost:4175   (tests/e2e/host/, not allow-listed)
-//   admin     http://localhost:4179   (/health, /log, /reset — server-side request log, NFR-01)
+//   admin     http://localhost:4179   (/health, /log, /reset — server-side request log, NFR-01;
+//                                      /offline?on=1|0 — the tool origin refuses connections;
+//                                      /publish?on=1|0 — a new version of the tool is served;
+//                                      /sw-expired?on=1|0 — /sw.js is served with no-cache)
 // The deployed HOST_ORIGINS list (https://tarokit.app) is replaced by the stub host origin here,
 // because the stub host cannot run on the real portal origin. The setting has two outputs
 // (ADR-0008 §4) and both are replaced: the frame-ancestors header and the compiled-in
@@ -106,6 +109,20 @@ const TYPES = {
 
 let log = [];
 const t0 = Date.now();
+// F-011 (ADR-0012): offline is emulated by refusing connections at the server (Playwright's
+// WebKit `setOffline` also blocks the worker's cache responses). "Publishing" serves a new
+// version: the HTML gains a marker and names its assets under new paths (`/assets/v2-*`, the
+// same bytes), as a rebuilt app with new hashes would, and serves a changed /sw.js whose HTTP
+// whose HTTP cache lifetime can be ended (`/sw-expired`), so the browser's update check sees it.
+let offline = false;
+let published = false;
+let swExpired = false;
+const V2 = '/assets/v2-';
+const publishHtml = (body) =>
+  body
+    .toString('utf8')
+    .replaceAll('/assets/', V2)
+    .replace('</head>', '<meta name="tk-test-version" content="2" /></head>');
 
 function serve(res, dir, urlPath, extraHeaders, transformJs, transformHtml) {
   const p = urlPath === '/' ? '/index.html' : urlPath;
@@ -129,8 +146,21 @@ function tool(req, res) {
     method: req.method,
     path: u.pathname + u.search,
     dest: req.headers['sec-fetch-dest'] ?? null,
+    sw: req.headers['service-worker'] ?? null,
   });
-  serve(res, DIST, u.pathname, headersFor(u.pathname), rewriteAllowList);
+  if (offline) return req.socket.destroy();
+  let p = u.pathname;
+  if (p.startsWith(V2)) {
+    if (!published) p = '/404';
+    else p = '/assets/' + p.slice(V2.length);
+  }
+  const headers = headersFor(p);
+  let js = rewriteAllowList;
+  // A day has passed since /sw.js was cached (its max-age), so update checks reach the server.
+  if (swExpired && p === '/sw.js') headers['Cache-Control'] = 'no-cache';
+  // The new version also ships a changed worker script.
+  if (published && p === '/sw.js') js = (body) => `${rewriteAllowList(body)}\n// published: v2\n`;
+  serve(res, DIST, p, headers, js, published ? publishHtml : undefined);
 }
 
 // Stub host pages get the port base injected, whichever port (host or unlisted) serves them.
@@ -143,8 +173,23 @@ function admin(req, res) {
   res.setHeader('Content-Type', 'application/json');
   if (u.pathname === '/health') return res.end('{"ok":true}');
   if (u.pathname === '/log') return res.end(JSON.stringify({ now: Date.now() - t0, log }));
+  if (u.pathname === '/offline') {
+    offline = u.searchParams.get('on') === '1';
+    return res.end(JSON.stringify({ offline }));
+  }
+  if (u.pathname === '/sw-expired') {
+    swExpired = u.searchParams.get('on') === '1';
+    return res.end(JSON.stringify({ swExpired }));
+  }
+  if (u.pathname === '/publish') {
+    published = u.searchParams.get('on') === '1';
+    return res.end(JSON.stringify({ published }));
+  }
   if (u.pathname === '/reset') {
     log = [];
+    offline = false;
+    published = false;
+    swExpired = false;
     return res.end('{"ok":true}');
   }
   res.statusCode = 404;

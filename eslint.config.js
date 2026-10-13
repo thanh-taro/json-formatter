@@ -100,6 +100,17 @@ export default tseslint.config(
     },
   },
   {
+    // The offline service worker (ADR-0012) is the one place that may use Cache Storage and
+    // forward the browser's own requests; it never runs in the page.
+    files: ['src/host/sw.ts', 'src/host/sw-kill.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        ...NETWORK_AND_STORAGE.filter(({ name }) => name !== 'fetch' && name !== 'caches'),
+      ],
+    },
+  },
+  {
     // MOD-Core imports nothing.
     files: ['src/core/**'],
     rules: {

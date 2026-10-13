@@ -24,6 +24,11 @@ unlisted origin refused).
 ## Public surface
 - `pnpm build` (with `HOST_ORIGINS`), `pnpm check:size`, `pnpm check:licenses`,
   `pnpm gen` (copy, tokens), CI workflows.
+- Offline kill switch (ADR-0012 recovery): `SW_KILL=1 pnpm build` ships a `/sw.js` that takes
+  over at the browser's next update check (at most ~24 h, its `max-age`), deletes the tool's
+  `json-formatter-*` caches and unregisters itself; pages of that build register no worker.
+  For immediate recovery the deploy can also send `Clear-Site-Data: "cache", "storage"` on `/`.
+  Ship a normal build again once the defect is fixed.
 
 ## Implements
 F-008.R4 (embedding allow-list header), F-009 guarantee support; RULE-16 (deploy-time list);
