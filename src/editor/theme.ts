@@ -68,6 +68,15 @@ export const editorTheme = EditorView.theme({
     textDecorationSkipInk: 'none',
     textUnderlineOffset: v('space.1'),
   },
+  // CMP-SearchPanel "matches" (F-010.R2): the current match outlined, the others dotted.
+  '.tk-find-match': {
+    backgroundColor: v('color.selection'),
+    outline: `${v('border.width.hairline')} dotted ${v('color.accent')}`,
+  },
+  '.tk-find-current': {
+    backgroundColor: v('color.selection'),
+    outline: `${v('border.width.hairline')} solid ${v('color.accent')}`,
+  },
   '.cm-gutterElement.tk-gutter-warning': {
     color: v('color.accent2Fg'),
     backgroundColor: v('color.warnBg'),

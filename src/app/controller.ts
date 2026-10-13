@@ -27,6 +27,7 @@ import { copyBlob, download, downloadName, installDropTarget, pickFile, type Dro
 import { JobFailure, WorkerClient, type Job, type JobResult } from '../worker/client';
 import type { FailReason } from '../worker/protocol';
 import { needsVeryLargeConfirm } from './confirm';
+import { FindController } from './find';
 import type { AppState, Bar, Busy, Toast, Validation } from './state';
 
 /** Progress is shown once an operation has run this long (NFR-02). */
@@ -112,6 +113,11 @@ export function validityText(v: Validation): string {
 export class AppController {
   editor: EditorHandle | null = null;
   readonly worker: WorkerClient;
+  /** CMP-SearchPanel state (F-010). */
+  readonly find = new FindController(
+    () => this.editor,
+    () => this.showTextView(),
+  );
   private tier: Tier = 'normal';
   private barSeq = 0;
   private trimmedNoticeShown = false;
@@ -141,6 +147,7 @@ export class AppController {
       onLargePaste: (p) => void this.largePaste(p),
       onHistoryKey: (direction) => void this.history(direction),
       onHistoryTrimmed: () => this.toldTrimmed(),
+      onFindKey: () => this.find.show(),
     });
     this.editor = editor;
     this.requestValidation();
@@ -154,9 +161,18 @@ export class AppController {
 
   detach(): void {
     this.removeDrop?.();
+    this.find.dispose();
     this.editor?.destroy();
     this.editor = null;
     this.worker.dispose();
+  }
+
+  /**
+   * Shows the text view (F-010 edge case: find opens in the text view). F-006 extends this with
+   * whatever else switching views needs.
+   */
+  showTextView(): void {
+    this.state.view.value = 'text';
   }
 
   /** True while an operation runs, the mirror is re-seeded, or a confirmation is open (review m2). */

@@ -76,7 +76,8 @@ const IMPLEMENTATION: Record<string, Outcome> = {
 if (process.env['CI'] && !hasCorpus()) throw new Error('JSONTestSuite corpus missing: run pnpm fixtures:jsontestsuite');
 
 describe.skipIf(!hasCorpus())('NFR-08 JSONTestSuite conformance', () => {
-  const cases = loadCorpus();
+  // Vitest collects a skipped describe's body too: do not read a missing corpus (review F-010 M2).
+  const cases = hasCorpus() ? loadCorpus() : [];
 
   it('NFR-08 every y_ case is accepted', () => {
     const accept = cases.filter((c) => c.expect === 'accept');

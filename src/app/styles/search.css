@@ -1,0 +1,145 @@
+/* CMP-SearchPanel (F-010): docked at the top of CMP-Editor. Tokens only (ADR-0011). Wide: field ·
+   match case · count · previous · next · close in one row; narrow (< 600 px): field and close,
+   then match case, count, previous and next under the field. Coarse pointers: 44 px targets. */
+@layer components {
+  /* The editor area stacks the panel above the editor host. */
+  .tk-editor {
+    display: flex;
+    flex-direction: column;
+  }
+  .tk-editor-host {
+    flex: 1;
+    min-block-size: 0;
+  }
+
+  .tk-search {
+    --tk-search-target: var(--tk-size-control);
+    container: tk-search / inline-size;
+    /* above the empty-state overlay of the editor area */
+    position: relative;
+    z-index: 1;
+    flex: none;
+    background: var(--tk-color-surface);
+    border-block-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
+  }
+  @media (pointer: coarse) {
+    .tk-search {
+      --tk-search-target: var(--tk-size-touch-target);
+    }
+  }
+
+  .tk-search__bar {
+    display: grid;
+    grid-template-columns: auto auto auto 1fr auto auto auto;
+    grid-template-areas: 'field toggle count . prev next close';
+    align-items: center;
+    gap: var(--tk-space-1) var(--tk-space-2);
+    min-block-size: var(--tk-size-toolbar);
+    padding-block: var(--tk-space-1);
+    padding-inline: var(--tk-space-2) var(--tk-space-1);
+  }
+  @container tk-search (width < 600px) {
+    .tk-search__bar {
+      grid-template-columns: auto auto 1fr auto auto;
+      grid-template-areas:
+        'field field field field close'
+        'toggle count . prev next';
+      column-gap: var(--tk-space-1);
+    }
+    .tk-search__field {
+      inline-size: 100%;
+    }
+    .tk-search__count {
+      padding-inline-start: var(--tk-space-2);
+    }
+  }
+
+  .tk-search__field {
+    grid-area: field;
+    inline-size: calc(var(--tk-space-10) * 7);
+    max-inline-size: 100%;
+    block-size: var(--tk-search-target);
+    padding-inline: var(--tk-space-2);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-sm);
+    background: var(--tk-color-bg);
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-code);
+  }
+  @media (pointer: coarse) {
+    .tk-search__field {
+      font-size: var(--tk-font-size-input);
+    }
+  }
+  /* The panel has its own close action; no engine clear button (design: field only). */
+  .tk-search__field::-webkit-search-cancel-button {
+    appearance: none;
+  }
+  .tk-search__field::placeholder {
+    color: var(--tk-color-muted);
+  }
+  .tk-search__field:focus-visible {
+    border-color: var(--tk-color-accent);
+  }
+
+  .tk-search__toggle,
+  .tk-search__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--tk-search-target);
+    block-size: var(--tk-search-target);
+    padding: 0;
+    border: var(--tk-border-width-hairline) solid transparent;
+    border-radius: var(--tk-radius-sm);
+    background: none;
+    color: var(--tk-color-fg);
+    cursor: pointer;
+  }
+  .tk-search__toggle {
+    grid-area: toggle;
+    border-color: var(--tk-color-line-strong);
+    color: var(--tk-color-muted);
+  }
+  .tk-search__toggle[aria-pressed='true'] {
+    border-color: var(--tk-color-accent);
+    background: var(--tk-color-selection);
+    color: var(--tk-color-fg);
+  }
+  .tk-search__button:hover:not(:disabled),
+  .tk-search__toggle:hover {
+    background: var(--tk-color-surface2);
+  }
+  .tk-search__button:disabled {
+    color: var(--tk-color-muted);
+    cursor: default;
+  }
+  .tk-search__toggle .tk-icon svg,
+  .tk-search__button .tk-icon svg {
+    inline-size: var(--tk-size-icon-sm);
+    block-size: var(--tk-size-icon-sm);
+  }
+  .tk-search__prev {
+    grid-area: prev;
+  }
+  .tk-search__next {
+    grid-area: next;
+  }
+  .tk-search__close {
+    grid-area: close;
+  }
+
+  .tk-search__count {
+    grid-area: count;
+    min-inline-size: calc(var(--tk-space-12) * 2);
+    color: var(--tk-color-muted);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-medium);
+    white-space: nowrap;
+  }
+  .tk-search__count--none {
+    color: var(--tk-color-danger);
+  }
+}
