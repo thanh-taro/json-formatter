@@ -19,3 +19,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - SP-tree clarifications: RULE-06 paths use decoded names, minimally re-escaped; RULE-12 grouped root expands only its first group.
 - SP-pipeline decisions: NFR-04 memory measured after GC on the Chromium-based engine, best effort elsewhere (D-024); WebKit scroll and >120 MB copy limits accepted (D-025).
 - Gate G3: ADR-0001…0012 accepted; registry entries approved (D-026 for portal tokens; DEP-36/37/38 removed).
+- F-009 shipped; F-008 merged as building (AC6/AC7 re-run once all M-1 features land). ADR-0013 HSTS.
