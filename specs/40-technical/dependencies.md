@@ -58,7 +58,7 @@ non-code file; **build** / **dev** / **ci** = never shipped. Status: `candidate`
 ## Evaluated, not adopted
 | ID | Name | Version range | License | Kind | Purpose | Status | Decided by |
 |---|---|---|---|---|---|---|---|
-| **DEP-36** | monaco-editor | 0.57 | MIT | runtime (spike only) | SP-editor comparison; fallback if ADR-0004 fails | candidate (spike only) | ADR-0004 |
+| **DEP-36** | monaco-editor | 0.57 | MIT | runtime (spike only) | SP-editor comparison only; rejected (ADR-0004), not a runtime fallback | candidate (spike only) | ADR-0004 |
 | **DEP-37** | @tanstack/virtual-core | ^3.19 | MIT | runtime | Alternative virtualizer for the tree | removed (not needed) | ADR-0007 |
 | **DEP-38** | comlink | ^4.4 | Apache-2.0 | runtime | Alternative worker RPC | removed (not needed) | ADR-0005 |
 

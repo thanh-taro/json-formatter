@@ -14,6 +14,8 @@ other module contains user-facing literals (lint rule).
 
 ## Not responsible for
 - Deciding when text is shown (MOD-App); translation (English only in M-1).
+- Retired strings: COPY-error.download has no caller since F-007.R5 was deprecated (D-023);
+  it is not generated and should be removed from `copy.md` by the experience layer.
 
 ## Public surface
 - `t(id, params?)` with compile-time-checked IDs and parameters.

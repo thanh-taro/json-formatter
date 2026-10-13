@@ -74,7 +74,7 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-confirm.title** | Large content | dialog title |
 | **COPY-confirm.very_large** | This content is {size}. Working with it may be slow or run out of memory. Continue anyway? | Buttons: COPY-action.continue, COPY-action.cancel |
 | **COPY-error.too_large** | This file is too large for this device's memory. Your previous document is unchanged. | |
-| **COPY-error.download** | Downloads aren't allowed here. Use Copy instead, or open the tool on its own. | |
+| **COPY-error.download** | Downloads aren't allowed here. Use Copy instead, or open the tool on its own. | deprecated (D-023), not shown |
 | **COPY-notice.undo_trimmed** | Large document: only the last 3 operations can be undone. | |
 | **COPY-error.encoding** | This file isn't UTF-8 text, so it wasn't opened. | |
 | **COPY-error.not_a_file** | Only files can be dropped here. | |

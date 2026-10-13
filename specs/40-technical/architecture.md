@@ -2,13 +2,15 @@
 
 Status: proposed (2026-10-13). Decisions: ADR-0001 … ADR-0012. Modules: `modules/`.
 Dependencies: `dependencies.md`. Platform details: `platform-mapping.md`.
-Spike plan: `.build-my-app/reports/spike-plan.md`.
+Spike plan: `.build-my-app/reports/spike-plan.md`. Spike results applied: SP-formatter,
+SP-editor, SP-iframe (`.build-my-app/reports/spike-*.md`); SP-pipeline and SP-tree pending.
 
 ## Summary
 A static single-page web app at `https://json-formatter.tarokit.app`, embedded by the taro-kit
 portal (`https://tarokit.app`) in a sandboxed iframe and fully usable standalone. **Preact 10 +
-signals** render a small shell (ADR-0002); **CodeMirror 6** is the text editor at every size
-tier (ADR-0004); a **hand-written iterative streaming tokenizer** (MOD-Core) runs in **one
+signals** render a small shell (ADR-0002); **CodeMirror 6**, mounted in a shadow root so its
+styles stay CSP-clean, is the text editor at every size tier, with our own find engine and
+undo history (ADR-0004); a **hand-written iterative streaming tokenizer** (MOD-Core) runs in **one
 module worker** that keeps a mirror of the document and does all validation, formatting,
 re-indenting, file decoding, tree scanning and export (ADR-0005). Large results enter the
 editor through a **chunked commit** with a single undo step and a tier-aware **custom undo
@@ -16,7 +18,8 @@ history** (ADR-0006). The tree is built **lazily from token offsets** with a sma
 and drawn by a custom virtual list (ADR-0007). Built with **TypeScript 6 + Vite 8 + pnpm**
 (ADR-0003), styled with **plain CSS and the portal's tokens** (ADR-0011), hosted on
 **Cloudflare static assets** with a header-delivered strict CSP (`connect-src 'none'`,
-`frame-ancestors https://tarokit.app`) (ADR-0009), tested with **Vitest, fast-check,
+`frame-ancestors https://tarokit.app`) (ADR-0009), offline after one visit through a
+hand-written service worker seeded from the HTTP cache (ADR-0012), tested with **Vitest, fast-check,
 JSONTestSuite, Playwright ×3 engines, axe, Lighthouse CI** (ADR-0010). Stack choices mirror the
 portal's wherever they fit.
 
@@ -28,8 +31,8 @@ portal's wherever they fit.
 - A3. The portal frames the tool with `sandbox="allow-scripts allow-same-origin allow-forms
   allow-downloads"`, `allow="clipboard-write"`, `referrerpolicy="strict-origin"`, and will pass
   the theme per its change request (`taro:theme` / `taro:ready`, D-008).
-- A4. No backend, no accounts, no storage of any kind in M-1 (PRN-01). The optional offline
-  service worker (ADR-0012) stores only the tool's own code.
+- A4. No backend, no accounts, no storage of any kind in M-1 (PRN-01). The offline service
+  worker (ADR-0012, F-011) stores only the tool's own code in Cache Storage.
 - A5. Desktop only (NFR-07); touch is not optimised but nothing prevents it.
 - A6. English only in M-1.
 
@@ -48,6 +51,7 @@ flowchart LR
       IO[MOD-IO]
       CP[MOD-Copy]
     end
+    SW[sw.js: offline cache of the tool's own files]
     subgraph W["Module worker"]
       WK[MOD-Worker: mirror, jobs, file reading, export]
       CO[MOD-Core: tokenizer, validator, formatter]
@@ -57,6 +61,8 @@ flowchart LR
   TH -- "?theme=… , taro:theme" --> HO
   HO -- "taro:ready (only message out)" --> TH
   CDN -- "initial load only" --> Tool
+  CDN -. "browser's own SW install/update fetches (D-021)" .-> SW
+  HO -- "register, seed URL list" --> SW
   APP --> ED & TR & IO & HO & CP
   ED -- "versioned change sets" --> WK
   APP -- "jobs, cancel" --> WK
@@ -66,17 +72,19 @@ flowchart LR
   TR -- "children queries" --> WK
 ```
 After load, no arrow leaves the tool except `taro:ready` (INV-02, NFR-01; enforced by CSP
-`connect-src 'none'`, the lint ban on network APIs, and the e2e request recorder).
+`connect-src 'none'`, the lint ban on network APIs, and the server-side request log in e2e).
+The only allowed traffic after load is the browser fetching or update-checking the tool's
+own files for the offline cache (NFR-01 as amended by D-021; only WebKit does this).
 
 ## Modules
 | Module | Thread | Responsibility (short) | Main features / NFRs |
 |---|---|---|---|
 | MOD-Core | worker (pure helpers also main) | Iterative tokenizer, validation, beautify/minify, re-indent, paths, facts, tree scans | F-002, F-003, F-004, F-005, F-006 data; INV-01; NFR-03, NFR-08 |
 | MOD-Worker | worker | Mirror, job scheduling, cancellation, file decode, export Blobs | F-001.R5/R8/R9, F-005.R7; INV-03, INV-05; NFR-02, NFR-04 |
-| MOD-Editor | main | Editor engine, tiers, chunked commit, undo history, markers | F-001.R1/R6/R7, F-005.R5; INV-04; RULE-15 |
+| MOD-Editor | main | Editor engine (shadow root), tiers, chunked commit, undo history, markers, find engine | F-001.R1/R6/R7, F-005.R5, F-010; INV-04; RULE-15, RULE-18 |
 | MOD-Tree | main (lazy chunk) | Row model, RULE-12 groups, virtual list, copy/reveal | F-006 |
-| MOD-Host | main + inline boot | Theme, origin-checked messages, ready signal | F-008; RULE-16; NFR-09 |
-| MOD-IO | main | File pick/drop, clipboard, download with fallbacks | F-001.R2/R3, F-007 |
+| MOD-Host | main + inline boot + `sw.js` | Theme, origin-checked messages, ready signal, offline service worker | F-008, F-011; RULE-16; NFR-01, NFR-09 |
+| MOD-IO | main | File pick/drop, clipboard (with fallback), download | F-001.R2/R3, F-007 |
 | MOD-App | main | Shell components, app state, operation orchestration | SCR-Formatter, F-009; NFR-02, NFR-06 |
 | MOD-Copy | main | Generated strings, hints, size formatting | copy.md |
 | MOD-Build | build/CI | Codegen, `_headers`, size and license gates, deploy | NFR-01, NFR-05, NFR-09 |
@@ -88,14 +96,22 @@ Dependency rule: MOD-Core imports nothing; MOD-Worker imports only MOD-Core and
 - **Main thread**: input, rendering, editor view, tree rendering, orchestration. Every task
   is ≤ ~8 ms when building documents (sliced and yielded), so frames stay < 50 ms (NFR-04).
 - **One module worker**: all O(n) work. One job at a time; each job runs in slices of
-  ~30 ms / ~4 MB, yielding so `cancel` and `edit` messages arrive within one slice (NFR-02
-  cancel). No `SharedArrayBuffer` (cross-origin isolation is not available in the frame).
+  ~16 ms / ~1 MB of input, posting its output at the end of each slice and yielding so
+  `cancel` and `edit` messages arrive within one slice (≤ 50 ms measured, NFR-02 cancel). No
+  `SharedArrayBuffer` (cross-origin isolation is not available in the frame).
+- **Watchdog**: the worker can vanish without an `error` event (seen in WebKit under memory
+  pressure). The main-side client expects progress for a running job at least every 1 s; on
+  a miss (or a cancel ignored for > 1 s) it restarts the worker, re-seeds the mirror, discards
+  any pending document and shows an error (ADR-0005).
 - **Versions**: every editor change increments the document version; every worker message
   carries it; stale results are dropped; the UI shows COPY-status.checking / COPY-tree.checking
   while the current version is unvalidated (INV-05).
 - **Busy policy** (D-005): during a tool operation the editor is read-only, toolbar actions
   other than cancel are disabled, scrolling stays available; progress appears after 0.5 s,
   cancel is offered from the start (NFR-02).
+- **Hidden text view**: while the tree view is shown, the editor is hidden with
+  `visibility:hidden`, never `display:none`, so commits during that time stay viewport-bounded
+  (ADR-0004).
 
 ## Data flows
 
@@ -154,6 +170,7 @@ sequenceDiagram
     A->>W: adopt(version) → re-validate new text for positions of warnings
   end
   Note over A,W: cancel → worker stops within one slice; pending.discard()
+  Note over A,W: no progress for 1 s → restart worker, re-seed mirror, pending.discard(), error
 ```
 Re-indent follows the same path; the worker first detects the unit and may answer
 "not indented" (COPY-notice.no_indent, F-004.R5) without touching the document.
@@ -167,9 +184,23 @@ in the editor. Document change → tree marked stale, refreshed after re-validat
 ### Copy / download
 The worker builds a UTF-8 `Blob` from the mirror (joined with the document's line ending).
 Copy writes it as a clipboard item created synchronously inside the click handler with a
-promised Blob (keeps the user gesture across engines); download uses an object URL and a
-`download` link named per RULE-10. Blocked outcomes trigger the spec fallbacks (select all +
-COPY-error.clipboard; COPY-error.download).
+promised Blob (keeps the user gesture across engines; 100 MB measured at 277–449 ms in
+Chromium and Firefox); a refused write triggers the spec fallback (select all +
+COPY-error.clipboard). Download uses an object URL and a `download` link named per RULE-10.
+No engine reports a download blocked by the frame sandbox, so there is no download error
+path (F-007.R5 deprecated, D-023); the portal grants `allow-downloads`.
+
+### Find (F-010)
+CMP-SearchPanel (MOD-App) sends the term and match-case flag to MOD-Editor's find engine,
+which scans the current editor `Text` in ~1 MB windows, time-sliced at ≤ 8 ms on the main
+thread: the first match after the cursor is selected as soon as it is found, the total keeps
+counting in later slices and restarts on every document change (RULE-18).
+
+### Offline (F-011)
+After first render MOD-Host registers `/sw.js` (`updateViaCache: "all"`) and posts the list of
+loaded same-origin URLs; the worker copies them from the HTTP cache (`force-cache`). Later
+openings: HTML network-first with offline fallback, hashed assets cache-first; old assets
+pruned per navigation; a new version is used from the next opening (ADR-0012).
 
 ## Memory strategy for 100 MB (NFR-04: peak < 1.5 GB)
 Estimates for a formatted 100 MB ASCII document (~3.3 M lines). Editor `Text` stores each line
@@ -182,16 +213,18 @@ as a JS string: ~100 MB of characters + ~20–25 bytes per line overhead ≈ **~
 | Undo: up to 3 previous documents (large tier, whole-document tool ops) | after 3+ tool ops | ≤ ~525 MB (0 with the Blob fallback of ADR-0006) |
 | Pending document during load/format (main) | during an operation | ~175 MB (becomes current on commit) |
 | Worker: old mirror until adopt | during an operation | ~175 MB (released on adopt) |
-| Output chunks in flight | during an operation | ≤ ~16 MB (bounded queue) |
+| Output chunks in flight (flat strings, posted per slice) | during an operation | ≤ ~16 MB (bounded queue) |
 | Skip table + tree caches | tree used | ≤ ~10 MB |
 | Editor view, UI, code | always | ~50–100 MB |
 | **Worst-case peak (4th tool op on 100 MB)** | | **≈ 1.2–1.35 GB** |
 
 Rules: no full-document strings are ever built on the main thread (no `toString()` of the
-document; exports are Blobs from the worker); chunks are bounded (~1–4 MB) and released after
-append; at most one pending document; the worker releases a superseded mirror on `adopt`;
-syntax-tree parsing is off above 10 MB. The peak is close to the limit, so SP-pipeline
-measures it; the Blob-backed undo fallback (ADR-0006) cuts ~525 MB if needed. A minified
+document; exports are Blobs from the worker); chunks are bounded (~1–2 MB), flattened before
+they leave MOD-Core (rope-shaped output cost 6.3× in SP-formatter) and released after append; at most one pending document; the worker releases a superseded mirror on `adopt`;
+syntax-tree parsing is off above 10 MB. SP-editor measured the editor side at 100 MB with 3
+undo snapshots: Chromium heap 607 MB / renderer RSS 914 MB; WebKit RSS 1.6–1.9 GB (no forced
+GC, upper bound, unresolved). The peak is close to the limit, so SP-pipeline measures it end
+to end; the Blob-backed undo fallback (ADR-0006) cuts ~525 MB if needed. A minified
 100 MB document (one line) costs ~100 MB per copy, well inside the budget. Non-ASCII content
 roughly doubles text bytes (assumption A2) — measured in the spike; the very-large tier is
 best effort anyway (RULE-02).
@@ -210,9 +243,9 @@ this lands at ≈ 0.8–0.9 s, leaving ~0.6 s headroom.
 | HTML (incl. inline boot script, inline SVG icons) | ≤ 15 KB | ~8 KB |
 | CSS (tokens + base + components + editor theme) | ≤ 20 KB | ~12 KB |
 | JS critical path: Preact + signals | ≤ 10 KB | ~8 KB |
-| JS critical path: CodeMirror (state, view, commands, language, lang-json, Lezer) | ≤ 160 KB | ~130–150 KB |
+| JS critical path: CodeMirror (state, view, commands, language, lang-json, Lezer) | ≤ 160 KB | 94–107 KB gzip (measured, SP-editor) |
 | JS critical path: app shell, editor integration, host, IO, copy | ≤ 45 KB | ~30 KB |
-| **Critical path total (HTML + CSS + JS)** | **≤ 250 KB** | ~190–215 KB |
+| **Critical path total (HTML + CSS + JS)** | **≤ 250 KB** | ~160–175 KB |
 | Worker chunk (MOD-Core + MOD-Worker + `@codemirror/state`), loaded in parallel | ≤ 60 KB | ~40 KB |
 | Tree chunk (lazy) | ≤ 30 KB | ~15 KB |
 | Fonts (2 variable WOFF2 Latin subsets, swap, not blocking) | ≤ 80 KB | ~60–80 KB |
@@ -224,11 +257,13 @@ Cached: hashed assets are immutable; only the HTML revalidates (one 304 round tr
 ### Runtime targets (spike pass criteria derive from these)
 | Measure | Target | Source |
 |---|---|---|
-| Core validate/format throughput in the worker | ≥ 50 MB/s (NFR-03 needs ≥ 10 MB/s end to end) | NFR-03, SP-formatter |
+| Core validate/format throughput in the worker | ≥ 50 MB/s (NFR-03 needs ≥ 10 MB/s end to end); measured 118–326 MB/s on F1-100 MB | NFR-03, SP-formatter |
+| Worker cancel latency | ≤ 50 ms | NFR-02, SP-formatter |
+| Find: first match in 100 MB | ≤ 500 ms, typing within NFR-02 (measured 96–242 ms) | F-010.AC6, SP-editor |
 | 10 MB beautify, click → document shown | ≤ 1 s | NFR-03 |
 | 100 MB beautify, click → document shown | ≤ 10 s | NFR-03 |
 | Longest main-thread task during load/format/commit/scroll | ≤ 50 ms | NFR-04 |
-| Keystroke → paint at 100 MB | ≤ 100 ms (aim 50 ms) | NFR-02 |
+| Keystroke → paint at 100 MB | ≤ 100 ms (aim 50 ms); exception 2–10 MB with colouring on (D-022) | NFR-02 |
 | Cancel → UI idle and document unchanged | ≤ 200 ms | NFR-02, INV-03 |
 | Progress shown | after 0.5 s | NFR-02 |
 | Tree: first group of a 100,000-child container | ≤ 100 ms | F-006.AC9 |
@@ -236,33 +271,37 @@ Cached: hashed assets are immutable; only the HTML revalidates (one 304 round tr
 | Peak memory, 100 MB worst case | < 1.5 GB | NFR-04 |
 
 ### Tunable constants (initial values, set by spikes)
-Large-paste interception 1 MB; worker slice 30 ms / 4 MB; main append slice 8 ms; chunk size
-1–4 MB; validation debounce 0 / 150 / 300 ms by tier; skip-table threshold 4 KB; tree row
-preview 200 characters; normal-tier editor extras off above 10 MB (RULE-02).
+Large-paste interception 1 MB; worker slice 16 ms / 1 MB of input; worker watchdog 1 s; main
+append slice 8 ms; output chunk size 1–2 MB; validation debounce 0 / 150 / 300 ms by tier;
+skip-table threshold 4 KB; tree row preview 200 characters; normal-tier editor extras off
+above 10 MB (RULE-02, D-022); long-line direct-input handler from 100,000 characters per line;
+find window 1 MB / slice 8 ms; `/sw.js` max-age 86,400 s.
 
 ## Risks (ranked) and how they are retired
-1. **100 MB in the editor** (open, scroll, type, undo memory) — SP-editor, SP-pipeline.
+1. **100 MB in the editor** (open, scroll, type, undo memory) — SP-editor passed in Chromium
+   with the ADR-0004 adaptations; open: Gecko (not measured), WebKit scroll after many jumps
+   and WebKit memory — SP-pipeline.
 2. **Peak memory with mirror + 3 undo snapshots** — SP-pipeline; fallback Blob-backed undo.
 3. **Tokenizer throughput and exactness** (positions, unsafe numbers, chunk boundaries,
-   conformance) — SP-formatter; property and conformance tests.
+   conformance) — retired by SP-formatter (2–6× headroom, 100 % JSONTestSuite); kept in check
+   by property and conformance tests.
 4. **Tree scan latency on huge containers** — SP-tree; skip-table threshold tuning.
 5. **Iframe platform behaviour** (clipboard of large content, download, drop, CSP with editor
-   styles, theme without flash) across three engines — SP-iframe.
+   styles, theme without flash, offline) across three engines — retired by SP-iframe except
+   the manual real-Safari pass (clipboard, OS file and folder drag) and Cloudflare's
+   `_headers` merge on the first deploy.
+7. **Silent worker death** (WebKit under memory pressure) — watchdog and restart (ADR-0005).
 6. **Beautified size explosion**: deeply nested input (e.g. 10,000 levels) beautified with
    wide indents grows quadratically (≈ 200 MB from a 20 KB input at 2 spaces). Validation
    predicts the output size per indent; see open issue O-2.
 
-## Open issues for the user (spec clarifications)
-- **O-1 Mixed line endings**: the editor model unifies line breaks; documents with mixed
-  LF/CRLF are written out with the dominant ending (ADR-0006). Proposed spec note on
-  ENT-Document / F-001 edge cases: "mixed line endings are normalised to the dominant one".
-- **O-2 Oversized results**: RULE-02 confirmation covers loading and pasting only. Proposed:
-  if a beautify result would exceed 100 MB, ask for the same confirmation first.
-- **O-3 Blocked downloads**: browsers give no reliable signal when a sandbox blocks a
-  download, so F-007.AC6 can only be met where detectable (the portal grants downloads, so
-  embedded use is unaffected). Proposed spec note similar to the portal's "where the browser
-  can restrict them".
-- **O-4 Find in text**: browser find does not see virtualized text. Not in the M-1 spec; the
-  editor's search panel could be added (small) if wanted.
-- **O-5 Offline**: the portal lists the tool as offline-capable; M-1 specs do not require it.
-  ADR-0012 shows an NFR-01-compatible way; needs a spec item if wanted.
+## Resolved spec clarifications
+- **O-1 Mixed line endings**: normalised to the dominant one (RULE-17, D-015).
+- **O-2 Oversized results**: confirmation before a beautify or re-indent result above 100 MB
+  (RULE-02, D-015).
+- **O-3 Blocked downloads**: confirmed undetectable in all three engines (SP-iframe);
+  F-007.R5/AC6 deprecated (D-023).
+- **O-4 Find in text**: in M-1 as F-010 (D-013), own engine (ADR-0004).
+- **O-5 Offline**: in M-1 as F-011 (D-014, ADR-0012); NFR-01 allows the browser's own
+  service-worker install/update fetches of the tool's own files (D-021).
+- **Syntax colouring 2–10 MB**: kept, lag accepted as an NFR-02 exception (D-022).

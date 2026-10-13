@@ -75,7 +75,16 @@ Facts from the portal (repository `taro-kit`):
   redeploying the tool, once the portal change request ships.
 - The message shape is shared with the portal change request; a contract test in our e2e
   suite (stub host) and one in the portal's suite keep both sides aligned.
-- SP-iframe verifies the frame attributes, referrer value and message behaviour on all three
-  engines.
+- SP-iframe verified the decision as written on all three engines (no change needed): no
+  wrong-theme frame with the boot script (a negative control without it flashed), exactly one
+  outbound message per session, `document.referrer` equal to the portal origin, and every
+  malformed or foreign message ignored — including one from an unlisted sibling frame that
+  reached the tool through `parent.frames`, which is why the `event.source` check stays.
+  The iframe is transparent until the tool's CSS applies, so the portal's frame background
+  must match the theme it passes (an item for the portal change request).
+
+## Evidence
+- SP-iframe report: `.build-my-app/reports/spike-iframe.md` (tests and raw results in
+  `spikes/iframe/`, branch `spike/iframe`; final run 67 passed, 2 skipped).
 
 <!-- Accepted ADRs are immutable. Write a new ADR to change a decision. -->

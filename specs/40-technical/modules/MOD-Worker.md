@@ -10,8 +10,11 @@ The single dedicated module worker (ADR-0005). Holds the **document mirror** (an
 kept in sync from versioned change sets; tool results adopted as the next version without a
 round trip), runs one job at a time (validate, format, re-indent, build skip table, tree
 queries, load file, export), supersedes stale validation on new edits, debounces validation
-by tier, executes long jobs in time slices that yield to the event loop so `cancel` and `edit`
-messages are handled within one slice, and reports progress (throttled) and results tagged
+by tier, executes long jobs in time slices (~16 ms or ~1 MB of input) that yield to the event
+loop through a `MessageChannel` tick so `cancel` and `edit` messages are handled within one
+slice (≤ 50 ms), posts each slice's output chunks (flat strings from MOD-Core) at the end of
+the slice, feeds MOD-Core directly from the mirror's lines (no windowed copy), and reports
+progress (throttled) and results tagged
 with document version and job id. Reads dropped/chosen files by streaming them through a
 fatal UTF-8 decoder that keeps a leading byte-order mark (RULE-13, RULE-03), validating while
 reading and forwarding decoded chunks. Builds export `Blob`s (whole document or a node span,
@@ -34,7 +37,11 @@ Typed message protocol (discriminated unions), shared by main and worker:
   `blob(jobId, Blob)`, `failed(jobId, reason: invalid | encoding | too-large | cancelled |
   internal)`.
 - Main-side `WorkerClient` wraps the protocol in promise-returning calls with `AbortSignal`
-  cancellation and restarts the worker (re-seeding the mirror) on a hard failure.
+  cancellation. Its **watchdog** expects a message for every running job at least every 1 s
+  (the worker can die silently in WebKit); on a miss, a cancel ignored for > 1 s or an
+  `error` event it terminates and restarts the worker (same-origin module file, no `blob:`
+  URL), re-seeds the mirror and fails the job with `internal` so the caller discards any
+  pending document.
 
 ## Implements
 F-001.R5, F-001.R8, F-001.R9, F-002.R6, F-003.R5, F-004.R6, F-005.R1, F-005.R7, F-006.R8,

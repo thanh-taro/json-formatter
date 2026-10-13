@@ -883,9 +883,13 @@
     {
       "at": "2026-10-13T08:06:47+00:00",
       "event": "gate design passed: 44 boards (D1-D4), Workbench; audits converged; a11y contrast+targets pass; D-017..D-020"
+    },
+    {
+      "at": "2026-10-13T08:23:16+00:00",
+      "event": "SP-formatter ADAPT: 119-303 MB/s, JSONTestSuite 100%, depth ok, cancel<=34ms (1 GC outlier 55.7ms), flatten chunks"
     }
   ],
-  "updated": "2026-10-13T08:06:47+00:00",
+  "updated": "2026-10-13T08:23:16+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

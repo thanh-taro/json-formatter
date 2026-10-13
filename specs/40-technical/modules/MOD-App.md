@@ -10,7 +10,8 @@ The Preact shell of SCR-Formatter (ADR-0002): layout regions and states (default
 loading, error, large), CMP-Toolbar (groups, indent selector incl. custom 1–8, view switch,
 overflow menu at narrow widths, disabled/busy states), CMP-StatusBar (validity live region,
 size and lines, cursor, privacy badge and details popover), CMP-IssuePanel (error or up to
-1,000 warnings plus overflow line, jump to position), CMP-DropOverlay, the very-large
+1,000 warnings plus overflow line, jump to position), CMP-SearchPanel (on top of MOD-Editor's
+find engine), CMP-DropOverlay, the very-large
 confirmation dialog, notices and toasts. Holds app state in signals: document facts
 (ENT-Document: source name, line ending, final break, tier, validity, issues), current
 version, busy operation with progress and cancel, last tool operation (for RULE-10), view.
@@ -31,4 +32,4 @@ notices shown once (large tier, undo trimmed), announcements (errors once per ne
 ## Implements
 F-001.R4, F-002.R2, F-002.R4, F-002.R6, F-003.R3, F-004.R5 (notice), F-005.R2, F-005.R5,
 F-005.R6, F-006.R1, F-006.R7, F-007.R1 (confirmation), F-007.R6, F-008.R3, F-009.R1,
-F-009.R2; INV-03, INV-05; RULE-01, RULE-02; NFR-02, NFR-05, NFR-06, NFR-07; SCR-Formatter.
+F-009.R2, F-010.R1 (CMP-SearchPanel); INV-03, INV-05; RULE-01, RULE-02; NFR-02, NFR-05, NFR-06, NFR-07; SCR-Formatter.
