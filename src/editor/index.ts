@@ -9,6 +9,7 @@ import {
   Compartment,
   EditorSelection,
   EditorState,
+  Prec,
   Text,
   Transaction,
   type Extension,
@@ -249,10 +250,22 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   const facts = (): DocFacts => ({ lineEnding, sourceName, nonBreakBytes, lastTool });
   const snapshotNow = (): Snapshot => ({ blob: observed(options.snapshot()), facts: facts() });
 
-  const historyKeys = keymap.of([
-    { key: 'Mod-z', run: () => (options.onHistoryKey?.('undo'), true), preventDefault: true },
-    { key: 'Mod-Shift-z', run: () => (options.onHistoryKey?.('redo'), true), preventDefault: true },
-    { key: 'Mod-y', run: () => (options.onHistoryKey?.('redo'), true), preventDefault: true },
+  // Undo/redo keys, decided by the Shift flag as in the tree view: CodeMirror matches a lowercase
+  // "z" with Shift (Caps Lock, some layouts and drivers) as Mod-z, which would undo instead of redo.
+  const historyKeys = Prec.high(
+    EditorView.domEventHandlers({
+      keydown(e) {
+        if (!(e.ctrlKey || e.metaKey) || e.altKey) return false;
+        const k = e.key.toLowerCase();
+        if (k === 'z') options.onHistoryKey?.(e.shiftKey ? 'redo' : 'undo');
+        else if (k === 'y' && !e.shiftKey) options.onHistoryKey?.('redo');
+        else return false;
+        e.preventDefault();
+        return true;
+      },
+    }),
+  );
+  const findKey = keymap.of([
     // Implements: F-010.R1 — the platform find shortcut while the editor has focus (platform-mapping).
     { key: 'Mod-f', run: () => (options.onFindKey?.(), true), preventDefault: true },
   ]);
@@ -331,6 +344,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
         lineNumbers(),
         drawSelection(),
         historyKeys,
+        findKey,
         keymap.of(defaultKeymap),
         directInput,
         insertionHandlers,

@@ -116,6 +116,26 @@ test.describe('F-001 typing, opening and dropping', () => {
     await expect.poll(() => docText(page)).toBe('["replaced"]');
   });
 
+  // Reproduces on Linux and Windows only: on macOS CodeMirror names Cmd+Shift keys from the key code.
+  test('F-001.R7 redo with Shift held redoes even when the key arrives as a lowercase "z" (Caps Lock)', async ({
+    page,
+  }) => {
+    await start(page);
+    await paste(page, '[1]');
+    await loadSmall(page, 'data.json', '["replaced"]');
+    await content(page).focus();
+    const key = (shiftKey: boolean) =>
+      content(page).evaluate((el, shiftKey) => {
+        const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+        const init = { key: 'z', code: 'KeyZ', keyCode: 90, shiftKey, ctrlKey: !mac, metaKey: mac, bubbles: true };
+        el.dispatchEvent(new KeyboardEvent('keydown', { ...init, cancelable: true }));
+      }, shiftKey);
+    await key(false);
+    await expect.poll(() => docText(page)).toBe('[1]');
+    await key(true);
+    await expect.poll(() => docText(page)).toBe('["replaced"]');
+  });
+
   test('F-001.R7 INV-04 clearing can be undone in one step', async ({ page }) => {
     await start(page);
     await paste(page, '[1,\n2]');
