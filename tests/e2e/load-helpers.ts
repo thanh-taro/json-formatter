@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { MESSAGES } from '../../src/copy/messages.gen';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -76,6 +76,12 @@ export const app = (page: Page) => page.locator('[data-screen="SCR-Formatter"]')
 export async function docText(page: Page): Promise<string> {
   const lines = await page.locator('.cm-line').allTextContents();
   return lines.join('\n');
+}
+
+/** D-031: a toolbar control while busy is ignored (aria-disabled) but never natively disabled or restyled. */
+export async function expectBusyControl(control: Locator): Promise<void> {
+  await expect(control).toHaveAttribute('aria-disabled', 'true');
+  await expect(control).not.toHaveAttribute('disabled', /.*/);
 }
 
 export async function waitIdle(page: Page): Promise<void> {

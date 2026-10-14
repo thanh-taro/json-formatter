@@ -18,6 +18,7 @@ import {
   seamWorker,
   smallFixture,
   waitIdle,
+  expectBusyControl,
 } from './load-helpers';
 
 const MB = 1_000_000;
@@ -263,9 +264,10 @@ test.describe('F-002 slow worker', () => {
     await expect(bar).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('progressbar')).toBeVisible();
     await expect(content(page)).toHaveAttribute('aria-readonly', 'true');
+    // D-031: ignored (aria-disabled) but never styled as disabled
     for (const name of [COPY['action.beautify'], COPY['action.minify'], COPY['action.open'], COPY['action.clear']])
-      await expect(toolbar(page).getByRole('button', { name, exact: true })).toBeDisabled();
-    await expect(indentSelect(page)).toBeDisabled();
+      await expectBusyControl(toolbar(page).getByRole('button', { name, exact: true }));
+    await expectBusyControl(indentSelect(page));
     // scrolling stays available
     const scrolled = await page.locator('.cm-scroller').evaluate((el) => {
       el.scrollTop = 2000;

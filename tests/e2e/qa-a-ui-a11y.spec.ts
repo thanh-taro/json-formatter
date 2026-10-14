@@ -173,8 +173,8 @@ test.describe('QA-001 CMP-Toolbar narrow', () => {
     await page.keyboard.press('Enter');
     await expect(menu(page)).toBeHidden();
     await waitIdle(page);
-    // F-004: after re-indenting, the editor has focus (never the page)
-    await expect(content(page)).toBeFocused();
+    // after re-indenting from the menu, focus stays on More actions, as for every menu item (never the page)
+    await expect(more(page)).toBeFocused();
   });
 
   for (const width of [1280, 1000, 800, 640]) {
@@ -314,8 +314,8 @@ test.describe('QA-013 focus return', () => {
       await page.keyboard.press('Enter');
       await expect(app(page)).toHaveAttribute('data-busy', 'true');
       await waitIdle(page);
-      // re-indent hands focus to the editor (controller, F-004); the others keep their button
-      await expect(id === 'action.reindent' ? content(page) : button).toBeFocused();
+      // every tool action keeps focus on its button (re-indent no longer moves it to the editor)
+      await expect(button).toBeFocused();
     });
   }
 

@@ -597,13 +597,7 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     setBusy(busy) {
       view.dispatch({
         effects: busyConf.reconfigure(
-          busy
-            ? [
-                EditorState.readOnly.of(true),
-                EditorView.editorAttributes.of({ class: 'tk-busy' }),
-                EditorView.contentAttributes.of({ 'aria-readonly': 'true' }),
-              ]
-            : [],
+          busy ? [EditorState.readOnly.of(true), EditorView.contentAttributes.of({ 'aria-readonly': 'true' })] : [],
         ),
       });
     },

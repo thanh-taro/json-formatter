@@ -47,8 +47,6 @@ export const editorTheme = EditorView.theme({
     backgroundColor: v('color.selection'),
     outline: `${v('border.width.hairline')} solid ${v('color.selectionLine')}`,
   },
-  // CMP-Editor "loading" / busy: read-only, text muted (design: `.ro`).
-  '&.tk-busy .cm-content': { color: v('color.muted') },
   // CMP-Editor "error" (F-005.R3): wavy indicator at the position, tinted line with an inline
   // start rule, gutter mark on the line. The line marking wins over the current-line tint.
   '.tk-error-mark': {

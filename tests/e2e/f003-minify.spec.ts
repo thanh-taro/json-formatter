@@ -15,6 +15,7 @@ import {
   reportShot,
   seamWorker,
   waitIdle,
+  expectBusyControl,
 } from './load-helpers';
 
 const MB = 1_000_000;
@@ -106,8 +107,9 @@ test.describe('F-003 slow worker', () => {
     const bar = page.getByRole('status').filter({ hasText: /Formatting… \d+%/ });
     await expect(bar).toBeVisible({ timeout: 10_000 });
     await expect(content(page)).toHaveAttribute('aria-readonly', 'true');
+    // D-031: ignored (aria-disabled) but never styled as disabled
     for (const name of [COPY['action.beautify'], COPY['action.minify'], COPY['action.open']])
-      await expect(toolbar(page).getByRole('button', { name, exact: true })).toBeDisabled();
+      await expectBusyControl(toolbar(page).getByRole('button', { name, exact: true }));
     const scrolled = await page.locator('.cm-scroller').evaluate((el) => {
       el.scrollTop = 1500;
       return el.scrollTop;

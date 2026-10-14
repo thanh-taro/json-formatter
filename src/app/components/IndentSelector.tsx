@@ -14,7 +14,8 @@ const FIRST_CUSTOM = 3;
 /** True when a style is only reachable through the custom choice (not 2 or 4 spaces, not tab). */
 const isCustom = (s: IndentStyle) => s.kind === 'spaces' && s.width !== 2 && s.width !== 4;
 
-export function IndentSelector({ app, disabled }: { app: AppController; disabled: boolean }) {
+/** `disabled`: empty document (styled). `busy`: an operation runs — ignored but not restyled (D-031). */
+export function IndentSelector({ app, disabled, busy }: { app: AppController; disabled: boolean; busy: boolean }) {
   const indent = app.state.indent.value;
   // The choice is derived from app state, so it survives remounts (narrow overflow menu).
   const [customPicked, setCustomPicked] = useState(false);
@@ -46,8 +47,13 @@ export function IndentSelector({ app, disabled }: { app: AppController; disabled
           aria-label={t('label.indent')}
           value={value}
           disabled={disabled}
+          aria-disabled={busy ? 'true' : undefined}
           data-indent={value}
-          onChange={(e) => choose((e.currentTarget as HTMLSelectElement).value)}
+          onChange={(e) => {
+            const el = e.currentTarget as HTMLSelectElement;
+            if (app.blocked()) el.value = value;
+            else choose(el.value);
+          }}
         >
           <option value="2">{t('indent.spaces2')}</option>
           <option value="4">{t('indent.spaces4')}</option>
@@ -68,6 +74,8 @@ export function IndentSelector({ app, disabled }: { app: AppController; disabled
           step={1}
           value={width}
           disabled={disabled}
+          readOnly={busy}
+          aria-disabled={busy ? 'true' : undefined}
           aria-label={t('indent.custom', { n: width })}
           onChange={(e) => {
             const el = e.currentTarget as HTMLInputElement;

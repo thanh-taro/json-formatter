@@ -13,6 +13,7 @@ import {
   COPY,
   copy,
   docText,
+  expectBusyControl,
   largeFixture,
   openFile,
   paste,
@@ -144,6 +145,55 @@ test.describe('F-004 re-indent', () => {
     await reportShot(page, 'F-004/no-indent.png');
   });
 
+  test('CMP-Notice D-032 COPY-notice.no_indent is removed when the next tool action starts', async ({ page }) => {
+    await start(page);
+    await setDoc(page, '{"a":1,"b":[1,2]}');
+    await reindent(page, '2');
+    const notice = page.locator('[data-notice-id="notice.no_indent"]');
+    await expect(notice).toBeVisible();
+    await toolbar(page).getByRole('button', { name: COPY['action.beautify'] }).click();
+    await waitIdle(page);
+    await expect.poll(() => docText(page)).toBe('{\n  "a": 1,\n  "b": [\n    1,\n    2\n  ]\n}');
+    await expect(notice).toHaveCount(0);
+  });
+
+  test('CMP-Notice D-032 COPY-notice.no_indent is removed when the document changes', async ({ page }) => {
+    await start(page);
+    await setDoc(page, '{"a":1}');
+    await reindent(page, '2');
+    const notice = page.locator('[data-notice-id="notice.no_indent"]');
+    await expect(notice).toBeVisible();
+    await content(page).click();
+    await page.keyboard.press('End');
+    await page.keyboard.type(' ');
+    await expect(notice).toHaveCount(0);
+  });
+
+  test('CMP-Toolbar D-031 a quick re-indent never disables or restyles toolbar controls', async ({ page }) => {
+    await start(page);
+    await setDoc(page, '{\n  "a": [\n    1\n  ]\n}');
+    await page.evaluate(() => {
+      const w = window as unknown as { __flips: string[] };
+      w.__flips = [];
+      // a disabled toolbar control, or the editor's busy styling, would be a visible flash
+      const mo = new MutationObserver((ms) => {
+        for (const m of ms) {
+          const el = m.target as Element;
+          if (m.attributeName === 'disabled' || el.classList.contains('tk-busy'))
+            w.__flips.push(el.outerHTML.slice(0, 60));
+        }
+      });
+      for (const el of document.querySelectorAll('[role=toolbar] button, [role=toolbar] select'))
+        mo.observe(el, { attributes: true, attributeFilter: ['disabled'] });
+      const host = document.querySelector('.tk-editor-host');
+      mo.observe(host?.shadowRoot ?? document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+    });
+    await reindent(page, '4');
+    await expect.poll(() => docText(page)).toBe('{\n    "a": [\n        1\n    ]\n}');
+    await waitIdle(page);
+    expect(await page.evaluate(() => (window as unknown as { __flips: string[] }).__flips)).toEqual([]);
+  });
+
   test('F-004.R1 RULE-01 the indent selector is shared and keeps its choice', async ({ page }) => {
     await start(page);
     await setDoc(page, '[\n  1\n]');
@@ -170,9 +220,10 @@ test.describe('F-004 re-indent', () => {
     await expect(page.getByRole('progressbar')).toBeVisible();
     // editing and all other actions are unavailable
     await expect(content(page)).toHaveAttribute('aria-readonly', 'true');
+    // D-031: ignored (aria-disabled) but never styled as disabled
     for (const name of [COPY['action.open'], COPY['action.reindent'], COPY['action.beautify'], COPY['action.copy']])
-      await expect(toolbar(page).getByRole('button', { name })).toBeDisabled();
-    await expect(toolbar(page).getByLabel(COPY['label.indent'])).toBeDisabled();
+      await expectBusyControl(toolbar(page).getByRole('button', { name }));
+    await expectBusyControl(toolbar(page).getByLabel(COPY['label.indent']));
     // scrolling stays available
     await content(page).hover();
     await page.mouse.wheel(0, 4000);

@@ -17,7 +17,7 @@ switch (text/tree) · Export group (copy, download).
 |---|---|
 | default | all actions available |
 | empty document | clear, find, format, export and view switch disabled; open stays enabled |
-| busy | actions disabled except cancel; the editor is read-only |
+| busy | actions other than cancel do nothing, but keep their normal look (no disabled styling, D-031); the editor is read-only; the progress bar (CMP-Notice) is the only visible busy signal |
 | narrow | groups collapse into an overflow menu (COPY-action.more) |
 
 ## Behavior

@@ -108,9 +108,9 @@ Dependency rule: MOD-Core imports nothing; MOD-Worker imports only MOD-Core and
 - **Versions**: every editor change increments the document version; every worker message
   carries it; stale results are dropped; the UI shows COPY-status.checking / COPY-tree.checking
   while the current version is unvalidated (INV-05).
-- **Busy policy** (D-005): during a tool operation the editor is read-only, toolbar actions
-  other than cancel are disabled, scrolling stays available; progress appears after 0.5 s,
-  cancel is offered from the start (NFR-02).
+- **Busy policy** (D-005, D-031): during a tool operation the editor is read-only, toolbar actions
+  other than cancel are ignored (exposed as `aria-disabled`, never styled as disabled), scrolling
+  stays available; progress appears after 0.5 s, cancel is offered from the start (NFR-02).
 - **Hidden text view**: while the tree view is shown, the editor is hidden with
   `visibility:hidden`, never `display:none`, so commits during that time stay viewport-bounded
   (ADR-0004).

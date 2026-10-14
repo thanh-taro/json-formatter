@@ -73,7 +73,7 @@
     "release": {
       "title": "6 Release",
       "status": "in_progress",
-      "step": "6 hand-off: A done; first deploy done locally (wrangler, version 3c92eb93, smoke 9/9); waiting for user B3 zone hygiene, C (GitHub secrets), F, G, H",
+      "step": "6 hand-off (release): v1.0.0 deployed; CR bug fixes committed on main, not yet deployed; waiting for user B3, C, F, G, H",
       "gate": {
         "status": "pending",
         "at": null,
@@ -550,6 +550,38 @@
       "answer": "Pass G5; all manual checks move to the phase-6 release checklist, signed off before publishing",
       "asked": "2026-10-14T03:15:54+00:00",
       "answered": "2026-10-14T03:15:54+00:00"
+    },
+    {
+      "id": "D-031",
+      "question": "Busy look for tool operations (toolbar flashed disabled on every action)",
+      "options": [
+        "show after 0.5 s",
+        "show after 150 ms",
+        "never disable visually"
+      ],
+      "recommendation": "show after 0.5 s",
+      "kind": "product",
+      "phase": "release",
+      "status": "answered",
+      "answer": "Never disable visually: controls keep their normal look while busy (still blocked, editor read-only); only the progress bar (after 0.5 s) signals busy",
+      "asked": "2026-10-14T15:27:03+00:00",
+      "answered": "2026-10-14T15:27:08+00:00"
+    },
+    {
+      "id": "D-032",
+      "question": "When outcome notices (no_indent, file/copy errors) are cleared",
+      "options": [
+        "next action or edit",
+        "only on document change",
+        "every notice"
+      ],
+      "recommendation": "next action or edit",
+      "kind": "product",
+      "phase": "release",
+      "status": "answered",
+      "answer": "Outcome notices (no_indent, multiple_files, error bars) clear when another tool action starts or the document changes; large and undo_trimmed stay until dismissed",
+      "asked": "2026-10-14T15:27:03+00:00",
+      "answered": "2026-10-14T15:27:08+00:00"
     }
   ],
   "loops": {
@@ -1354,9 +1386,41 @@
     {
       "at": "2026-10-14T15:17:17+00:00",
       "event": "release step: 6 hand-off: A done; first deploy done locally (wrangler, version 3c92eb93, smoke 9/9); waiting for user B3 zone hygiene, C (GitHub secrets), F, G, H"
+    },
+    {
+      "at": "2026-10-14T15:24:15+00:00",
+      "event": "release step: 7 change request: 3 bugs (toolbar flash, stale reindent notice, purple editor edges) — investigating"
+    },
+    {
+      "at": "2026-10-14T15:27:03+00:00",
+      "event": "decision D-031 opened: Busy look for tool operations (toolbar flashed disabled on every action)"
+    },
+    {
+      "at": "2026-10-14T15:27:03+00:00",
+      "event": "decision D-032 opened: When outcome notices (no_indent, file/copy errors) are cleared"
+    },
+    {
+      "at": "2026-10-14T15:27:08+00:00",
+      "event": "decision D-031 answered: Never disable visually: controls keep their normal look while busy (still blocked, editor read-only); only the progress bar (after 0.5 s) signals busy"
+    },
+    {
+      "at": "2026-10-14T15:27:08+00:00",
+      "event": "decision D-032 answered: Outcome notices (no_indent, multiple_files, error bars) clear when another tool action starts or the document changes; large and undo_trimmed stay until dismissed"
+    },
+    {
+      "at": "2026-10-14T15:31:39+00:00",
+      "event": "release step: 7 change request CR (3 bugs): specs updated (D-031, D-032), code fixed, targeted tests green; full regression running"
+    },
+    {
+      "at": "2026-10-14T15:40:48+00:00",
+      "event": "CR after v1.0.0: 3 user-reported bugs fixed — toolbar flash (D-031, busy controls aria-disabled not disabled; editor busy muting removed), stale outcome notices (D-032, clearOutcome on action start/edit), re-indent focus jump removed. Unit 397/397; e2e Chromium+WebKit 430 pass after updating one obsolete focus assertion; spec lint 0; AC coverage 100%."
+    },
+    {
+      "at": "2026-10-14T15:40:48+00:00",
+      "event": "release step: 6 hand-off (release): v1.0.0 deployed; CR bug fixes committed on main, not yet deployed; waiting for user B3, C, F, G, H"
     }
   ],
-  "updated": "2026-10-14T15:17:17+00:00",
+  "updated": "2026-10-14T15:40:48+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

@@ -58,8 +58,14 @@ interface Spec {
 export function Toolbar({ app }: { app: AppController }) {
   const empty = app.state.doc.value.empty;
   const busy = app.blocked();
-  // Busy: every action disabled except cancel (in the progress bar), D-005.
-  const off = empty || busy;
+  // Busy (D-005, D-031): every action except cancel (in the progress bar) is ignored and exposed as
+  // aria-disabled, but keeps its look — only an empty document disables controls visibly.
+  const off = empty;
+  const busyAttr = busy ? 'true' : undefined;
+  /** Runs `fn` only when no operation, re-seed or confirmation blocks the app. */
+  const unlessBusy = (fn: () => void) => () => {
+    if (!app.blocked()) fn();
+  };
   const view = app.state.view.value;
   const bar = useRef<HTMLDivElement>(null);
   const current = useRef<HTMLElement | null>(null);
@@ -239,7 +245,8 @@ export function Toolbar({ app }: { app: AppController }) {
         type="button"
         class={`tk-button${where === 'icon' ? ' tk-button--icon' : ''}${extra}`}
         disabled={disabled}
-        onClick={run}
+        aria-disabled={busyAttr}
+        onClick={unlessBusy(run)}
       >
         <Icon name={spec.icon} />
         <span class={where === 'icon' ? 'tk-visually-hidden' : undefined}>{t(spec.copy)}</span>
@@ -248,7 +255,14 @@ export function Toolbar({ app }: { app: AppController }) {
   };
   const menuAction = (key: Exclude<Action, 'indent'>, spec: Spec, disabled: boolean, run: () => void, extra = '') =>
     layout[key] === 'menu' ? (
-      <button type="button" class={`tk-menu__item${extra}`} tabIndex={-1} disabled={disabled} onClick={fromMenu(run)}>
+      <button
+        type="button"
+        class={`tk-menu__item${extra}`}
+        tabIndex={-1}
+        disabled={disabled}
+        aria-disabled={busyAttr}
+        onClick={unlessBusy(fromMenu(run))}
+      >
         <Icon name={spec.icon} />
         {t(spec.copy)}
       </button>
@@ -277,13 +291,13 @@ export function Toolbar({ app }: { app: AppController }) {
     download: () => app.download(),
   };
 
-  const load = [action('open', S.open, busy, run.open), action('clear', S.clear, off, run.clear)].filter(Boolean);
+  const load = [action('open', S.open, false, run.open), action('clear', S.clear, off, run.clear)].filter(Boolean);
   const findBtn = action('find', S.find, off, run.find);
   const format = [
     action('beautify', S.beautify, off, run.beautify, ' tk-button--primary'),
     action('minify', S.minify, off, run.minify),
     action('reindent', S.reindent, off, run.reindent),
-    layout.indent !== 'menu' ? <IndentSelector key="indent" app={app} disabled={off} /> : null,
+    layout.indent !== 'menu' ? <IndentSelector key="indent" app={app} disabled={off} busy={busy} /> : null,
   ].filter(Boolean);
   const exportGroup = [action('copy', S.copy, off, run.copy), action('download', S.download, off, run.download)].filter(
     Boolean,
@@ -311,7 +325,8 @@ export function Toolbar({ app }: { app: AppController }) {
             class="tk-button"
             aria-pressed={view === 'text'}
             disabled={off}
-            onClick={() => app.showTextView()}
+            aria-disabled={busyAttr}
+            onClick={unlessBusy(() => app.showTextView())}
           >
             {t('view.text')}
           </button>
@@ -320,7 +335,8 @@ export function Toolbar({ app }: { app: AppController }) {
             class="tk-button"
             aria-pressed={view === 'tree'}
             disabled={off}
-            onClick={() => app.showTreeView()}
+            aria-disabled={busyAttr}
+            onClick={unlessBusy(() => app.showTreeView())}
           >
             {t('view.tree')}
           </button>
@@ -335,8 +351,12 @@ export function Toolbar({ app }: { app: AppController }) {
               aria-expanded={menuOpen ? 'true' : 'false'}
               aria-controls={MENU_ID}
               popovertarget={MENU_ID}
-              disabled={busy}
-              onClick={place}
+              aria-disabled={busyAttr}
+              onClick={(e) => {
+                // the popover opens as the click's default action; busy cancels it (D-031)
+                if (app.blocked()) e.preventDefault();
+                else place();
+              }}
               onKeyDown={onMoreKeyDown}
             >
               <Icon name="more" />
@@ -346,14 +366,14 @@ export function Toolbar({ app }: { app: AppController }) {
         </div>
         {narrow && (
           <div ref={menuRef} id={MENU_ID} class="tk-menu" popover="auto" role="group" aria-label={t('action.more')}>
-            {menuAction('open', S.open, busy, run.open)}
+            {menuAction('open', S.open, false, run.open)}
             {menuAction('find', S.find, off, run.find)}
             <hr class="tk-menu__separator" />
             {menuAction('minify', S.minify, off, run.minify)}
             {menuAction('reindent', S.reindent, off, run.reindent)}
             {layout.indent === 'menu' && (
               <div class="tk-menu__field">
-                <IndentSelector app={app} disabled={off} />
+                <IndentSelector app={app} disabled={off} busy={busy} />
               </div>
             )}
             <hr class="tk-menu__separator" />

@@ -3,6 +3,15 @@
 All notable changes to JSON Formatter. Format: Keep a Changelog; versions follow Semantic Versioning.
 Spec-level changes are tracked separately in `specs/60-delivery/changelog.md`.
 
+## [Unreleased]
+
+### Fixed
+- The toolbar no longer flashes on every action: while an operation runs, controls keep their normal look
+  (they are ignored and marked `aria-disabled`); the progress bar after 0.5 s is the only busy signal (D-031).
+- A notice about an action's result, such as "No indentation found to change", now goes away when the next
+  action starts or the document changes (D-032).
+- Re-indent no longer moves focus into the editor, so the editor's focus ring no longer appears around it.
+
 ## [1.0.0] - 2026-10-14
 
 First release (milestone M-1). User-facing notes: `.build-my-app/reports/release-notes-v1.0.0.md`.

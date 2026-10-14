@@ -184,6 +184,7 @@ export class AppController {
 
   private sync(how: MirrorSync, version: number, changes: { toJSON(): unknown }): void {
     if (how === 'edit') {
+      this.clearOutcome();
       this.worker.edit(version, changes.toJSON() as Parameters<WorkerClient['edit']>[1]);
       this.requestValidation();
     } else if (how === 'reseed') void this.reseed();
@@ -324,6 +325,16 @@ export class AppController {
 
   dismissBar(): void {
     this.state.bar.value = null;
+  }
+
+  /**
+   * Implements: CMP-Notice "Behavior" (D-032) — an outcome bar (COPY-notice.no_indent,
+   * COPY-notice.multiple_files, any error) goes when the next tool action starts or the document
+   * changes; the document's own notices (COPY-notice.large, COPY-notice.undo_trimmed) stay.
+   */
+  private clearOutcome(): void {
+    const id = this.state.bar.value?.id;
+    if (id && id !== 'notice.large' && id !== 'notice.undo_trimmed') this.dismissBar();
   }
 
   /** CMP-Notice toast: newest last, at most TOAST_MAX, each removed after TOAST_MS. */
@@ -485,12 +496,14 @@ export class AppController {
 
   async open(): Promise<void> {
     if (this.blocked()) return;
+    this.clearOutcome();
     const file = await pickFile();
     if (file) await this.loadFile(file);
   }
 
   drop(d: DropKind): void {
     if (this.blocked()) return; // also while the confirmation is open (security review MINOR-4)
+    this.clearOutcome();
     if (d.kind === 'not-a-file') {
       this.showBar({ kind: 'error', id: 'error.not_a_file', text: t('error.not_a_file'), offerOpen: true });
       return;
@@ -515,6 +528,7 @@ export class AppController {
    */
   async reindent(): Promise<void> {
     if (this.blocked() || !this.editor || this.editor.isEmpty) return;
+    this.clearOutcome();
     const ed = this.editor;
     // RULE-01: an invalid width (NaN, < 1, > 8, fractional) never reaches the re-indenter.
     const target = indentStyle(this.state.indent.value);
@@ -559,7 +573,6 @@ export class AppController {
       );
       await this.feed(job, pending, busy, (res) => keepLineEnding(loadedFacts(res), eol), { sourceName });
     });
-    this.editor?.focus();
   }
 
   // ---- beautify / minify (F-002, F-003) ----------------------------------------------------
@@ -577,11 +590,12 @@ export class AppController {
    * whose result (predicted from that validation) would exceed 100 MB is confirmed first. The
    * result streams into a pending document, committed as one undo step (Blob snapshot in the
    * large tiers, ADR-0006); cancel or failure leaves the document as it was. Busy policy D-005
-   * throughout: read-only editor, actions disabled, progress after 0.5 s, cancel.
+   * throughout: read-only editor, actions ignored (D-031), progress after 0.5 s, cancel.
    */
   async format(kind: 'beautify' | 'minify'): Promise<void> {
     const ed = this.editor;
     if (this.blocked() || !ed || ed.isEmpty) return;
+    this.clearOutcome();
     const version = ed.version;
     let result = await this.validationOf(version);
     if (!result || this.editor !== ed || ed.version !== version) return;
@@ -655,6 +669,7 @@ export class AppController {
   /** Implements: F-001.R4 large-paste path (ADR-0006 §2), F-001.AC11; also large external drops. */
   async largePaste(p: LargePaste): Promise<void> {
     if (this.blocked() || !this.editor) return;
+    this.clearOutcome();
     if (p.needsConfirm && !(await this.confirmVeryLarge(p.bytesAfter))) return;
     const ed = this.editor;
     await this.run('progress.inserting', async (busy) => {
@@ -698,6 +713,7 @@ export class AppController {
   /** Implements: F-001.R7, INV-04, RULE-15 — undo/redo; large-tier tool operations reload. */
   async history(direction: 'undo' | 'redo'): Promise<void> {
     if (this.blocked() || !this.editor) return;
+    this.clearOutcome();
     const step = direction === 'undo' ? this.editor.undo() : this.editor.redo();
     if (!step || step.kind === 'applied') return;
     let lost = false;
@@ -770,6 +786,7 @@ export class AppController {
   copy(): void {
     const ed = this.editor;
     if (this.blocked() || !ed || ed.isEmpty) return;
+    this.clearOutcome();
     let outcome: 'copied' | 'blocked' | null = null;
     void this.run('progress.exporting', async (busy) => {
       const job = this.exportJob(busy, ed);
@@ -805,6 +822,7 @@ export class AppController {
   download(): void {
     const ed = this.editor;
     if (this.blocked() || !ed || ed.isEmpty) return;
+    this.clearOutcome();
     const name = downloadName(ed.sourceName, this.lastToolOperation());
     void this.run('progress.exporting', async (busy) => {
       const blob = await this.exportJob(busy, ed).blob.catch((e: unknown) => {

@@ -1,7 +1,7 @@
 // Implements: NFR-06 (full keyboard operation), SCR-Formatter "Accessibility" — focus is never
-// dropped to the page (QA-013, WCAG 2.4.3). Busy operations disable the toolbar (D-005), the
-// confirmation and notice bars come and go; when the focused control is disabled or removed that
-// way, focus returns to the control that triggered it once it is usable again, or to the editor.
+// dropped to the page (QA-013, WCAG 2.4.3). Busy operations block the toolbar (D-005; its controls
+// stay enabled, D-031), the confirmation and notice bars come and go; when the focused control is
+// disabled or removed that way, focus returns to the control that triggered it once it is usable again, or to the editor.
 import { effect } from '@preact/signals';
 import type { AppController } from './controller';
 
