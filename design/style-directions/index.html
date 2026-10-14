@@ -1,0 +1,362 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>JSON Formatter Styles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+/* Layout: one column of three full-width direction mocks, each a real SCR-Formatter state, under a short brief.
+   Tokens are the taro-kit portal's "Night Market" tokens (dark-first), plus proposed syntax roles. */
+:root {
+  color-scheme: dark;
+  --bg: #0F0B16; --bgGlow: #2A1850; --surface: #18121F; --surface2: #221A2F;
+  --line: #2D2440; --lineStrong: #6F6290; --fg: #EFEAF8; --muted: #9C92B0;
+  --accent: #A47BFF; --onAccent: #0F0B16; --accent2: #FFB870; --accent2Fg: #FFC48A;
+  --selection: #2A1D47; --selectionLine: #4A3580; --danger: #FF8595; --success: #5BD6A0;
+  --dangerBg: #3A1622; --warnBg: #33240F;
+  /* proposed syntax roles, derived from the portal's category tints */
+  --synKey: #8CCBFF; --synString: #7FE3B8; --synNumber: #FFC48A; --synLiteral: #C4A6FF; --synPunct: #9C92B0;
+  --display: "Unbounded", system-ui, sans-serif;
+  --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  color-scheme: light;
+  --bg: #FBFAFE; --bgGlow: #F4F0FF; --surface: #FFFFFF; --surface2: #F1EDFA;
+  --line: #E2DCF0; --lineStrong: #8C82A2; --fg: #16111F; --muted: #5E566F;
+  --accent: #6837E0; --onAccent: #FFFFFF; --accent2: #B85E08; --accent2Fg: #8F4705;
+  --selection: #F0EAFE; --selectionLine: #CDBBF8; --danger: #C0243B; --success: #13744C;
+  --dangerBg: #FCE8EC; --warnBg: #FDEBD8;
+  --synKey: #0B5A94; --synString: #0B6B49; --synNumber: #8F4705; --synLiteral: #5B2FCC; --synPunct: #5E566F;
+}}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #FBFAFE; --bgGlow: #F4F0FF; --surface: #FFFFFF; --surface2: #F1EDFA;
+  --line: #E2DCF0; --lineStrong: #8C82A2; --fg: #16111F; --muted: #5E566F;
+  --accent: #6837E0; --onAccent: #FFFFFF; --accent2: #B85E08; --accent2Fg: #8F4705;
+  --selection: #F0EAFE; --selectionLine: #CDBBF8; --danger: #C0243B; --success: #13744C;
+  --dangerBg: #FCE8EC; --warnBg: #FDEBD8;
+  --synKey: #0B5A94; --synString: #0B6B49; --synNumber: #8F4705; --synLiteral: #5B2FCC; --synPunct: #5E566F;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); padding-inline: 16px; padding-block: 32px 64px; }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 48px; }
+header.brief { display: grid; gap: 12px; position: relative; }
+header.brief::before { content: ""; position: absolute; inset: -60px -40px auto auto; width: 420px; height: 260px; background: radial-gradient(closest-side, var(--bgGlow), transparent); pointer-events: none; z-index: -1; }
+h1 { font: 600 28px/1.15 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 20px/1.2 var(--display); margin: 0; }
+.lede { color: var(--muted); max-width: 68ch; margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.kbd { font: 500 12px var(--mono); padding: 2px 6px; border-radius: 7px; background: var(--surface2); border: 1px solid var(--line); border-bottom-width: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; padding: 2px; background: var(--surface); }
+.seg button { font: 600 13px var(--body); color: var(--muted); background: none; border: 0; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface2); color: var(--fg); }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+section.dir { display: grid; gap: 16px; }
+.dir-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: end; }
+.dir-head p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+.tag { font: 500 12px var(--mono); color: var(--accent); letter-spacing: .04em; text-transform: uppercase; }
+.specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 24px; font-size: 13px; color: var(--muted); }
+.specs b { color: var(--fg); font-weight: 600; }
+
+/* ---------- shared mock structure ---------- */
+.mock { border: 1px solid var(--line); background: var(--bg); overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.tb { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.tb .grp { display: flex; align-items: center; gap: 2px; }
+.tb .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 6px; }
+.tb .spacer { flex: 1; }
+.btn { display: inline-flex; align-items: center; gap: 6px; color: var(--fg); background: none; border: 1px solid transparent; cursor: pointer; white-space: nowrap; }
+.btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.btn:hover { background: var(--surface2); }
+.btn.primary { background: var(--accent); color: var(--onAccent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.select { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.select .lab { color: var(--muted); }
+.views { display: inline-flex; border: 1px solid var(--line); }
+.views button { background: none; border: 0; color: var(--muted); cursor: pointer; }
+.views button[aria-pressed="true"] { color: var(--fg); background: var(--surface2); }
+
+.main { display: grid; min-height: 0; overflow: auto; flex: 1; }
+.code { font-family: var(--mono); display: grid; grid-template-columns: auto 1fr; min-width: 0; }
+.gutter { color: var(--muted); text-align: right; user-select: none; opacity: .7; }
+.lines { white-space: pre; overflow-x: auto; min-width: 0; }
+.ln { display: block; position: relative; }
+.ln.cur { background: color-mix(in srgb, var(--surface2) 70%, transparent); }
+.ln.err { background: var(--dangerBg); }
+.k { color: var(--synKey); } .s { color: var(--synString); } .n { color: var(--synNumber); } .l { color: var(--synLiteral); } .p { color: var(--synPunct); }
+.squig { text-decoration: underline wavy var(--danger); text-underline-offset: 3px; }
+.warnmark { text-decoration: underline dotted var(--accent2); text-underline-offset: 3px; }
+
+.issues { border-top: 1px solid var(--line); background: var(--surface); }
+.issue { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: start; cursor: pointer; }
+.issue:hover { background: var(--surface2); }
+.sev { font: 600 11px var(--mono); padding: 1px 6px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; }
+.sev.e { color: var(--danger); background: var(--dangerBg); }
+.sev.w { color: var(--accent2Fg); background: var(--warnBg); }
+.issue .loc { font-family: var(--mono); color: var(--muted); }
+.issue .hint { grid-column: 2 / -1; color: var(--muted); }
+
+.sb { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; border-top: 1px solid var(--line); color: var(--muted); }
+.sb .state { display: inline-flex; align-items: center; gap: 6px; color: var(--fg); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex: none; }
+.dot.bad { background: var(--danger); }
+.sb .spacer { flex: 1; }
+.badge { display: inline-flex; align-items: center; gap: 6px; color: var(--success); }
+.badge svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+.tree { font-family: var(--mono); }
+.trow { display: flex; align-items: center; gap: 8px; cursor: default; position: relative; }
+.trow:hover { background: var(--surface2); }
+.trow.sel { background: var(--selection); box-shadow: inset 2px 0 0 var(--accent); }
+.tw { width: 14px; color: var(--muted); text-align: center; flex: none; }
+.kind { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 7px; padding: 0 5px; }
+.racts { margin-left: auto; display: none; gap: 4px; }
+.trow:hover .racts, .trow.sel .racts { display: inline-flex; }
+.racts span { font: 500 11px var(--body); color: var(--muted); border: 1px solid var(--line); border-radius: 7px; padding: 1px 6px; background: var(--surface); }
+
+/* ---------- Direction A: Workbench (IDE-dense) ---------- */
+.A.mock { border-radius: 7px; height: 470px; }
+.A .tb { padding: 4px 6px; background: var(--surface); border-bottom: 1px solid var(--line); min-height: 38px; }
+.A .btn { font: 500 13px var(--body); padding: 4px 8px; border-radius: 7px; }
+.A .select { font: 500 12px var(--body); padding: 3px 8px; border-radius: 7px; }
+.A .views { border-radius: 7px; } .A .views button { font: 600 12px var(--body); padding: 4px 10px; }
+.A .code { font-size: 13px; line-height: 20px; }
+.A .gutter { padding: 6px 10px 6px 12px; background: var(--surface); border-right: 1px solid var(--line); }
+.A .lines { padding: 6px 12px; }
+.A .issues .ihead { font: 600 11px var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 6px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; }
+.A .issues .ihead b { color: var(--fg); border-bottom: 2px solid var(--accent); padding-bottom: 4px; margin-bottom: -7px; }
+.A .issue { font-size: 13px; padding: 6px 12px; }
+.A .sb { font: 500 12px var(--mono); padding: 3px 12px; background: var(--surface); min-height: 26px; }
+.A .tree { font-size: 13px; padding: 6px 0; } .A .trow { padding: 2px 12px; line-height: 20px; }
+
+/* ---------- Direction B: Market (portal-native, softer) ---------- */
+.B.mock { border: 0; background: transparent; gap: 10px; height: 520px; }
+.B .tb { padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.B .btn { font: 600 14px var(--body); padding: 7px 12px; border-radius: 10px; }
+.B .btn.primary { box-shadow: 0 8px 24px -10px color-mix(in srgb, var(--accent) 70%, transparent); }
+.B .select { font: 600 13px var(--body); padding: 6px 10px; border-radius: 10px; }
+.B .views { border-radius: 999px; padding: 2px; } .B .views button { font: 600 13px var(--body); padding: 5px 12px; border-radius: 999px; }
+.B .main { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.B .code { font-size: 13.5px; line-height: 22px; }
+.B .gutter { padding: 10px 12px 10px 16px; }
+.B .lines { padding: 10px 16px 10px 4px; }
+.B .issues { border: 1px solid var(--line); border-radius: 12px; }
+.B .issues .ihead { display: none; }
+.B .issue { font-size: 14px; padding: 10px 14px; border-radius: 12px; }
+.B .sb { border: 0; font: 500 13px var(--body); padding: 0 4px; }
+.B .sb .state { padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.B .badge { padding: 3px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.B .tree { font-size: 13.5px; padding: 8px 0; } .B .trow { padding: 4px 16px; line-height: 22px; border-radius: 7px; margin: 0 6px; }
+
+/* ---------- Direction C: Terminal (mono, quiet) ---------- */
+.C.mock { border-radius: 0; height: 470px; border-color: var(--lineStrong); }
+.C .tb { padding: 6px 10px; border-bottom: 1px solid var(--line); gap: 2px; }
+.C .btn { font: 500 12px var(--mono); padding: 4px 8px; border-radius: 0; text-transform: lowercase; color: var(--muted); }
+.C .btn:hover { color: var(--fg); background: none; text-decoration: underline; text-underline-offset: 4px; }
+.C .btn.primary { background: none; color: var(--accent); }
+.C .btn svg { display: none; }
+.C .select { font: 500 12px var(--mono); padding: 3px 8px; border-radius: 0; background: none; }
+.C .views { border: 0; } .C .views button { font: 500 12px var(--mono); padding: 4px 8px; }
+.C .views button[aria-pressed="true"] { background: none; color: var(--fg); box-shadow: inset 0 -2px 0 var(--accent); }
+.C .tb .sep { background: none; width: 8px; }
+.C .code { font-size: 12.5px; line-height: 19px; }
+.C .gutter { padding: 8px 12px; }
+.C .lines { padding: 8px 12px 8px 0; }
+.C .issues { background: none; border-top: 1px dashed var(--line); }
+.C .issues .ihead { display: none; }
+.C .issue { font: 12px var(--mono); padding: 6px 12px; }
+.C .sev { border-radius: 0; background: none; padding: 0; }
+.C .sb { font: 500 12px var(--mono); padding: 4px 12px; }
+.C .dot { border-radius: 0; width: 6px; height: 6px; }
+.C .tree { font-size: 12.5px; padding: 8px 0; } .C .trow { padding: 1px 12px; line-height: 19px; }
+.C .kind { border: 0; padding: 0; }
+.C .kind::before { content: "<"; } .C .kind::after { content: ">"; }
+
+.statebar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.note { font-size: 13px; color: var(--muted); }
+.syntax { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 13px var(--mono); }
+.syntax span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; background: currentColor; vertical-align: -1px; }
+
+@media (max-width: 640px) {
+  .A.mock, .B.mock, .C.mock { height: 560px; }
+  .tb .lbl { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) { .btn, .trow { transition: background-color 120ms cubic-bezier(.2,.8,.2,1); } }
+</style>
+
+<div class="wrap">
+  <header class="brief">
+    <span class="tag">JSON Formatter · phase 2 · style directions</span>
+    <h1>Three ways to dress the formatter in Night Market</h1>
+    <p class="lede">All three use the taro-kit portal's own tokens (colors, Manrope, JetBrains Mono, 4&nbsp;px grid), so the tool sits naturally inside the portal frame. They differ in density, chrome and how loud the controls are. Each mock is the real Formatter screen from the spec; switch between its valid, error and tree states, and flip the theme.</p>
+    <div class="row">
+      <span class="note">Theme</span>
+      <div class="seg" role="group" aria-label="Theme">
+        <button type="button" id="th-dark" data-th="dark">Dark</button>
+        <button type="button" id="th-light" data-th="light">Light</button>
+      </div>
+      <span class="note">Proposed syntax colors (from the portal's category tints):</span>
+      <div class="syntax"><span class="k">key</span><span class="s">"string"</span><span class="n">number</span><span class="l">true/null</span><span class="p">{ } [ ] , :</span></div>
+    </div>
+  </header>
+
+  <section class="dir" data-dir="A">
+    <div class="dir-head">
+      <div><span class="tag">Direction A</span><h2>Workbench</h2>
+      <p>An editor first. Thin toolbar, gutter and status strip like an IDE, a "Problems" dock for issues, small radii and hairlines everywhere. Most lines of JSON on screen. Beautify is the only filled button.</p></div>
+    </div>
+    <div class="specs"><div><b>Density</b> 38 px toolbar · 20 px lines</div><div><b>Type</b> 13 px mono · 13 px UI</div><div><b>Shape</b> radius sm (7 px), hairlines</div><div><b>Issues</b> docked panel with tabs</div></div>
+  </section>
+
+  <section class="dir" data-dir="B">
+    <div class="dir-head">
+      <div><span class="tag">Direction B</span><h2>Market</h2>
+      <p>Closest to the portal's own pages. Toolbar and editor are separate rounded cards, pill status chips, a soft accent glow on Beautify. Friendlier, a little less dense.</p></div>
+    </div>
+    <div class="specs"><div><b>Density</b> 50 px toolbar · 22 px lines</div><div><b>Type</b> 13.5 px mono · 14 px UI</div><div><b>Shape</b> radius md/lg, pills</div><div><b>Issues</b> card under the editor</div></div>
+  </section>
+
+  <section class="dir" data-dir="C">
+    <div class="dir-head">
+      <div><span class="tag">Direction C</span><h2>Terminal</h2>
+      <p>Mono everywhere, no fills, no icons. Actions are lowercase words; the accent only marks the active view and the primary action. The quietest and densest, but less discoverable for mouse users.</p></div>
+    </div>
+    <div class="specs"><div><b>Density</b> 34 px toolbar · 19 px lines</div><div><b>Type</b> 12.5 px mono for all</div><div><b>Shape</b> square, dashed dividers</div><div><b>Issues</b> plain list, no chrome</div></div>
+  </section>
+
+  <p class="note">My recommendation: <b>A · Workbench</b>, matching your "pro / dense, VS Code-like" answers, while borrowing B's pill status chip for the validity state so it reads clearly at a glance.</p>
+</div>
+
+<script>
+(function () {
+  // Theme toggle (per-viewer convenience only)
+  const root = document.documentElement;
+  const setTheme = (t) => {
+    root.setAttribute('data-theme', t);
+    document.querySelectorAll('[data-th]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.th === t)));
+    try { localStorage.setItem('jf-style-theme', t); } catch (e) {}
+  };
+  let saved = null; try { saved = localStorage.getItem('jf-style-theme'); } catch (e) {}
+  const initial = saved || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  setTheme(initial);
+  document.querySelectorAll('[data-th]').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.th)));
+
+  const VALID = [
+    '{',
+    '  "order": {',
+    '    "id": 9007199254740993,',
+    '    "status": "shipped",',
+    '    "total": 1499.50,',
+    '    "items": [',
+    '      { "sku": "TK-204", "qty": 2, "gift": false },',
+    '      { "sku": "TK-311", "qty": 1, "gift": true }',
+    '    ],',
+    '    "coupon": null,',
+    '    "customer": { "name": "Mai Tran", "email": "mai@example.com" }',
+    '  }',
+    '}'
+  ];
+  const ERROR = VALID.slice(); ERROR[7] = '      { "sku": "TK-311", "qty": 1, "gift": true },';
+
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  function hl(line, opts) {
+    // tiny highlighter: strings followed by ":" are keys
+    let out = '', i = 0;
+    const re = /("(?:[^"\\]|\\.)*")(\s*:)?|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(true|false|null)|([{}\[\],:])|(\s+)/g;
+    let m;
+    while ((m = re.exec(line))) {
+      const col = m.index + 1;
+      if (m[1]) out += m[2] ? '<span class="k">' + esc(m[1]) + '</span><span class="p">' + m[2] + '</span>' : '<span class="s">' + esc(m[1]) + '</span>';
+      else if (m[3]) out += '<span class="n' + (opts.warnCol === col ? ' warnmark' : '') + '">' + m[3] + '</span>';
+      else if (m[4]) out += '<span class="l">' + m[4] + '</span>';
+      else if (m[5]) out += '<span class="p' + (opts.errCol === col ? ' squig' : '') + '">' + m[5] + '</span>';
+      else out += m[6];
+    }
+    return out;
+  }
+  const I = {
+    open: '<svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v10H4z"/></svg>',
+    clear: '<svg viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M7 7l1 12h8l1-12M9 7V4h6v3"/></svg>',
+    beautify: '<svg viewBox="0 0 24 24"><path d="M4 6h16M8 10h12M8 14h12M4 18h16"/></svg>',
+    minify: '<svg viewBox="0 0 24 24"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>',
+    reindent: '<svg viewBox="0 0 24 24"><path d="M4 6h16M10 12h10M10 18h10M4 10l3 2-3 2"/></svg>',
+    copy: '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
+    download: '<svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+    shield: '<svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>'
+  };
+  const btn = (k, label, cls) => '<button type="button" class="btn ' + (cls || '') + '">' + I[k] + '<span class="lbl">' + label + '</span></button>';
+
+  function toolbar(view) {
+    return '<div class="tb" role="toolbar" aria-label="Document actions">' +
+      '<div class="grp">' + btn('open', 'Open file') + btn('clear', 'Clear') + '</div><span class="sep"></span>' +
+      '<div class="grp">' + btn('beautify', 'Beautify', 'primary') + btn('minify', 'Minify') + btn('reindent', 'Re-indent') +
+      '<span class="select"><span class="lab">Indent</span> 2 spaces ▾</span></div><span class="sep"></span>' +
+      '<div class="views" role="group" aria-label="View"><button type="button" aria-pressed="' + (view !== 'tree') + '">Text</button><button type="button" aria-pressed="' + (view === 'tree') + '">Tree</button></div>' +
+      '<span class="spacer"></span><div class="grp">' + btn('copy', 'Copy') + btn('download', 'Download') + '</div></div>';
+  }
+  function codeView(lines, o) {
+    let g = '', l = '';
+    lines.forEach((t, i) => {
+      const n = i + 1;
+      g += n + '\n';
+      const cls = 'ln' + (o.errLine === n ? ' err' : '') + (o.curLine === n ? ' cur' : '');
+      l += '<span class="' + cls + '">' + hl(t, { errCol: o.errLine === n ? o.errCol : 0, warnCol: o.warnLine === n ? o.warnCol : 0 }) + '</span>';
+    });
+    return '<div class="code" aria-label="JSON document"><div class="gutter" style="white-space:pre">' + g + '</div><div class="lines">' + l + '</div></div>';
+  }
+  function treeView() {
+    const rows = [
+      [0, '▾', '$', 'object', '1 key'],
+      [1, '▾', 'order', 'object', '7 keys'],
+      [2, '', 'id', 'number', '<span class="n">9007199254740993</span>'],
+      [2, '', 'status', 'string', '<span class="s">"shipped"</span>'],
+      [2, '', 'total', 'number', '<span class="n">1499.50</span>'],
+      [2, '▸', 'items', 'array', '2 items', 'sel'],
+      [2, '', 'coupon', 'null', '<span class="l">null</span>'],
+      [2, '▸', 'customer', 'object', '2 keys']
+    ];
+    return '<div class="tree" role="tree" aria-label="Document tree">' + rows.map(r =>
+      '<div class="trow ' + (r[5] || '') + '" role="treeitem" style="padding-left:calc(' + (r[0] * 18) + 'px + 12px)">' +
+      '<span class="tw">' + r[1] + '</span><span class="k">' + r[2] + '</span><span class="kind">' + r[3] + '</span><span>' + r[4] + '</span>' +
+      '<span class="racts"><span>Copy path</span><span>Copy value</span><span>Show in text</span></span></div>').join('') +
+      '</div>';
+  }
+  function issues(state) {
+    if (state === 'error') return '<div class="issues"><div class="ihead"><b>Problems 1</b><span>Warnings 0</span></div>' +
+      '<div class="issue" tabindex="0"><span class="sev e">Error</span><span>Trailing comma</span><span class="loc">Line 8, column 50</span>' +
+      '<span class="hint">Remove the comma after the last item — JSON doesn\'t allow trailing commas.</span></div></div>';
+    if (state === 'valid') return '<div class="issues"><div class="ihead"><span>Problems 0</span><b>Warnings 1</b></div>' +
+      '<div class="issue" tabindex="0"><span class="sev w">Warn</span><span>Unsafe number</span><span class="loc">Line 3, column 11</span>' +
+      '<span class="hint">This number is kept exactly here, but many languages (including JavaScript) will round it.</span></div></div>';
+    return '';
+  }
+  function statusbar(state) {
+    const bad = state === 'error';
+    return '<div class="sb" role="status"><span class="state"><span class="dot' + (bad ? ' bad' : '') + '"></span>' + (bad ? 'Invalid JSON' : 'Valid JSON') + '</span>' +
+      '<span>412 B · 13 lines</span><span>' + (bad ? 'Ln 8, Col 50' : 'Ln 3, Col 11') + '</span><span class="spacer"></span>' +
+      '<span class="badge" title="Your data stays in this browser">' + I.shield + 'Local only</span></div>';
+  }
+  function render(sec, state) {
+    const dir = sec.dataset.dir;
+    let mock = sec.querySelector('.mock');
+    if (!mock) {
+      const bar = document.createElement('div'); bar.className = 'statebar';
+      bar.innerHTML = '<div class="seg" role="group" aria-label="Screen state">' +
+        ['valid', 'error', 'tree'].map(s => '<button type="button" id="st-' + dir + '-' + s + '" data-st="' + s + '">' + ({ valid: 'Valid + warning', error: 'Error', tree: 'Tree view' })[s] + '</button>').join('') +
+        '</div><span class="note">Sample: an order payload with a 64-bit id</span>';
+      sec.appendChild(bar);
+      mock = document.createElement('div'); mock.className = 'mock ' + dir; sec.appendChild(mock);
+      bar.querySelectorAll('[data-st]').forEach(b => b.addEventListener('click', () => render(sec, b.dataset.st)));
+    }
+    sec.querySelectorAll('[data-st]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.st === state)));
+    const main = state === 'tree' ? treeView() :
+      state === 'error' ? codeView(ERROR, { errLine: 8, errCol: 50, curLine: 8 }) :
+      codeView(VALID, { warnLine: 3, warnCol: 11, curLine: 3 });
+    mock.innerHTML = toolbar(state) + '<div class="main">' + main + '</div>' + issues(state) + statusbar(state === 'error' ? 'error' : 'valid');
+  }
+  document.querySelectorAll('section.dir').forEach((sec, i) => render(sec, ['error', 'valid', 'tree'][i]));
+})();
+</script>
+
+</body></html>
