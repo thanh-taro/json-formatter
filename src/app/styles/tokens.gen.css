@@ -44,7 +44,7 @@
     --tk-size-icon-sm: 16px;
     --tk-size-icon-md: 20px;
     --tk-size-tree-indent: 18px; /** indent per tree depth */
-    --tk-size-min-width: 360px; /** smallest supported width (NFR-07) */
+    --tk-size-min-width: 320px; /** smallest supported width (NFR-07, WCAG reflow) */
     --tk-size-panel-header: 32px; /** issue panel and tree header height */
     --tk-size-tree-row: 24px; /** tree row height (row actions meet size.targetMin) */
     --tk-border-width-hairline: 1px;

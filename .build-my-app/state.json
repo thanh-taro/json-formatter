@@ -52,18 +52,18 @@
     },
     "build": {
       "title": "4 Implementation",
-      "status": "gate",
+      "status": "done",
       "step": "4 all features merged; integration follow-ups + full verification running; then G4",
       "gate": {
-        "status": "pending",
-        "at": null,
-        "note": null
+        "status": "passed",
+        "at": "2026-10-13T23:53:11+00:00",
+        "note": "M-1: 11 features shipped; 384 unit, 342 e2e (Chromium+WebKit); AC coverage 100%; NFR-03 met"
       }
     },
     "qa": {
       "title": "5 QA & hardening",
-      "status": "pending",
-      "step": null,
+      "status": "in_progress",
+      "step": "5 audits running: qa-runner, a11y, security, perf, license",
       "gate": {
         "status": "pending",
         "at": null,
@@ -520,6 +520,21 @@
       "answer": "Accept; clarify NFR-01",
       "asked": "2026-10-13T13:27:08+00:00",
       "answered": "2026-10-13T13:27:08+00:00"
+    },
+    {
+      "id": "D-029",
+      "question": "Minimum width for WCAG reflow",
+      "options": [
+        "320px",
+        "keep 360px"
+      ],
+      "recommendation": "320px",
+      "kind": "technical",
+      "phase": "qa",
+      "status": "answered",
+      "answer": "320 px (NFR-06 WCAG 2.2 AA reflow overrides NFR-07's 360)",
+      "asked": "2026-10-14T00:40:10+00:00",
+      "answered": "2026-10-14T00:40:10+00:00"
     }
   ],
   "loops": {
@@ -1224,9 +1239,29 @@
     {
       "at": "2026-10-13T17:23:45+00:00",
       "event": "phase build -> gate"
+    },
+    {
+      "at": "2026-10-13T23:53:11+00:00",
+      "event": "gate build passed: M-1: 11 features shipped; 384 unit, 342 e2e (Chromium+WebKit); AC coverage 100%; NFR-03 met"
+    },
+    {
+      "at": "2026-10-13T23:53:51+00:00",
+      "event": "phase qa -> in_progress"
+    },
+    {
+      "at": "2026-10-13T23:53:51+00:00",
+      "event": "qa step: 5 audits running: qa-runner, a11y, security, perf, license"
+    },
+    {
+      "at": "2026-10-14T00:40:10+00:00",
+      "event": "decision D-029 opened: Minimum width for WCAG reflow"
+    },
+    {
+      "at": "2026-10-14T00:40:10+00:00",
+      "event": "decision D-029 answered: 320 px (NFR-06 WCAG 2.2 AA reflow overrides NFR-07's 360)"
     }
   ],
-  "updated": "2026-10-13T17:23:45+00:00",
+  "updated": "2026-10-14T00:40:10+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
