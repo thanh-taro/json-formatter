@@ -48,3 +48,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
   exceptions), `blockExoticSubdeps`, `strictDepBuilds`; CI checkout without persisted
   credentials; JSONTestSuite tarball SHA-256 pinned. Trusted Types not enforced (see MOD-Build).
 - QA fixes group A: added COPY-privacy.notices (link to the open-source notices from the privacy details, F-009 UX notes; QA-021).
+- Release preparation (v1.0.0): DEP-33 wrangler installed as a pinned dev dependency (needs a `sharp` override and `allowBuilds` esbuild/workerd = false so ADR-0001 still passes); DEP-34 gains actions/upload-artifact and actions/download-artifact (pinned SHAs). Deploy workflow, `wrangler.jsonc`, `public/.assetsignore` (no source maps uploaded) and `pnpm smoke:prod` (QA-026) added to MOD-Build's surface.

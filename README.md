@@ -33,3 +33,41 @@ Test naming and the e2e setup are described in `adapters/tests.md`.
 
 Deploying for other host origins: `HOST_ORIGINS="https://a.example https://b.example" pnpm build`
 (sets `frame-ancestors` and the compiled-in message allow-list).
+
+## Release and deployment
+Hosting is Cloudflare Workers static assets at https://json-formatter.tarokit.app (ADR-0009), published by
+`.github/workflows/deploy.yml` (manual run or a `v*` tag; runs every CI check, builds with
+`HOST_ORIGINS=https://tarokit.app`, uploads `dist/` with `wrangler`, then runs the smoke test).
+Source maps are built hidden and never uploaded (`public/.assetsignore`). Account, DNS and secret setup is
+owner work: see `.build-my-app/reports/release-checklist.md`.
+
+| Command | What it does |
+|---|---|
+| `pnpm smoke:prod <url>` | Post-deploy check of headers, `/sw.js` exception, no source maps, notices file, and zero requests after load in headless Chromium |
+| `pnpm exec wrangler dev --port 8787` | Serve `dist/` locally with the real `_headers` handling; then `pnpm smoke:prod http://127.0.0.1:8787` |
+| `SW_KILL=1 pnpm build` | Build the offline kill switch (recovery only, see the checklist) |
+
+## Privacy
+**Privacy.** JSON Formatter runs entirely in your browser. Your JSON is never uploaded, logged, or stored,
+and the tool sends no analytics. It has no cookies, no accounts and no third-party code. Its content
+security policy forbids it from making network connections, so documents you paste, open or drop stay in
+the page's memory and are discarded when you close it.
+
+To work offline, the browser keeps a copy of the tool's own program files (never your data). It may
+re-check those files when you open the tool. When embedded in the taro-kit portal, the tool only tells the
+portal that it is ready and receives the light or dark theme. It never shares your document. Copy writes to
+your clipboard only when you press Copy, and downloads are created on your device.
+
+One caveat outside our control: browser extensions and your browser's own features, such as automatic page
+translation, can see page content. The tool marks document text as "do not translate". If you handle
+secrets, use a browser profile without untrusted extensions.
+
+Source: `.build-my-app/reports/qa/privacy-declaration.md`. *Needs review by the owner before publishing
+(the owner is the data controller; contact details for privacy questions are not yet stated here).*
+
+## Terms
+No terms of service are provided: this is a free personal tool with no accounts, payments or user data. It
+is offered as is, without warranty. *Needs review by the owner*: confirm this is enough for the jurisdiction
+you operate in, and decide on a licence for the source (`package.json` says `UNLICENSED`, all rights
+reserved). Third-party licences are in `/third-party-notices.txt`.
+

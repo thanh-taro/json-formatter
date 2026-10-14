@@ -16,3 +16,13 @@ blockExoticSubdeps: true
 # rather than silently skipping a newly added dependency's build script.
 # pnpm 11 default; set explicitly so a default change cannot weaken it.
 strictDepBuilds: true
+# wrangler (DEP-33, deploy only): its esbuild and workerd install scripts only verify/optimise
+# the platform binary, which arrives as an optional dependency; the deploy does not need them.
+allowBuilds:
+  esbuild: false
+  workerd: false
+# miniflare (inside wrangler) depends on sharp for the local-dev Images binding only; sharp's
+# prebuilt libvips is LGPL-3.0, which ADR-0001 refuses, and a static-assets deploy never loads it.
+# `-` removes the dependency (checked: `wrangler deploy --dry-run` works without it).
+overrides:
+  sharp: '-'

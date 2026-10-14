@@ -1,6 +1,6 @@
 {
   "name": "json-formatter",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "A private, lossless JSON formatter for developers, embedded in the taro-kit tools portal.",
@@ -27,7 +27,8 @@
     "check:size": "node scripts/check-size.mjs",
     "lhci": "lhci autorun",
     "spec:lint": "python3 tools/spec_lint.py",
-    "bench": "vitest run --config tests/bench/vitest.config.ts"
+    "bench": "vitest run --config tests/bench/vitest.config.ts",
+    "smoke:prod": "node scripts/smoke-prod.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.1",
@@ -55,6 +56,7 @@
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.0",
     "vite": "8.3.1",
-    "vitest": "5.0.2"
+    "vitest": "5.0.2",
+    "wrangler": "4.149.0"
   }
 }

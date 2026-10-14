@@ -13,3 +13,4 @@ blob-report/
 tests/fixtures/JSONTestSuite/
 # generated large fixtures
 tests/fixtures/generated/
+.wrangler/

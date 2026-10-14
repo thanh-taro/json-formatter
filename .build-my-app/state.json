@@ -62,18 +62,18 @@
     },
     "qa": {
       "title": "5 QA & hardening",
-      "status": "gate",
+      "status": "done",
       "step": "5 bug loop round 2: re-verify + traceability",
       "gate": {
-        "status": "pending",
-        "at": null,
-        "note": null
+        "status": "passed",
+        "at": "2026-10-14T03:15:54+00:00",
+        "note": "Automated matrix 100% pass; audits no blockers; manual checks deferred to release checklist (D-030)"
       }
     },
     "release": {
       "title": "6 Release",
-      "status": "pending",
-      "step": null,
+      "status": "in_progress",
+      "step": "6 release-manager preparing pipeline, notes, checklist",
       "gate": {
         "status": "pending",
         "at": null,
@@ -535,6 +535,21 @@
       "answer": "320 px (NFR-06 WCAG 2.2 AA reflow overrides NFR-07's 360)",
       "asked": "2026-10-14T00:40:10+00:00",
       "answered": "2026-10-14T00:40:10+00:00"
+    },
+    {
+      "id": "D-030",
+      "question": "G5 manual checks timing",
+      "options": [
+        "move to release",
+        "do now"
+      ],
+      "recommendation": "move to release",
+      "kind": "release",
+      "phase": "qa",
+      "status": "answered",
+      "answer": "Pass G5; all manual checks move to the phase-6 release checklist, signed off before publishing",
+      "asked": "2026-10-14T03:15:54+00:00",
+      "answered": "2026-10-14T03:15:54+00:00"
     }
   ],
   "loops": {
@@ -1291,9 +1306,29 @@
     {
       "at": "2026-10-14T03:14:46+00:00",
       "event": "phase qa -> gate"
+    },
+    {
+      "at": "2026-10-14T03:15:54+00:00",
+      "event": "decision D-030 opened: G5 manual checks timing"
+    },
+    {
+      "at": "2026-10-14T03:15:54+00:00",
+      "event": "decision D-030 answered: Pass G5; all manual checks move to the phase-6 release checklist, signed off before publishing"
+    },
+    {
+      "at": "2026-10-14T03:15:54+00:00",
+      "event": "gate qa passed: Automated matrix 100% pass; audits no blockers; manual checks deferred to release checklist (D-030)"
+    },
+    {
+      "at": "2026-10-14T03:16:17+00:00",
+      "event": "phase release -> in_progress"
+    },
+    {
+      "at": "2026-10-14T03:16:17+00:00",
+      "event": "release step: 6 release-manager preparing pipeline, notes, checklist"
     }
   ],
-  "updated": "2026-10-14T03:14:46+00:00",
+  "updated": "2026-10-14T03:16:17+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
