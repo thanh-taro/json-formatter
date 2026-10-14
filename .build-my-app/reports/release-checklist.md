@@ -106,13 +106,15 @@ the workflow on GitHub, Cloudflare authentication, custom-domain creation, Cloud
 | Date | How | Commit | Cloudflare version | Smoke |
 |---|---|---|---|---|
 | 2026-10-14 | Claude, local `pnpm exec wrangler deploy` with the owner's wrangler OAuth login (account `a883c9c8bc26ff703c6a7894d5b06a02`), at the owner's request; build `HOST_ORIGINS=https://tarokit.app pnpm build` | `2d14de9` | `3c92eb93-30f5-4055-b5d8-1208df3febc0` | `pnpm smoke:prod https://json-formatter.tarokit.app`: all 9 checks passed |
+| 2026-10-14 | Claude, local `pnpm exec wrangler deploy` (same login and build settings), at the owner's request: bug fixes D-031/D-032 + re-indent focus | `1e63fa7` | `f89082db-eb19-4711-8720-6d48cb76f6fa` | `smoke:prod` not run (blocked by a local permission check); manual curl: `/` 200 with CSP, HSTS, `no-cache`; new bundle `index-BUVLEZRe.js` served; its `.map` 404 |
 
 Notes on this deploy:
 - Created the Worker `json-formatter` (assets only, 10 files) and attached the custom domain `json-formatter.tarokit.app`; DNS and certificate were live within a minute.
 - Before deploying: build, `check:size` (177.0 of 250 KB), unit tests 394/397 on the full run; the 3 failures were 5 s timeouts under load and passed when re-run alone (17/17). Lint, typecheck and e2e were not re-run (CI on `main` was green for the same source).
 - The smoke script prints 9 checks (the "10 checks" in steps D3 and E refers to an older count).
 - Not verified: B3 zone hygiene (the wrangler login cannot read zone settings or DNS), and the GitHub `production` environment does not exist yet, so the Deploy workflow and a `v1.0.0` tag push will fail until section C is done.
-- Rollback for this deploy: section I.1 or I.3; Cloudflare Versions rollback (I.2) has no earlier version yet.
+- Rollback: section I.1 or I.3; since `f89082db` Cloudflare Versions rollback (I.2) can return to `3c92eb93` (v1.0.0 without the bug fixes).
+- Not yet tagged: the bug fixes are on `main` as "Unreleased" in `CHANGELOG.md`; bump to 1.0.1 before tagging (section 4).
 
 ## A. GitHub repository and first push (USER) — done 2026-10-14
 1. Decide visibility. Private is the safe default (the source is `UNLICENSED`; `.build-my-app/` holds internal reports).

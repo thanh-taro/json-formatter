@@ -73,7 +73,7 @@
     "release": {
       "title": "6 Release",
       "status": "in_progress",
-      "step": "6 hand-off (release): v1.0.0 deployed; CR bug fixes committed on main, not yet deployed; waiting for user B3, C, F, G, H",
+      "step": "6 hand-off (release): bug-fix build 1e63fa7 live (f89082db); waiting for user B3, C, F, G, H",
       "gate": {
         "status": "pending",
         "at": null,
@@ -1418,9 +1418,17 @@
     {
       "at": "2026-10-14T15:40:48+00:00",
       "event": "release step: 6 hand-off (release): v1.0.0 deployed; CR bug fixes committed on main, not yet deployed; waiting for user B3, C, F, G, H"
+    },
+    {
+      "at": "2026-10-14T15:43:13+00:00",
+      "event": "Redeployed 1e63fa7 (bug fixes D-031/D-032) with local wrangler: version f89082db-eb19-4711-8720-6d48cb76f6fa; smoke:prod blocked by local permission check, curl header/bundle check passed."
+    },
+    {
+      "at": "2026-10-14T15:43:13+00:00",
+      "event": "release step: 6 hand-off (release): bug-fix build 1e63fa7 live (f89082db); waiting for user B3, C, F, G, H"
     }
   ],
-  "updated": "2026-10-14T15:40:48+00:00",
+  "updated": "2026-10-14T15:43:13+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
