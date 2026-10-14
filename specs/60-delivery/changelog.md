@@ -47,3 +47,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
   `clipboard-write=(self)`. pnpm `trustPolicy: no-downgrade` (semver 5.7.2/6.3.1 reviewed
   exceptions), `blockExoticSubdeps`, `strictDepBuilds`; CI checkout without persisted
   credentials; JSONTestSuite tarball SHA-256 pinned. Trusted Types not enforced (see MOD-Build).
+- QA fixes group A: added COPY-privacy.notices (link to the open-source notices from the privacy details, F-009 UX notes; QA-021).

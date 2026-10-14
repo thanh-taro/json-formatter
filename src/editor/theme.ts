@@ -14,7 +14,11 @@ export const editorTheme = EditorView.theme({
     backgroundColor: v('color.bg'),
     fontSize: v('font.size.code'),
   },
-  '&.cm-focused': { outline: 'none' },
+  // QA-020 (a11y m4): an inset focus ring, as on the design's focused editor (not only the caret).
+  '&.cm-focused': {
+    outline: `${v('border.width.focus')} solid ${v('color.accent')}`,
+    outlineOffset: `calc(-1 * ${v('border.width.focus')})`,
+  },
   '.cm-scroller': {
     fontFamily: v('font.family.mono'),
     lineHeight: v('size.codeLine'),

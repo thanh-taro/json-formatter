@@ -283,6 +283,8 @@ export class AppController {
     const issue = this.state.validation.value.result?.issues[index];
     if (!ed || !issue) return;
     ed.goTo(ed.issuePosition(index) ?? issue.pos);
+    // F-002.R4 "shown and focused"; QA-020 (a11y m5): keyboard and screen-reader users land on it.
+    ed.focus();
   }
 
   // ---- facts, tiers, notices --------------------------------------------------------------

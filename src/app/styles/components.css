@@ -25,9 +25,23 @@
   .tk-button--primary:hover:not(:disabled) {
     background: var(--tk-color-accent);
   }
+  /* design CMP-Toolbar: a disabled Beautify keeps its shape on surface2 */
+  .tk-button--primary:disabled {
+    border-color: var(--tk-color-surface2);
+    background: var(--tk-color-surface2);
+  }
   .tk-notice .tk-icon-button {
     inline-size: var(--tk-size-target-min);
     block-size: var(--tk-size-target-min);
+  }
+  @media (pointer: coarse) {
+    .tk-notice {
+      min-block-size: calc(var(--tk-size-touch-target) + 2 * var(--tk-space-1));
+    }
+    .tk-notice .tk-icon-button {
+      inline-size: var(--tk-size-touch-target);
+      block-size: var(--tk-size-touch-target);
+    }
   }
 
   /* CMP-TreeView host (F-006): covers the main area in the tree view; MOD-Tree renders inside. */

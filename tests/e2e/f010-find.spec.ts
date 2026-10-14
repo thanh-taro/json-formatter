@@ -268,7 +268,9 @@ test.describe('F-010 find in the text view', () => {
     });
   }
 
-  test('F-010.R1 CMP-SearchPanel narrow: match case and count move under the field', async ({ page }) => {
+  test('F-010.R1 CMP-SearchPanel narrow: match case, count, previous, next and close move under the field', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 390, height: 760 });
     await load(page, THREE);
     await find(page, 'status');
@@ -279,7 +281,8 @@ test.describe('F-010 find in the text view', () => {
     const x = (await button(page, 'action.close').boundingBox())!;
     expect(t.y).toBeGreaterThanOrEqual(f.y + f.height);
     expect(c.y).toBeGreaterThanOrEqual(f.y + f.height - 1);
-    expect(Math.abs(x.y - f.y)).toBeLessThan(f.height);
+    // design SCR-Formatter find-open narrow (QA-004): the field alone on the first row
+    expect(x.y).toBeGreaterThanOrEqual(f.y + f.height - 1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     await reportShot(page, 'F-010/narrow.png');
   });
