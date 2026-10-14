@@ -37,3 +37,27 @@ Run summary: all tests pass; no functional e2e failure. The bugs below are desig
 - "Embedded" boards were captured standalone at 1200x760 (same layout); the embedded-host behaviour is covered by host.spec.ts and f007 embedded clipboard test.
 - Firefox: not run.
 - Matches within tolerance: FLOW-01/02/03 steps, Main, empty, find (embedded), loading, busy, large notice, confirm, errors (encoding, too large, not-a-file, clipboard), tree checking, tree clipboard, both themes (colours, regions, copy).
+
+## Triage — all QA audits (2026-10-14)
+Sources: qa-runner (this file above), a11y.md, security.md, perf.md, license-audit-2.md. No blockers.
+
+| ID | Sev | Area | Finding | Fix group |
+|---|---|---|---|---|
+| QA-001 | major | UI | 390 px: no overflow menu; Tree/Copy/Download clipped, unreachable by touch | A |
+| QA-010 | major | a11y | Coarse pointer toolbar buttons 28 px (44 px required) | A |
+| QA-011 | major | a11y | Reflow fails at 320 px (min-width 360; NFR-07 now 320, D-029) | A |
+| QA-012 | major | a11y | No forced-colors rules; pressed/selected states indistinguishable | A |
+| QA-013 | major | a11y | Focus lost to body after Minify, file-open Cancel, notice dismiss | A |
+| QA-014 | major | privacy | Tree keys/values/path lack translate="no" (auto-translate could send content off device) | B |
+| QA-015 | major | find | Find count doubled when the term is typed character by character | B |
+| QA-016 | major | perf | First keystroke < 300 ms after opening Find at 100 MB takes ~137 ms (NFR-02) | B |
+| QA-002..005 | minor | UI | Beautify not accent-filled; indent selector style/label; narrow Find layout; Ln/Col in tree view | A |
+| QA-020 | minor | a11y | No h1/landmarks; editor focus ring; Go to error doesn't focus editor (+ others in a11y.md) | A |
+| QA-021 | minor | license | No UI link to /third-party-notices.txt | A |
+| QA-022 | minor | license | check-licenses lacks dist/ scan (ADR-0001 rule 6); duplicate lucide-static; DEP-22/33 not direct; notices list unbundled crelt/streamparser | C |
+| QA-023 | minor | security | Trusted Types; CI persist-credentials; corpus hash pinning; pnpm trustPolicy/blockExoticSubdeps/strictDepBuilds; tighter Permissions-Policy | C |
+| QA-024 | minor | tree | Expansion restore: duplicate keys after earlier insert; renamed key exhausts 200-block budget | B |
+| QA-025 | minor | perf | Chromium scroll memory peaks 1.25–1.6 GB (after-GC 0.65–0.86 passes); fast scrollbar drags drop 1–9 frames | record |
+| QA-026 | major | release | No deploy workflow / post-deploy header smoke test | phase 6 |
+
+Process: each fix starts with a failing test, then the fix, then the full suite.
