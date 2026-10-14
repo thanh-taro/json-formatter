@@ -5,7 +5,9 @@ direct dependency, every transitive **runtime** dependency, and every asset pack
 here before it enters the lockfile. Versions as published on the registry on 2026-10-13.
 
 Kinds: **runtime** = shipped to the browser (main bundle or worker); **asset** = shipped
-non-code file; **build** / **dev** / **ci** = never shipped. Status: `candidate` → `approved`
+non-code file; **unbundled** = production transitive installed with a runtime package but
+removed by tree-shaking (registered so the license audit covers it; the `dist/` scan fails if it
+ever ships, and it is not listed in the notices); **build** / **dev** / **ci** = never shipped. Status: `candidate` → `approved`
 → `removed`.
 
 ## Runtime (shipped)
@@ -20,7 +22,8 @@ non-code file; **build** / **dev** / **ci** = never shipped. Status: `candidate`
 | **DEP-07** | @codemirror/language | ^6.13 | MIT | runtime | Highlighting and bracket matching (normal tier only) | approved | ADR-0004 |
 | **DEP-08** | @codemirror/lang-json | ^6.0.2 | MIT | runtime | JSON syntax tree for highlighting (normal tier only) | approved | ADR-0004 |
 | **DEP-09** | @lezer/common, @lezer/lr, @lezer/highlight, @lezer/json | transitive (^1.x) | MIT | runtime | Incremental parser used by DEP-07/DEP-08 | approved | ADR-0004 |
-| **DEP-10** | style-mod, crelt, w3c-keyname, @marijn/find-cluster-break, @codemirror/streamparser | transitive | MIT | runtime | Editor internals (constructable stylesheets, DOM helpers, key names, grapheme clusters) | approved | ADR-0004 |
+| **DEP-10** | style-mod, w3c-keyname, @marijn/find-cluster-break | transitive | MIT | runtime (find-cluster-break also in the worker) | Editor internals (constructable stylesheets, key names, grapheme clusters) | approved | ADR-0004 |
+| **DEP-39** | crelt, @codemirror/streamparser | transitive of DEP-05 / DEP-07 | MIT | unbundled | Installed with CodeMirror; no code path the tool uses imports them, so they are not in `dist/` | approved | ADR-0004 |
 
 ## Assets (shipped)
 | ID | Name | Version range | License | Kind | Purpose | Status | Decided by |
@@ -40,7 +43,7 @@ non-code file; **build** / **dev** / **ci** = never shipped. Status: `candidate`
 | **DEP-19** | caniuse-lite (via browserslist) | transitive | CC-BY-4.0 (attribution in notices) | build | Browser target data | approved | ADR-0001 |
 | **DEP-20** | style-dictionary | ~5.5.5 (5.6 too new on 2026-10-13; bump later) | Apache-2.0 | dev | Compile DTCG tokens to CSS variables (same as portal) | approved | ADR-0011 |
 | **DEP-21** | vitest | ^5.0 | MIT | dev | Unit, integration and bench | approved | ADR-0010 |
-| **DEP-22** | @vitest/browser-playwright | ^5.0 | MIT | dev | Worker/integration tests in real browsers | approved | ADR-0010 |
+| **DEP-22** | @vitest/browser-playwright | ^5.0 | MIT | dev | Worker/integration tests in real browsers | removed (not needed: the worker protocol is tested in Node against the worker engine and in real browsers through the Playwright e2e suite; not installed) | ADR-0010 |
 | **DEP-23** | fast-check | ^4.10 | MIT | dev | Property-based tests (INV-01, robustness) | approved | ADR-0010 |
 | **DEP-24** | JSONTestSuite (nst/JSONTestSuite test files) | pinned commit, vendored | MIT | dev (fixtures) | Conformance corpus for NFR-08 | approved | ADR-0010 |
 | **DEP-25** | @playwright/test | ~1.63.0 (1.64 too new on 2026-10-13; bump later) | Apache-2.0 | dev | E2E on three engines, perf and memory measurements | approved | ADR-0010 |
@@ -51,7 +54,7 @@ non-code file; **build** / **dev** / **ci** = never shipped. Status: `candidate`
 | **DEP-30** | typescript-eslint | ^8.71 | MIT | dev | TypeScript lint rules | approved | ADR-0003 |
 | **DEP-31** | eslint-plugin-jsx-a11y | ^6.10 | MIT | dev | Accessibility lint for TSX (peer range lists eslint ≤ 9; works with 10, re-check on upgrade) | approved | ADR-0003 |
 | **DEP-32** | prettier | ^3.9 | MIT | dev | Formatting | approved | ADR-0003 |
-| **DEP-33** | wrangler | ^4 | MIT OR Apache-2.0 | ci | Deploy static assets | approved | ADR-0009 |
+| **DEP-33** | wrangler | ^4 | MIT OR Apache-2.0 | ci | Deploy static assets | approved (not installed yet: added as a pinned dev dependency with the publish workflow, which does not exist yet) | ADR-0009 |
 | **DEP-34** | GitHub Actions: actions/checkout, actions/setup-node, pnpm/action-setup, actions/cache | pinned by commit SHA | MIT | ci | CI and publish workflows | approved | ADR-0009 |
 | **DEP-35** | pnpm | 11.x | MIT | dev | Package manager, license report | approved | ADR-0003 |
 
@@ -63,7 +66,10 @@ non-code file; **build** / **dev** / **ci** = never shipped. Status: `candidate`
 | **DEP-38** | comlink | ^4.4 | Apache-2.0 | runtime | Alternative worker RPC | removed (not needed) | ADR-0005 |
 
 ## Notes
-- Shipped runtime code totals four upstream projects (Preact, signals, CodeMirror, Lezer), all
-  MIT; `/third-party-notices.txt` lists them plus fonts (OFL text) and icons (ISC).
+- Shipped runtime code comes from Preact, signals, CodeMirror, Lezer and the CodeMirror
+  helpers of DEP-10, all MIT; `/third-party-notices.txt` lists exactly the shipped packages
+  (runtime and asset rows) plus fonts (OFL text) and icons (ISC). `pnpm check:licenses` scans
+  the built `dist/` (source maps, license banners, Vite manifest) and fails when the shipped
+  set and the notices differ, or when anything ships that is not a runtime/asset row.
 - Build-only transitive packages beyond those listed are covered by the CI license audit
   (ADR-0001); only exceptions and shipped code are listed individually.

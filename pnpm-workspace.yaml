@@ -1,4 +1,18 @@
 # pnpm 11 settings (ADR-0001 supply chain, ADR-0003 tooling).
-# Dependency lifecycle scripts stay blocked (pnpm default); no dependency needs one.
 # New releases wait 3 days before they can be resolved (value in minutes).
 minimumReleaseAge: 4320
+# Fail the install when a package version has weaker publish trust (provenance / trusted
+# publisher) than an earlier version of the same package (account-takeover signature).
+trustPolicy: no-downgrade
+# Reviewed exceptions (exact versions only): semver 5.7.2 and 6.3.1 are the 2023-07 ReDoS
+# backports (CVE-2022-25883) published by the npm/semver maintainers from a release line without
+# provenance, after 7.5.2 gained it; reached only via build/dev tools (Babel, lighthouse).
+trustPolicyExclude:
+  - semver@5.7.2 || 6.3.1
+# Transitive dependencies may resolve only from the registry, never git or tarball URLs.
+# pnpm 11 default; set explicitly so a default change cannot weaken it.
+blockExoticSubdeps: true
+# Dependency lifecycle scripts stay blocked (no dependency needs one), and an install fails
+# rather than silently skipping a newly added dependency's build script.
+# pnpm 11 default; set explicitly so a default change cannot weaken it.
+strictDepBuilds: true

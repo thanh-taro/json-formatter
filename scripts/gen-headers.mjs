@@ -69,6 +69,41 @@ export function pageCsp(origins = hostOrigins()) {
   ].join('; ');
 }
 
+/**
+ * Permissions-Policy (ADR-0009, NFR-01): the tool only writes to the clipboard (F-007), for
+ * itself. Every other powerful feature is denied explicitly, so neither a host `allow=`
+ * attribute nor a future dependency can turn it on. Only names Chromium recognises are listed
+ * (an unknown name only logs a console warning, but adds nothing).
+ */
+export const PERMISSIONS_POLICY = [
+  'clipboard-write=(self)',
+  'clipboard-read=()',
+  'camera=()',
+  'microphone=()',
+  'geolocation=()',
+  'payment=()',
+  'usb=()',
+  'hid=()',
+  'serial=()',
+  'bluetooth=()',
+  'midi=()',
+  'fullscreen=()',
+  'display-capture=()',
+  'screen-wake-lock=()',
+  'idle-detection=()',
+  'local-fonts=()',
+  'browsing-topics=()',
+  'storage-access=()',
+  'publickey-credentials-get=()',
+  'publickey-credentials-create=()',
+  'otp-credentials=()',
+  'accelerometer=()',
+  'gyroscope=()',
+  'magnetometer=()',
+  'xr-spatial-tracking=()',
+  'window-management=()',
+].join(', ');
+
 export const SW_CSP = "default-src 'none'; connect-src 'self'";
 
 export function genHeaders({ check }) {
@@ -76,7 +111,7 @@ export function genHeaders({ check }) {
 # Every matching rule applies; "! Name" detaches a header set by an earlier rule.
 /*
   Content-Security-Policy: ${pageCsp()}
-  Permissions-Policy: clipboard-write=(self), camera=(), microphone=(), geolocation=(), clipboard-read=(), payment=(), usb=()
+  Permissions-Policy: ${PERMISSIONS_POLICY}
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Cross-Origin-Opener-Policy: same-origin
