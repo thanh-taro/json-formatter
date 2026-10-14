@@ -137,6 +137,11 @@ export class RowModel {
     return this.cache.has(blockKey(cs, block));
   }
 
+  /** Block `block` of container `cs` when cached, without touching its recency. */
+  peekBlock(cs: number, block: number): readonly TreeItem[] | undefined {
+    return this.cache.get(blockKey(cs, block));
+  }
+
   item(c: ContainerRef, idx: number): TreeItem | undefined {
     const key = blockKey(c.s, Math.floor(idx / GROUP));
     const rows = this.cache.get(key);

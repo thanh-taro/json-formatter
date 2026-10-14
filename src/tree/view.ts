@@ -133,6 +133,9 @@ type Mode = 'none' | 'tree' | 'invalid' | 'too-large' | 'building';
 export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
   const uid = ++ids;
   const root = el('div', 'tk-tree');
+  // PRN-01 (QA-014): rows, the selected path and the manual-copy field show document text;
+  // browser page translation must never send it to a translation service.
+  root.setAttribute('translate', 'no');
   root.dataset['mode'] = 'none';
 
   // ---- header (D-018): selected row's path, its actions, collapse all ----
@@ -180,6 +183,9 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
   const fbInput = el('input', 'tk-tree__fallback-input');
   fbInput.type = 'text';
   fbInput.readOnly = true;
+  fbInput.setAttribute('translate', 'no');
+  fbInput.spellcheck = false;
+  fbInput.autocomplete = 'off';
   fbInput.id = `tk-tree-fallback-${uid}`;
   fbLabel.htmlFor = fbInput.id;
   fallback.append(fbLabel, fbInput);

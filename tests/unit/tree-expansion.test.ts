@@ -60,6 +60,15 @@ const expand = (m: RowModel, path: string) => {
   m.expand(m.describe(at.node, at.entry));
 };
 
+/** The `nth` (0-based) row with `path` (duplicate keys share a path). */
+function nth(m: RowModel, path: string, n: number): Position {
+  for (let i = 0, seen = 0; i < m.total; i++) {
+    const r = m.rowAt(i);
+    if ((m.pathOf(r) ?? label(m, r)) === path && seen++ === n) return { node: r.node, entry: r.entry };
+  }
+  throw new Error(`no row ${path} #${n}`);
+}
+
 describe('F-006 expansion kept by path across versions', () => {
   it('F-006 a deep expanded node stays expanded after a member is inserted before it; the cursor follows', async () => {
     const v1 = await build('{"order": {"items": [{"meta": {"a": [1]}}, 2]}, "z": {"k": 1}}');
@@ -138,5 +147,77 @@ describe('F-006 expansion kept by path across versions', () => {
     const before = v2.fetched();
     await restoreExpansion(v2.m, snap, v2.load, 2);
     expect(v2.fetched() - before).toBeLessThanOrEqual(2);
+  });
+
+  it('F-006 RULE-06 QA-024 duplicate keys keep their own expansion after a member is inserted before them (restored by occurrence)', async () => {
+    const src = (head: string) => `{"o": {${head}"a": {"x": 1}, "b": 0, "a": {"y": 2}}}`;
+    const v1 = await build(src(''));
+    // the second "a" is expanded, the first is not; the cursor is on the second one's child
+    const second = nth(v1.m, '$.o.a', 1);
+    v1.m.expand(v1.m.describe(second.node, second.entry));
+    await v1.fill();
+    expect(shown(v1.m)).toEqual(['$ -', '$.o -', '$.o.a', '$.o.b', '$.o.a -', '$.o.a.y']);
+    const snap = snapshotOf(v1.m, find(v1.m, '$.o.a.y'), true, 0);
+    const v2 = await build(src('"new": 0, '));
+    const at = await restoreExpansion(v2.m, snap, v2.load);
+    await v2.fill();
+    expect(shown(v2.m)).toEqual(['$ -', '$.o -', '$.o.new', '$.o.a', '$.o.b', '$.o.a -', '$.o.a.y']);
+    const row = at && v2.m.describe(at.node, at.entry);
+    expect(row?.type === 'item' && row.item?.v).toBe('2');
+  });
+
+  it('F-006 RULE-06 QA-024 when both duplicates are expanded, both stay expanded after an earlier insert', async () => {
+    const src = (head: string) => `{"o": {${head}"a": {"x": 1}, "a": {"y": 2}}}`;
+    const v1 = await build(src(''));
+    for (const n of [0, 1]) {
+      const r = nth(v1.m, '$.o.a', n);
+      v1.m.expand(v1.m.describe(r.node, r.entry));
+      await v1.fill();
+    }
+    const snap = snapshotOf(v1.m, null, false, 0);
+    const v2 = await build(src('"new": 0, '));
+    await restoreExpansion(v2.m, snap, v2.load);
+    await v2.fill();
+    expect(shown(v2.m)).toEqual(['$ -', '$.o -', '$.o.new', '$.o.a -', '$.o.a.x', '$.o.a -', '$.o.a.y']);
+  });
+
+  it('F-006 QA-024 a renamed key in a large object is skipped cheaply: the later expanded nodes are still restored', async () => {
+    const members = (rename: boolean) =>
+      Array.from({ length: 2500 }, (_, i) => `"${rename && i === 5 ? 'renamed' : `k${i}`}": {"v": ${i}}`).join(',');
+    const v1 = await build(`{"o": {${members(false)}}}`);
+    expand(v1.m, '[0 … 99]');
+    expand(v1.m, '[2400 … 2499]');
+    await v1.fill();
+    expand(v1.m, '$.o.k5');
+    expand(v1.m, '$.o.k2400');
+    await v1.fill();
+    const snap = snapshotOf(v1.m, find(v1.m, '$.o.k2400.v'), true, 0);
+    const v2 = await build(`{"o": {${members(true)}}}`);
+    const before = v2.fetched();
+    // a budget far smaller than the object's 25 blocks
+    const at = await restoreExpansion(v2.m, snap, v2.load, 8);
+    expect(v2.fetched() - before).toBeLessThanOrEqual(8);
+    await v2.fill();
+    const rows = shown(v2.m);
+    expect(rows).toContain('$.o.k2400 -');
+    expect(rows).not.toContain('$.o.renamed -');
+    expect(at && v2.m.pathOf(v2.m.describe(at.node, at.entry))).toBe('$.o.k2400.v');
+  });
+
+  it('F-006 QA-024 after an insert at the start of a large object, expanded members are found at the shifted position with few fetches', async () => {
+    const members = Array.from({ length: 2500 }, (_, i) => `"k${i}": {"v": ${i}}`).join(',');
+    const v1 = await build(`{"o": {${members}}}`);
+    for (const g of [0, 10, 20]) expand(v1.m, `[${g * 100} … ${g * 100 + 99}]`);
+    await v1.fill();
+    for (const k of [3, 1050, 2040]) expand(v1.m, `$.o.k${k}`);
+    await v1.fill();
+    const snap = snapshotOf(v1.m, null, false, 0);
+    const v2 = await build(`{"o": {"n0": 0, "n1": 1, ${members}}}`);
+    const before = v2.fetched();
+    await restoreExpansion(v2.m, snap, v2.load);
+    expect(v2.fetched() - before).toBeLessThanOrEqual(6);
+    await v2.fill();
+    const rows = shown(v2.m);
+    for (const k of [3, 1050, 2040]) expect(rows).toContain(`$.o.k${k} -`);
   });
 });

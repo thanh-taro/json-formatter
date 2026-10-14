@@ -5,7 +5,19 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { instrument } from './fixtures';
-import { app, content, COPY, copy, docText, largeFixture, openFile, paste, reportShot, waitIdle } from './load-helpers';
+import {
+  app,
+  content,
+  COPY,
+  copy,
+  docText,
+  largeFixture,
+  openFile,
+  paste,
+  reportShot,
+  smallFixture,
+  waitIdle,
+} from './load-helpers';
 
 const MB = 1_000_000;
 
@@ -273,6 +285,46 @@ test.describe('F-010 find in the text view', () => {
   });
 });
 
+test('F-010.AC2 F-010.R2 RULE-18 QA-015 typing the term right after the find shortcut puts every key in the field and shows the real count', async ({
+  page,
+}) => {
+  await start(page);
+  // 109 records like the QA repro (perf.md R1): "item" once per record, "tem" twice
+  const records = Array.from(
+    { length: 109 },
+    (_, i) =>
+      `  {\n    "id": ${1_000_000 + i},\n    "name": "item-${i}",\n    "note": "lorem ipsum tempor",\n    "score": ${i}\n  }`,
+  );
+  const text = `[\n${records.join(',\n')}\n]\n`;
+  await openFile(page, smallFixture('qa015.json', text));
+  await waitIdle(page);
+  await content(page).focus();
+  await page.keyboard.press('ControlOrMeta+Home');
+  // typed right after the shortcut, the way a user does (no wait for the field)
+  await page.keyboard.press('ControlOrMeta+f');
+  await page.keyboard.type('item', { delay: 120 });
+  // every key went to the field; none went into the document
+  await expect(field(page)).toHaveValue('item');
+  await expect(count(page)).toHaveText(of(1, 109));
+  await expect(page.locator('.cm-line').first()).toHaveText('[');
+  await expect(app(page)).toHaveAttribute('data-bytes', String(text.length));
+});
+
+test('F-010.R1 QA-015 Escape pressed right after the find shortcut closes the panel and returns focus', async ({
+  page,
+}) => {
+  await start(page);
+  await load(page, THREE);
+  for (let i = 0; i < 5; i++) {
+    // no wait between the keys: the panel's keys work as soon as its field has focus
+    await page.keyboard.press('ControlOrMeta+f');
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(content(page)).toBeFocused();
+  }
+  await expect.poll(() => docText(page)).toBe(THREE);
+});
+
 test('F-010.R1 NFR-06 CMP-SearchPanel coarse pointer: every control is at least 44 px', async ({
   browser,
   browserName,
@@ -306,7 +358,7 @@ test('F-010.R1 NFR-06 CMP-SearchPanel coarse pointer: every control is at least 
   await context.close();
 });
 
-test('F-010.AC6 F-010.R6 NFR-02 in a 100 MB document typing a term stays responsive and the first match appears before the count is final; editing with find open recounts without blanking', async ({
+test('F-010.AC6 F-010.R6 NFR-02 QA-016 in a 100 MB document typing a term right after opening find stays responsive and the first match appears before the count is final; editing with find open recounts without blanking', async ({
   page,
   browserName,
 }) => {
@@ -317,30 +369,28 @@ test('F-010.AC6 F-010.R6 NFR-02 in a 100 MB document typing a term stays respons
   await waitIdle(page);
   await expect(app(page)).toHaveAttribute('data-bytes', String(100 * MB), { timeout: 120_000 });
   await content(page).focus();
-  await page.keyboard.press('ControlOrMeta+f');
-  await expect(field(page)).toBeFocused();
   // In the page: every count text shown (in order), and per keystroke the time from key down to
-  // the first frame showing the typed character in the field (NFR-02: ≤ 100 ms).
+  // the first frame showing the typed character in the field (NFR-02: ≤ 100 ms). Installed before
+  // the panel opens, so the keys can follow the shortcut at once (QA-016: a key typed within
+  // ~300 ms of opening find was measured at ~137 ms).
   await page.evaluate(() => {
     const w = window as unknown as { __counts: string[]; __lat: number[] };
     w.__counts = [];
     w.__lat = [];
-    const root = document.querySelector('[role="search"]')!;
-    const status = root.querySelector('.tk-search__count')!;
-    new MutationObserver(() => w.__counts.push(status.textContent ?? '')).observe(status, {
-      childList: true,
-      characterData: true,
-      subtree: true,
-    });
-    const input = root.querySelector('input')!;
+    const input = () => document.querySelector<HTMLInputElement>('[role="search"] input');
+    const status = () => document.querySelector('[role="search"] .tk-search__count');
+    new MutationObserver(() => {
+      const text = status()?.textContent;
+      if (text !== undefined && text !== null && text !== w.__counts.at(-1)) w.__counts.push(text);
+    }).observe(document.querySelector('.tk-editor')!, { childList: true, characterData: true, subtree: true });
     window.addEventListener(
       'keydown',
       (e) => {
-        if (e.key.length !== 1) return;
+        if (e.key.length !== 1 || e.ctrlKey || e.metaKey) return;
         const down = performance.now();
-        const want = input.value.length + 1;
+        const want = (input()?.value.length ?? 0) + 1;
         const tick = () => {
-          if (input.value.length >= want) w.__lat.push(performance.now() - down);
+          if ((input()?.value.length ?? 0) >= want) w.__lat.push(performance.now() - down);
           else requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
@@ -348,7 +398,9 @@ test('F-010.AC6 F-010.R6 NFR-02 in a 100 MB document typing a term stays respons
       { capture: true },
     );
   });
+  await page.keyboard.press('ControlOrMeta+f');
   await page.keyboard.type('item', { delay: 120 });
+  await expect(field(page)).toHaveValue('item');
   // the final count has no "+"
   await expect(count(page)).toHaveText(/^1 of [\d,.\s]+$/, { timeout: 60_000 });
   const { counts, lat } = await page.evaluate(() => {

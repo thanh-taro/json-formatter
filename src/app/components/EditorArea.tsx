@@ -20,7 +20,8 @@ export function EditorArea({ app }: { app: AppController }) {
     <section class="tk-editor" aria-label={t('label.editor')}>
       {/* CMP-SearchPanel docked at the top of the editor when open (SCR-Formatter main area). */}
       <SearchPanel find={app.find} />
-      <div ref={host} class="tk-editor-host" />
+      {/* PRN-01 (QA-014): document text is never sent to a browser translation service. */}
+      <div ref={host} class="tk-editor-host" translate={false} />
       {doc.empty && !busy && (
         <div class="tk-editor__empty">
           <Icon name="braces" class="tk-editor__empty-icon" />
