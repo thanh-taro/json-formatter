@@ -73,7 +73,7 @@
     "release": {
       "title": "6 Release",
       "status": "in_progress",
-      "step": "6 hand-off: waiting for user to complete checklist A–I",
+      "step": "6 hand-off: A done (repo thanh-taro/json-formatter private, CI green on c343908); waiting for user B–I",
       "gate": {
         "status": "pending",
         "at": null,
@@ -1338,9 +1338,17 @@
     {
       "at": "2026-10-14T06:07:24+00:00",
       "event": "Portal theme hand-off (taro-kit F-012.R5/R6, commit 40b1ac5) checked locally against the real portal build: 20/20 Chromium+WebKit (qa/portal-embedding.md). Repo user.email set to adamnguyen.itdn@gmail.com; history email rewrite pending user approval."
+    },
+    {
+      "at": "2026-10-14T11:22:06+00:00",
+      "event": "release step: 6 hand-off: A done (repo thanh-taro/json-formatter private, CI green on c343908); waiting for user B–I"
+    },
+    {
+      "at": "2026-10-14T11:22:07+00:00",
+      "event": "Checklist A done: private repo thanh-taro/json-formatter, main pushed; first CI found Linux redo bug (lowercase z with Shift), fixed in c343908, CI green (run 38555001105)."
     }
   ],
-  "updated": "2026-10-14T06:07:24+00:00",
+  "updated": "2026-10-14T11:22:07+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
