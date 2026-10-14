@@ -73,7 +73,7 @@
     "release": {
       "title": "6 Release",
       "status": "in_progress",
-      "step": "6 hand-off: A done (repo thanh-taro/json-formatter private, CI green on c343908); waiting for user B–I",
+      "step": "6 hand-off: A done; first deploy done locally (wrangler, version 3c92eb93, smoke 9/9); waiting for user B3 zone hygiene, C (GitHub secrets), F, G, H",
       "gate": {
         "status": "pending",
         "at": null,
@@ -1346,9 +1346,17 @@
     {
       "at": "2026-10-14T11:22:07+00:00",
       "event": "Checklist A done: private repo thanh-taro/json-formatter, main pushed; first CI found Linux redo bug (lowercase z with Shift), fixed in c343908, CI green (run 38555001105)."
+    },
+    {
+      "at": "2026-10-14T15:17:17+00:00",
+      "event": "First deploy done by Claude at the user's request: local `wrangler deploy` (OAuth login, account a883c9c8…) of 2d14de9 built with HOST_ORIGINS=https://tarokit.app; Worker json-formatter + custom domain json-formatter.tarokit.app, version 3c92eb93-30f5-4055-b5d8-1208df3febc0; smoke:prod 9/9 passed. GitHub production environment/secrets not set yet, so the Deploy workflow is still unrun."
+    },
+    {
+      "at": "2026-10-14T15:17:17+00:00",
+      "event": "release step: 6 hand-off: A done; first deploy done locally (wrangler, version 3c92eb93, smoke 9/9); waiting for user B3 zone hygiene, C (GitHub secrets), F, G, H"
     }
   ],
-  "updated": "2026-10-14T11:22:07+00:00",
+  "updated": "2026-10-14T15:17:17+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

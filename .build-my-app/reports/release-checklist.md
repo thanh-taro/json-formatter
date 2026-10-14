@@ -5,23 +5,24 @@ portal, portal ADR-0007). Address: https://json-formatter.tarokit.app (D-009). P
 frame the tool: https://tarokit.app (`HOST_ORIGINS`). Prepared 2026-10-14.
 
 **Owner key.** Claude = done by files in the repo (committed on `main`). USER = account, signing, payment,
-secret or submission step that Claude never performs; each has exact steps below. Nothing has been pushed,
-deployed or published, and there is no git remote yet.
+secret or submission step that Claude never performs; each has exact steps below. Section A is done (private repo
+`thanh-taro/json-formatter`, CI green). The first deploy was made by Claude from this machine on 2026-10-14 at the
+owner's request (see "Deploy record" below); the GitHub Deploy workflow has still never run.
 
 ## 0. Status at a glance
 
 | # | Item | Owner | Status |
 |---|---|---|---|
-| 1 | Deploy workflow `.github/workflows/deploy.yml` | Claude | done, **never run on GitHub** (first run is step D) |
+| 1 | Deploy workflow `.github/workflows/deploy.yml` | Claude | done, **never run on GitHub** (needs section C secrets) |
 | 2 | `wrangler.jsonc` + `public/.assetsignore` (no `*.map`, no `.vite/` uploaded; `/sw.js` header exception from generated `_headers`) | Claude | done, verified with `wrangler dev` |
 | 3 | wrangler 4.149.0 as pinned devDependency (DEP-33), registry updated | Claude | done |
 | 4 | `pnpm smoke:prod <url>` (QA-026) wired as last deploy step | Claude | done, passes on local `wrangler dev` |
 | 5 | Version 1.0.0, `CHANGELOG.md`, release notes | Claude | done |
 | 6 | Privacy and terms text (README) | Claude | drafted, **needs review by the owner** |
 | 7 | Portal catalog unhide change | Claude prepares, USER applies | section G |
-| 8 | GitHub repo, push | USER | section A |
-| 9 | Cloudflare account, zone, DNS, token, secrets | USER | sections B, C |
-| 10 | First deploy, smoke, manual QA | USER | sections D, E, F |
+| 8 | GitHub repo, push | USER | **done** (section A) |
+| 9 | Cloudflare account, zone, DNS, token, secrets | USER | B done except **B3 zone hygiene (unverified)**; C open |
+| 10 | First deploy, smoke, manual QA | USER | D, E **done locally** (deploy record); F open |
 | 11 | Unhide in portal, tag v1.0.0 | USER | sections G, H |
 
 ## 1. Deploy assets (exact sizes, build of 2026-10-14, `HOST_ORIGINS=https://tarokit.app`)
@@ -100,7 +101,20 @@ HSTS, Permissions-Policy, nosniff; `pnpm smoke:prod http://127.0.0.1:8799` passe
 the same script against plain `pnpm preview` (no headers, maps present) fails as it should. Not verified (needs your accounts):
 the workflow on GitHub, Cloudflare authentication, custom-domain creation, Cloudflare's real header merge, the real HTTPS site.
 
-## A. GitHub repository and first push (USER)
+## Deploy record
+
+| Date | How | Commit | Cloudflare version | Smoke |
+|---|---|---|---|---|
+| 2026-10-14 | Claude, local `pnpm exec wrangler deploy` with the owner's wrangler OAuth login (account `a883c9c8bc26ff703c6a7894d5b06a02`), at the owner's request; build `HOST_ORIGINS=https://tarokit.app pnpm build` | `2d14de9` | `3c92eb93-30f5-4055-b5d8-1208df3febc0` | `pnpm smoke:prod https://json-formatter.tarokit.app`: all 9 checks passed |
+
+Notes on this deploy:
+- Created the Worker `json-formatter` (assets only, 10 files) and attached the custom domain `json-formatter.tarokit.app`; DNS and certificate were live within a minute.
+- Before deploying: build, `check:size` (177.0 of 250 KB), unit tests 394/397 on the full run; the 3 failures were 5 s timeouts under load and passed when re-run alone (17/17). Lint, typecheck and e2e were not re-run (CI on `main` was green for the same source).
+- The smoke script prints 9 checks (the "10 checks" in steps D3 and E refers to an older count).
+- Not verified: B3 zone hygiene (the wrangler login cannot read zone settings or DNS), and the GitHub `production` environment does not exist yet, so the Deploy workflow and a `v1.0.0` tag push will fail until section C is done.
+- Rollback for this deploy: section I.1 or I.3; Cloudflare Versions rollback (I.2) has no earlier version yet.
+
+## A. GitHub repository and first push (USER) — done 2026-10-14
 1. Decide visibility. Private is the safe default (the source is `UNLICENSED`; `.build-my-app/` holds internal reports).
    Private repos get 2,000 free Actions minutes per month; the deploy workflow's check job (all CI checks, Chromium e2e only) takes roughly 10 to 15 minutes, plus the deploy job.
 2. Create an empty repository (no README, no licence, no .gitignore): GitHub, New repository, name `json-formatter`, owner of your choice.
@@ -144,7 +158,7 @@ the workflow on GitHub, Cloudflare authentication, custom-domain creation, Cloud
    Or with the CLI (prompts for the value): `gh secret set CLOUDFLARE_API_TOKEN --env production` and `gh secret set CLOUDFLARE_ACCOUNT_ID --env production`.
    The workflow only exposes them to the single "Deploy dist/ with wrangler" step of the `deploy` job; the `check` job that runs project code has no secrets.
 
-## D. First deploy (USER)
+## D. First deploy (USER) — first deploy done locally 2026-10-14 (deploy record); first workflow run still to do after C
 Do this before tagging, so a pipeline problem does not use up a tag.
 1. GitHub, Actions, "Deploy", Run workflow, branch `main`, leave "sw_kill" unchecked, Run.
 2. The `check` job runs every CI check and builds with `HOST_ORIGINS=https://tarokit.app`. Then the `deploy` job waits for your approval (if you set reviewers): open the run, "Review deployments", tick `production`, Approve and deploy.
