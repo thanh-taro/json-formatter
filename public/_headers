@@ -2,7 +2,7 @@
 # Every matching rule applies; "! Name" detaches a header set by an earlier rule.
 /*
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fYxLGKP027VuIKcYCoXm1DTGyi13AkX+TH/Q4QtewO8='; style-src 'self'; img-src 'self' data:; font-src 'self'; worker-src 'self'; connect-src 'none'; manifest-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors https://tarokit.app
-  Permissions-Policy: clipboard-write=(self), camera=(), microphone=(), geolocation=(), clipboard-read=(), payment=(), usb=()
+  Permissions-Policy: clipboard-write=(self), clipboard-read=(), camera=(), microphone=(), geolocation=(), payment=(), usb=(), hid=(), serial=(), bluetooth=(), midi=(), fullscreen=(), display-capture=(), screen-wake-lock=(), idle-detection=(), local-fonts=(), browsing-topics=(), storage-access=(), publickey-credentials-get=(), publickey-credentials-create=(), otp-credentials=(), accelerometer=(), gyroscope=(), magnetometer=(), xr-spatial-tracking=(), window-management=()
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Cross-Origin-Opener-Policy: same-origin

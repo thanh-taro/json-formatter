@@ -36,3 +36,14 @@ Spec changes to items in `building` or `shipped` status are recorded here.
  - F-007, F-008 shipped: F-007.AC3 runs a real minify; F-008.AC6/AC7 exercise a full M-1 session embedded and standalone. Open: NFR-01 vs lazy MOD-Tree chunk on a first WebKit visit (expected-fail test, needs a decision).
 - F-006 shipped. All M-1 features shipped. Lazy chunks preloaded during page load to keep NFR-01 on first WebKit visits.
 - NFR-07 minimum width lowered to 320 px for WCAG reflow (QA a11y).
+
+## 2026-10-14
+- QA-022/QA-023 (license and security minors): registry DEP-10 split — crelt and
+  @codemirror/streamparser move to new DEP-39 (kind `unbundled`, not in dist/ or the notices);
+  DEP-22 removed (never installed; worker protocol tested in Node and Playwright e2e, ADR-0010's
+  Vitest browser mode not used); DEP-33 noted as not installed until the publish workflow lands;
+  duplicate lucide-static devDependency removed. `pnpm check:licenses` now also scans dist/
+  (ADR-0001 rule 6). Headers: Permissions-Policy denies every unused powerful feature, keeps
+  `clipboard-write=(self)`. pnpm `trustPolicy: no-downgrade` (semver 5.7.2/6.3.1 reviewed
+  exceptions), `blockExoticSubdeps`, `strictDepBuilds`; CI checkout without persisted
+  credentials; JSONTestSuite tarball SHA-256 pinned. Trusted Types not enforced (see MOD-Build).

@@ -65,5 +65,10 @@ differs from what the generators produce.
   allow-lists — shipped packages must use allowed licenses and be registered as runtime/asset;
   direct dev dependencies must be registered; build/test-only exceptions (MPL-2.0 `lightningcss`,
   `axe-core`, `@axe-core/playwright`; CC-BY-4.0 `caniuse-lite`) are matched by name. Packages
-  without an SPDX license are listed in `REVIEWED` after reading their license file.
+  without an SPDX license are listed in `REVIEWED` after reading their license file. Production
+  transitives that tree-shaking removes are registered with kind `unbundled`. It then runs
+  `scripts/check-dist.mjs` on `dist/` (so `pnpm build` first): packages from the source maps,
+  `@license` banners and the Vite manifest must be runtime/asset rows, fonts/images must trace to
+  a registered package, unknown file types fail, and the shipped notices must list exactly the
+  shipped packages and versions.
 - `scripts/fetch-jsontestsuite.mjs` (`pnpm fixtures:jsontestsuite`): see `adapters/tests.md`.

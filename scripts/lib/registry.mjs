@@ -39,6 +39,9 @@ export const isActive = (r) => !/removed|spike only/i.test(r.status);
 /** Is the row shipped to the browser (runtime code or asset)? */
 export const isShipped = (r) => /^(runtime|asset)/i.test(r.kind);
 
+/** Is the row a production transitive that is installed but tree-shaken out of every bundle? */
+export const isUnbundled = (r) => /^unbundled/i.test(r.kind);
+
 /** Installed copy of an npm package anywhere in node_modules (top level or pnpm store). */
 export function findInstalled(name) {
   const top = abs('node_modules', name, 'package.json');

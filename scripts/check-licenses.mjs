@@ -1,11 +1,14 @@
 // License audit (ADR-0001, MOD-Build): every installed package against the allow-lists, by kind.
-//  - shipped (production dependencies): allowed licenses only, and registered as runtime/asset;
+//  - production dependencies: allowed licenses only, and registered as runtime/asset (or
+//    `unbundled` when tree-shaking removes them; the dist/ scan fails if one ever ships);
 //  - direct dev dependencies: registered in the registry;
 //  - everything else (build/dev/test transitives): allowed licenses, or a named build-only exception.
+// Then the dist/ scan (scripts/check-dist.mjs, ADR-0001 rule 6) on the last `pnpm build`.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { abs } from './lib/util.mjs';
-import { isActive, isShipped, readRegistry, REGISTRY } from './lib/registry.mjs';
+import { scanDist } from './check-dist.mjs';
+import { isActive, isShipped, isUnbundled, readRegistry, REGISTRY } from './lib/registry.mjs';
 
 const ALLOWED = new Set([
   'MIT',
@@ -57,8 +60,10 @@ const shipped = licenses(true);
 const shippedNames = new Set(shipped.map((p) => p.name));
 for (const p of shipped) {
   const r = registered.get(p.name);
-  if (!r || !isShipped(r))
-    problems.push(`${p.name}@${p.version}: shipped but not registered as runtime/asset in ${REGISTRY}`);
+  if (!r || !(isShipped(r) || isUnbundled(r)))
+    problems.push(
+      `${p.name}@${p.version}: production dependency not registered as runtime/asset/unbundled in ${REGISTRY}`,
+    );
   const ok = spdxOk(p.license, (l) => ALLOWED.has(l) || (FONT_LICENSES.has(l) && r && /asset/i.test(r.kind)));
   if (!ok) problems.push(`${p.name}@${p.version}: license ${p.license} not allowed in shipped code`);
 }
@@ -78,8 +83,15 @@ const counts = all.reduce((m, p) => m.set(p.license, (m.get(p.license) ?? 0) + 1
 console.log(
   `licenses: ${all.length} packages (${shipped.length} shipped) — ${[...counts].map(([l, n]) => `${l} ${n}`).join(', ')}`,
 );
+const DIST = abs('dist');
+if (!fs.existsSync(DIST)) problems.push('dist/ missing: run `pnpm build` first (the dist/ scan of ADR-0001 rule 6)');
+else {
+  const scan = scanDist(DIST, registry);
+  problems.push(...scan.problems.map((p) => `dist: ${p}`));
+  console.log(`dist: ${scan.shipped.size} third-party packages ship — ${[...scan.shipped.keys()].sort().join(', ')}`);
+}
 if (problems.length) {
   console.error(problems.map((p) => `✗ ${p}`).join('\n'));
   process.exit(1);
 }
-console.log('licenses: all within the ADR-0001 allow-lists');
+console.log('licenses: all within the ADR-0001 allow-lists; dist/ ships only registered runtime/asset packages');

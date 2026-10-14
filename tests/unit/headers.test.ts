@@ -1,8 +1,11 @@
-// MOD-Build: the HOST_ORIGINS deploy setting drives frame-ancestors (ADR-0008 §4, ADR-0009).
+// MOD-Build: the HOST_ORIGINS deploy setting drives frame-ancestors (ADR-0008 §4, ADR-0009);
+// the Permissions-Policy denies every powerful feature but clipboard-write for the tool itself.
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 // @ts-expect-error -- plain ESM build script without type declarations
 import { DEFAULT_HOST_ORIGINS, hostOrigins, pageCsp, parseHostOrigins } from '../../scripts/gen-headers.mjs';
+// @ts-expect-error -- plain ESM build script without type declarations
+import { PERMISSIONS_POLICY } from '../../scripts/gen-headers.mjs';
 
 const saved = process.env['HOST_ORIGINS'];
 afterEach(() => {
@@ -69,5 +72,46 @@ describe('frame-ancestors from HOST_ORIGINS', () => {
     expect(headers).toMatch(/frame-ancestors https:\/\/tarokit\.app/);
     expect(headers).not.toMatch(/X-Frame-Options/i);
     expect(headers).toMatch(/Strict-Transport-Security: max-age=31536000; includeSubDomains/);
+  });
+});
+
+describe('Permissions-Policy (ADR-0009, NFR-01)', () => {
+  const directives = (policy: string) => new Map(policy.split(/,\s*/).map((d) => d.split('=') as [string, string]));
+
+  it('NFR-01 only clipboard-write is allowed, and only for the tool itself', () => {
+    const p = directives(PERMISSIONS_POLICY as string);
+    expect(p.get('clipboard-write')).toBe('(self)');
+    for (const [feature, allow] of p) if (feature !== 'clipboard-write') expect(allow, feature).toBe('()');
+  });
+
+  it('NFR-01 powerful features the tool never uses are denied explicitly', () => {
+    const p = directives(PERMISSIONS_POLICY as string);
+    for (const feature of [
+      'camera',
+      'microphone',
+      'geolocation',
+      'clipboard-read',
+      'payment',
+      'usb',
+      'fullscreen',
+      'display-capture',
+      'browsing-topics',
+      'local-fonts',
+      'hid',
+      'serial',
+      'bluetooth',
+      'idle-detection',
+      'screen-wake-lock',
+      'publickey-credentials-get',
+      'otp-credentials',
+      'storage-access',
+    ]) {
+      expect(p.get(feature), feature).toBe('()');
+    }
+  });
+
+  it('NFR-01 the committed _headers sends that policy on every page', () => {
+    const headers = readFileSync(new URL('../../public/_headers', import.meta.url), 'utf8');
+    expect(headers).toContain(`Permissions-Policy: ${PERMISSIONS_POLICY as string}\n`);
   });
 });
