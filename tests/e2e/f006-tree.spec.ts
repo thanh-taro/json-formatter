@@ -399,6 +399,39 @@ test.describe('F-006 tree view', () => {
     expect((await axe(page)).violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
   });
 
+  test('PRN-01 F-006.R9 F-010.R1 QA-014 every element showing document text is marked translate="no" (browser translation never sends it off the device)', async ({
+    page,
+  }) => {
+    await stubClipboard(page, 'deny');
+    await start(page);
+    await paste(page, ORDER);
+    // `translate` reflects the inherited translation mode: false under a translate="no" ancestor
+    const untranslated = (l: Locator) => l.evaluateAll((els) => els.map((e) => (e as HTMLElement).translate));
+    // the editor's text (CodeMirror's content) and its host
+    expect(await untranslated(page.locator('.tk-editor-host, .cm-content, .cm-line'))).not.toContain(true);
+    await showTree(page);
+    await row(page, 'total').click();
+    // the tree root, every row (keys, values, previews) and the selected path in the header
+    await expect(page.locator('.tk-tree')).toHaveAttribute('translate', 'no');
+    const treeText = page.locator('.tk-tree__row, .tk-tree__row *, .tk-tree__path');
+    expect((await untranslated(treeText)).length).toBeGreaterThan(10);
+    expect(await untranslated(treeText)).not.toContain(true);
+    await expect(header(page).locator('.tk-tree__path')).toHaveText('$.order.total');
+    // the manual-copy field holding a path or value
+    await headerButton(page, 'action.copy_value').click();
+    const value = page.getByRole('textbox', { name: COPY['action.copy_value'] });
+    await expect(value).toHaveValue('1499.50');
+    expect(await untranslated(value)).toEqual([false]);
+    // the find field (find opens in the text view)
+    await page.keyboard.press('Escape');
+    await textButton(page).click();
+    await content(page).focus();
+    await page.keyboard.press('ControlOrMeta+f');
+    const findField = page.getByRole('search').getByRole('searchbox');
+    await findField.fill('total');
+    expect(await untranslated(findField)).toEqual([false]);
+  });
+
   test('F-006.AC13 INV-05 after an undo to a different text the tree shows COPY-tree.checking until the new tree is ready', async ({
     page,
   }) => {

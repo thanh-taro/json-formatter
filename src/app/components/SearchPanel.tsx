@@ -5,7 +5,7 @@
 // (COPY-action.find_prev), next (COPY-action.find_next), close (COPY-action.close). Enter moves to
 // the next match, Shift+Enter to the previous, Escape closes and returns focus to the editor.
 // Narrow: match case and count move under the field (container width < 600 px).
-import { useEffect, useRef } from 'preact/hooks';
+import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../../copy';
 import { countText, type FindController } from '../find';
 import { Icon } from './Icon';
@@ -18,14 +18,18 @@ export function SearchPanel({ find }: { find: FindController }) {
   const panel = useRef<HTMLDivElement>(null);
   const open = find.open.value;
   const focusRequest = find.focusRequest.value;
-  useEffect(() => {
+  // F-010.R1 (QA-015/QA-016): the field takes focus in the same task as the shortcut, before the
+  // browser handles the next key. A passive effect runs only after a paint (a frame or more at
+  // 100 MB), so a key typed right after the shortcut went into the document, not the field.
+  useLayoutEffect(() => {
     field.current?.focus();
     field.current?.select();
   }, [focusRequest]);
 
   // Panel-wide keys (from the field and every button): Escape closes, the platform find shortcut
-  // goes back to the field instead of the browser's find.
-  useEffect(() => {
+  // goes back to the field instead of the browser's find. Attached in the same task as the
+  // focus above, so an Escape pressed right after opening already closes.
+  useLayoutEffect(() => {
     const el = panel.current;
     if (!el) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -64,6 +68,7 @@ export function SearchPanel({ find }: { find: FindController }) {
           aria-invalid={none ? 'true' : undefined}
           autocomplete="off"
           spellcheck={false}
+          translate={false}
           value={find.term.value}
           onInput={(e) => find.setTerm(e.currentTarget.value)}
           onKeyDown={onFieldKeyDown}
