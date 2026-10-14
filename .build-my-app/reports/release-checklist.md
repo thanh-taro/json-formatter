@@ -105,7 +105,7 @@ the workflow on GitHub, Cloudflare authentication, custom-domain creation, Cloud
    Private repos get 2,000 free Actions minutes per month; the deploy workflow's check job (all CI checks, Chromium e2e only) takes roughly 10 to 15 minutes, plus the deploy job.
 2. Create an empty repository (no README, no licence, no .gitignore): GitHub, New repository, name `json-formatter`, owner of your choice.
    Or with the CLI after `gh auth login`: `gh repo create <OWNER>/json-formatter --private` (do not use `--source` or `--push`).
-3. Note that every commit carries the author email `thanhnt1@tech.est-rouge.com`. In a public repository that email becomes public.
+3. Every commit carries the author email `adamnguyen.itdn@gmail.com` (history rewritten on 2026-10-14, before the first push; the repository's `user.email` is set to it). In a public repository that email becomes public.
 4. In the project folder:
    ```
    cd /Users/er_lap_mam3_016/Documents/personals/taro-kit-tools/developer-tools/json-formatter
@@ -170,7 +170,7 @@ Copied verbatim from `.build-my-app/reports/traceability.md`, "Manual checks for
 2. VoiceOver (macOS Safari, then iOS): follow a11y.md M5-M11 (toolbar, More actions menu, find count "1 of N", tree announcements, error status).
 3. Clipboard longer than 5 s: paste or open a ~100 MB file, press Copy, confirm the "copying" progress and that the result pastes complete (F-007.AC8 uses a stubbed clipboard).
 4. Real phone (iOS Safari, Android Chrome) at 390/360/320 px: tap More actions, every item; Find with the on-screen keyboard; check 44 px targets, pinch-zoom to 200%, no horizontal page scroll.
-5. Embedding in the real portal once taro-kit implements F-012.R5/R6: load the tool in the portal iframe, toggle portal theme (tool follows without reload), resize, run FLOW-01, check the portal CSP/frame-ancestors allow it.
+5. Embedding in the real portal. taro-kit implemented F-012.R5/R6 (its commit 40b1ac5), and the theme hand-off passed locally on 2026-10-14 in Chromium and WebKit (`.build-my-app/reports/qa/portal-embedding.md`). What is left on the live sites: load the tool in the portal iframe, toggle the portal theme (the tool follows without reloading), resize, run FLOW-01, and confirm no CSP or frame-ancestors errors in the console.
 6. Notices link inside the portal frame: privacy details > "Open-source notices" opens in a new tab via target=_blank; a portal iframe sandbox without allow-popups blocks it. Verify there; if blocked, decide between adding allow-popups in the portal or an in-frame notices view.
 7. Windows High Contrast / forced colors (real Edge): Text/Tree pressed, tabs, match case, tree selected row distinguishable (Chromium emulation passes).
 8. Real memory on 100 MB+ documents in Firefox/Safari; headed Chromium Performance trace for fast scrollbar drags (QA-025).
@@ -182,7 +182,7 @@ Locally now: (2) VoiceOver pass, (3) clipboard > 5 s, (4) real phone on the loca
 After first deploy (phase 6): (1) on the production URL, (5) embedding in the real portal (needs taro-kit F-012.R5/R6), (6) notices link inside the portal frame, (9) header smoke test.
 
 
-Order that works: 9 right after the first deploy (step E), then 1, 6 (portal part) and 5 once the portal embeds the tool, and 2, 3, 4, 7, 8 on any device at any time (use the production URL, or `pnpm preview` for local-only ones). Items 5 and 6 need the taro-kit portal to implement F-012.R5/R6 (section G).
+Order that works: 9 right after the first deploy (step E), then 1, 6 (portal part) and 5 once the portal embeds the tool, and 2, 3, 4, 7, 8 on any device at any time (use the production URL, or `pnpm preview` for local-only ones). Items 5 and 6 need the tool to be visible in the portal (section G); the portal side of F-012.R5/R6 is already implemented.
 
 ## G. Portal catalog: unhide the tool (USER applies; Claude did not edit taro-kit)
 Repository: `~/Documents/personals/taro-kit` (read-only to the Claude agents; the entry was committed hidden in 6ad0cf9).
@@ -209,7 +209,7 @@ Steps: edit the file in the taro-kit repo, run its checks (`pnpm build` runs con
 Notes:
 - The portal's `frame-src` is derived from visible embedded tools, so unhiding also lets the portal frame `https://json-formatter.tarokit.app`.
 - taro-kit currently has only `ci.yml` and `catalog-check.yml` (no publish workflow yet). Unhiding goes live only when the portal itself is deployed, which is also a user-owned Cloudflare step (portal ADR-0007).
-- **Dependency on taro-kit F-012.R5/R6 (theme hand-off).** The tool already reads `?theme=light|dark`, sends `taro:ready` and accepts `taro:theme` only from `https://tarokit.app` (MOD-Host, RULE-16, change request `.build-my-app/reports/portal-change-request-theme.md`). In the taro-kit specs, F-012 was still `building` when this was prepared; confirm R5/R6 are implemented and merged before relying on them. Until then the portal does not pass a theme and the tool follows the device theme (`prefers-color-scheme`), so it can disagree with the portal only when the user overrides the portal theme. This is not a blocker for unhiding; manual items 5 and 6 wait for it.
+- **taro-kit F-012.R5/R6 (theme hand-off): implemented and checked locally.** taro-kit implemented it in commit 40b1ac5, using the same contract as this tool: `?theme=light|dark` in the frame address, `taro:ready` answered with `taro:theme`, exact origins only. A local cross-origin check passed 20/20 in Chromium and WebKit: the real portal build framed this tool's production build, both on their real https origins through request routing (`.build-my-app/reports/qa/portal-embedding.md`). Live confirmation is manual item 5, after section G. The portal's Permissions-Policy delegates `clipboard-write` to the tool only once the tool is visible (`hidden: false`), so Copy inside the portal works only after section G is deployed.
 - The portal sandbox (`allow-scripts allow-same-origin allow-forms`) has no `allow-popups`: the "Open-source notices" link may be blocked inside the frame (manual item 6). The notices are always available at https://json-formatter.tarokit.app/third-party-notices.txt.
 
 ## H. Tag v1.0.0 and release (USER)

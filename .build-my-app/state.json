@@ -73,7 +73,7 @@
     "release": {
       "title": "6 Release",
       "status": "in_progress",
-      "step": "6 release-manager preparing pipeline, notes, checklist",
+      "step": "6 hand-off: waiting for user to complete checklist A–I",
       "gate": {
         "status": "pending",
         "at": null,
@@ -1326,9 +1326,17 @@
     {
       "at": "2026-10-14T03:16:17+00:00",
       "event": "release step: 6 release-manager preparing pipeline, notes, checklist"
+    },
+    {
+      "at": "2026-10-14T03:29:53+00:00",
+      "event": "release step: 6 hand-off: waiting for user to complete checklist A–I"
+    },
+    {
+      "at": "2026-10-14T04:23:54+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 6 Release [in_progress] — 6 hand-off: waiting for user to complete checklist A–I · 6/8 phases done · autonomy balanced"
     }
   ],
-  "updated": "2026-10-14T03:16:17+00:00",
+  "updated": "2026-10-14T04:23:54+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

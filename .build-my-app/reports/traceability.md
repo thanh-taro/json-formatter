@@ -183,14 +183,14 @@ Detail: perf `.build-my-app/reports/qa/perf.md`, a11y `.build-my-app/reports/qa/
 | NFR-06 accessibility | axe round 2 (qa-round2.spec.ts: empty, invalid, loaded, find, tree, privacy, 390 menu, 320; dark + light; both engines): 0 violations; qa-a-ui-a11y.spec.ts (touch 44 px, forced colors, focus return, landmarks); a11y.md; keyboard walkthrough of overflow menu and Find (qa-round2 `keyboard`) pass | automated pass. Safari/WebKit does not Tab to buttons by default (M-A4, manual). **Manual:** screen reader pass |
 | NFR-07 browser support / min width | Chromium + WebKit e2e; 390 and 320 touch (QA-001/010/011); forced colors | pass Chromium/WebKit. **Firefox not run (cannot launch here); real Safari/devices manual** |
 | NFR-08 correctness | tests/conformance (JSONTestSuite), tests/property, format-roundtrip (vitest) | pass |
-| NFR-09 embedding safety | host.spec.ts (frame-ancestors, origin check) | pass (stub host). Real portal embedding pending F-012.R5/R6 in taro-kit |
+| NFR-09 embedding safety | host.spec.ts (frame-ancestors, origin check) | pass (stub host); real portal build vs production build, local routed origins: 20/20 Chromium+WebKit (qa/portal-embedding.md, 2026-10-14). Live check is manual item 5 |
 
 ## Manual checks for the user (exact steps)
 1. Real Safari (macOS, iOS) and real Firefox: open the production URL; run FLOW-01 (paste `{"a":1,"b":[1,2]}`, Beautify, Copy, Download), FLOW-02 (type `{"a":1,}`, click the error, fix it), FLOW-03 (paste 250-element array, Tree, expand, Copy path, Show in text). In Safari also press Tab through the page (find buttons, "Local only" reachable? then Option+Tab) — a11y.md M-A4/M5. Playwright Firefox cannot launch here.
 2. VoiceOver (macOS Safari, then iOS): follow a11y.md M5-M11 (toolbar, More actions menu, find count "1 of N", tree announcements, error status).
 3. Clipboard longer than 5 s: paste or open a ~100 MB file, press Copy, confirm the "copying" progress and that the result pastes complete (F-007.AC8 uses a stubbed clipboard).
 4. Real phone (iOS Safari, Android Chrome) at 390/360/320 px: tap More actions, every item; Find with the on-screen keyboard; check 44 px targets, pinch-zoom to 200%, no horizontal page scroll.
-5. Embedding in the real portal once taro-kit implements F-012.R5/R6: load the tool in the portal iframe, toggle portal theme (tool follows without reload), resize, run FLOW-01, check the portal CSP/frame-ancestors allow it.
+5. Embedding in the real portal (portal side implemented; local check passed, qa/portal-embedding.md): on the live sites, load the tool in the portal iframe, toggle portal theme (tool follows without reload), resize, run FLOW-01, check the portal CSP/frame-ancestors allow it.
 6. Notices link inside the portal frame: privacy details > "Open-source notices" opens in a new tab via target=_blank; a portal iframe sandbox without allow-popups blocks it. Verify there; if blocked, decide between adding allow-popups in the portal or an in-frame notices view.
 7. Windows High Contrast / forced colors (real Edge): Text/Tree pressed, tabs, match case, tree selected row distinguishable (Chromium emulation passes).
 8. Real memory on 100 MB+ documents in Firefox/Safari; headed Chromium Performance trace for fast scrollbar drags (QA-025).
