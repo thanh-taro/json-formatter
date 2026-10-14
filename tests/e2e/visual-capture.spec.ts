@@ -8,7 +8,7 @@ import { instrument } from './fixtures';
 import { app, content, COPY, drop, largeFixture, openFile, paste, ROOT, seamWorker, waitIdle } from './load-helpers';
 import { recordClipboard } from './m1-session';
 
-const OUT = path.join(ROOT, '.build-my-app/reports/qa/visual/app');
+const OUT = path.join(ROOT, process.env['VISUAL_OUT'] ?? '.build-my-app/reports/qa/visual/app');
 const MB = 1_000_000;
 const THEMES = ['dark', 'light'] as const;
 
@@ -157,7 +157,11 @@ for (const theme of THEMES) {
       await start(page, theme);
       await load(page, ORDER_PRETTY);
       const bad = Buffer.concat([Buffer.from('{"a": "'), Buffer.from([0xc3, 0x28, 0xff]), Buffer.from('"}')]);
-      await openFile(page, { name: 'latin1.json', mimeType: 'application/json', buffer: bad });
+      // at narrow widths Open file lives in the overflow menu
+      const chooser = page.waitForEvent('filechooser');
+      await page.getByRole('toolbar').getByRole('button', { name: COPY['action.more'], exact: true }).tap();
+      await page.locator('.tk-menu').getByRole('button', { name: COPY['action.open'], exact: true }).tap();
+      await (await chooser).setFiles({ name: 'latin1.json', mimeType: 'application/json', buffer: bad });
       await expect(page.getByRole('alert').filter({ hasText: COPY['error.encoding'] })).toBeVisible();
       await shot(page, 'SCR-Formatter_error-encoding_embedded', theme);
       await page.reload();
@@ -296,12 +300,9 @@ for (const theme of THEMES) {
       await shot(page, 'SCR-Formatter_empty_narrow', theme);
       await load(page, ORDER_PRETTY);
       await shot(page, 'SCR-Formatter_default_narrow', theme);
-      // find
-      await page
-        .getByRole('button', { name: COPY['action.find'] ?? 'Find' })
-        .first()
-        .tap()
-        .catch(() => undefined);
+      // find: at narrow widths Find lives in the overflow menu (COPY-action.more)
+      await page.getByRole('toolbar').getByRole('button', { name: COPY['action.more'], exact: true }).tap();
+      await page.locator('.tk-menu').getByRole('button', { name: COPY['action.find'], exact: true }).tap();
       const search = page.getByRole('search');
       if (await search.isVisible().catch(() => false)) {
         await search.getByRole('searchbox').fill('sku');
@@ -315,7 +316,11 @@ for (const theme of THEMES) {
       // notice
       await load(page, ORDER_PRETTY);
       const bad = Buffer.concat([Buffer.from('{"a": "'), Buffer.from([0xc3, 0x28, 0xff]), Buffer.from('"}')]);
-      await openFile(page, { name: 'latin1.json', mimeType: 'application/json', buffer: bad });
+      // at narrow widths Open file lives in the overflow menu
+      const chooser = page.waitForEvent('filechooser');
+      await page.getByRole('toolbar').getByRole('button', { name: COPY['action.more'], exact: true }).tap();
+      await page.locator('.tk-menu').getByRole('button', { name: COPY['action.open'], exact: true }).tap();
+      await (await chooser).setFiles({ name: 'latin1.json', mimeType: 'application/json', buffer: bad });
       await expect(page.getByRole('alert').filter({ hasText: COPY['error.encoding'] })).toBeVisible();
       await shot(page, 'SCR-Formatter_notice_narrow', theme);
     });

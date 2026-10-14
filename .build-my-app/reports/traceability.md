@@ -1,14 +1,15 @@
 # Traceability — JSON Formatter M-1
 
-Run date: 2026-10-14. Build: `pnpm build` (fresh). Commands: `pnpm test` (vitest), `E2E_PORT_BASE=4273 CI=1 pnpm exec playwright test --project=chromium --project=webkit`.
+Run date: 2026-10-14 (QA round 2, main c40c3ab + QA tests). Build: `pnpm build` (fresh). Commands: `pnpm test` (vitest), `E2E_PORT_BASE=4873 CI=1 pnpm exec playwright test --project=chromium --project=webkit`.
 Firefox: cannot launch on this machine — **not run**.
 
 ## Last results (fresh full run)
-- Unit/property/conformance (vitest): 34 files, 384 tests, all pass.
-- E2E Chromium + WebKit: 360 test executions = 346 pass, 14 skipped, 0 fail, 0 flaky (the 14 skips are WebKit-only by design: >100 MB best-effort cases, Chromium-only visual/axe cases; each has a Chromium pass).
-- `pnpm typecheck`, `pnpm lint`, `pnpm spec:lint` (400 IDs, 0 errors), `pnpm check:size` (critical path 173.9 KB of 250 KB): pass.
-- Visual capture (tests/e2e/visual-capture.spec.ts, `VISUAL=1`): 65 screenshots in `.build-my-app/reports/qa/visual/` — see `bugs.md`.
-- Bugs: `.build-my-app/reports/qa/bugs.md` (the QA run found real defects; the tests above do not detect them because Playwright scrolls a clipped control into view).
+- Unit/property/conformance (vitest): 35 files, 397 tests, all pass.
+- E2E Chromium + WebKit: 458 executions = 401 pass, 57 skipped, 0 fail, 0 flaky (Chromium 208 pass/21 skip, WebKit 193 pass/36 skip; skips are WebKit best-effort >100 MB cases, Chromium-only visual/forced-colors/axe cases and the VISUAL-only capture, each has a Chromium pass). Plus `tests/e2e/qa-round2.spec.ts`: 22 executions, all pass (run separately).
+- `pnpm typecheck`, `pnpm lint`, `pnpm spec:lint` (402 IDs, 0 errors), `pnpm check:size` (critical path 176.9 KB of 250 KB), `pnpm check:licenses` (incl. dist/ scan): pass.
+- Visual capture (`VISUAL=1 VISUAL_OUT=...round2/app`): 65 screenshots in `.build-my-app/reports/qa/visual/round2/app`, side by side with the boards in `round2/compare`.
+- Bugs: `.build-my-app/reports/qa/bugs.md` (Round 2 section): all round-1 bugs fixed except QA-025 (accepted) and QA-026 (phase 6); 2 new minor UI notes, 0 regressions.
+- Tests added in QA: AC tests listed below plus QA-regression tests (qa-a-ui-a11y.spec.ts, f006 QA-014/QA-024, f010 QA-015/QA-016, unit dist-scan/headers/tree-expansion) are part of the run.
 
 ## Flows (one e2e each)
 | Flow | Test | Chromium | WebKit |
@@ -170,23 +171,27 @@ Results: pass = all matching tests passed; pass/skip = some matching tests skipp
 F-007.AC6 is deprecated (D-023): no test, no UI (the design board SCR-Formatter error-download is intentionally not implemented).
 
 ## Non-functional requirements
-Perf numbers: parallel perf-analyst, `.build-my-app/reports/qa/perf.md` (not present when this report was written; reference it for NFR-02/03/04/05 values). A11y detail: `.build-my-app/reports/qa/a11y.md`; security/privacy: `.build-my-app/reports/qa/security.md`.
+Detail: perf `.build-my-app/reports/qa/perf.md`, a11y `.build-my-app/reports/qa/a11y.md`, security/privacy `.build-my-app/reports/qa/security.md`, licenses `qa/license-audit-2.md`.
 
-| NFR | Measurement method | Result |
+| NFR | Measurement | Result |
 |---|---|---|
-| NFR-01 privacy | tests/e2e/privacy.spec.ts + network-log.ts, m1-session (full session, request log shows none after load, CSP header, no CSP violations), f011-offline | pass (Chromium, WebKit). Security audit: qa/security.md (note its 2 majors). |
-| NFR-02 responsiveness / progress | e2e progress+cancel tests (F-001.AC9, F-002.AC8, F-006.R8, F-007.AC8, F-010.AC6) | pass for progress/cancel behaviour; latency traces in qa/perf.md |
-| NFR-03 throughput | tests/bench (`pnpm bench`) | see qa/perf.md |
-| NFR-04 large docs | f006-tree AC9 (50 MB, 100k and 1M children), F-001/F-002 large tiers | pass in e2e (Chromium); memory/frame numbers in qa/perf.md. 100 MB+ tests are skipped on WebKit (best effort). |
-| NFR-05 startup | Lighthouse/lab throttling (lighthouserc.json); check:size budget 173.9/250 KB | size: pass; timing: see qa/perf.md |
-| NFR-06 accessibility | axe in e2e (many states) + qa/a11y.md (28 states x 2 engines, 0 AA violations) + keyboard tests | automated pass. **Manual:** screen-reader pass (VoiceOver/NVDA) for the user. Touch: see bug QA-001 (toolbar actions unreachable on phones). |
-| NFR-07 browser support | Chromium + WebKit e2e; 360 px width | Chromium/WebKit pass. **Firefox: not run (cannot launch here) — manual/CI.** **Manual:** real Safari (macOS and iOS), real Firefox, real devices. 360 px/390 px: FAIL, see QA-001. |
-| NFR-08 correctness | tests/conformance (JSONTestSuite) + tests/property + format-roundtrip (vitest) | pass |
-| NFR-09 embedding safety | tests/e2e/host.spec.ts (frame-ancestors header, message origin) | pass |
+| NFR-01 privacy | privacy.spec.ts, network-log.ts, m1-session, f011-offline; security.md (MJ-2 translate fixed, QA-014) | pass (Chromium, WebKit). Security mn-items hardened (QA-023); MJ-1 (deploy headers) open as QA-026 |
+| NFR-02 responsiveness / progress | e2e progress+cancel (F-001.AC9, F-002.AC8, F-006.R8, F-007.AC8, F-010.AC6 incl. QA-016 root-cause test); perf.md numbers | pass; first-key-after-Find (perf R2) covered by the QA-016 test, not re-measured by wall clock |
+| NFR-03 throughput | perf.md (10 MB <= 1 s, 100 MB <= 10 s); `pnpm bench` | pass (about 10x margin) |
+| NFR-04 large docs | f006 AC9 (50 MB, 100k, 1M children), F-001/F-002 large tiers; perf.md | pass Chromium; transient memory > 1.5 GB and fling frame drops recorded (QA-025, accepted); WebKit 100 MB scroll = known limit D-025 |
+| NFR-05 startup | perf.md (cold 0.6 s, cached 0.07 s, Lighthouse TTI 0.53 s); check:size 176.9/250 KB | pass |
+| NFR-06 accessibility | axe round 2 (qa-round2.spec.ts: empty, invalid, loaded, find, tree, privacy, 390 menu, 320; dark + light; both engines): 0 violations; qa-a-ui-a11y.spec.ts (touch 44 px, forced colors, focus return, landmarks); a11y.md; keyboard walkthrough of overflow menu and Find (qa-round2 `keyboard`) pass | automated pass. Safari/WebKit does not Tab to buttons by default (M-A4, manual). **Manual:** screen reader pass |
+| NFR-07 browser support / min width | Chromium + WebKit e2e; 390 and 320 touch (QA-001/010/011); forced colors | pass Chromium/WebKit. **Firefox not run (cannot launch here); real Safari/devices manual** |
+| NFR-08 correctness | tests/conformance (JSONTestSuite), tests/property, format-roundtrip (vitest) | pass |
+| NFR-09 embedding safety | host.spec.ts (frame-ancestors, origin check) | pass (stub host). Real portal embedding pending F-012.R5/R6 in taro-kit |
 
-## Manual checks for the user
-- Real Safari (macOS, iOS) and real Firefox: smoke FLOW-01..03, file open/drop, download in the portal iframe.
-- Screen reader (VoiceOver, NVDA) on SCR-Formatter: status announcements, tree, find.
-- Clipboard operations longer than 5 s on a very large document (F-007.AC8 uses a stubbed clipboard).
-- Real phones/tablets: touch targets, toolbar reachability (QA-001), virtual keyboard with find.
-- Real memory behaviour on 100 MB+ documents in Firefox/Safari.
+## Manual checks for the user (exact steps)
+1. Real Safari (macOS, iOS) and real Firefox: open the production URL; run FLOW-01 (paste `{"a":1,"b":[1,2]}`, Beautify, Copy, Download), FLOW-02 (type `{"a":1,}`, click the error, fix it), FLOW-03 (paste 250-element array, Tree, expand, Copy path, Show in text). In Safari also press Tab through the page (find buttons, "Local only" reachable? then Option+Tab) — a11y.md M-A4/M5. Playwright Firefox cannot launch here.
+2. VoiceOver (macOS Safari, then iOS): follow a11y.md M5-M11 (toolbar, More actions menu, find count "1 of N", tree announcements, error status).
+3. Clipboard longer than 5 s: paste or open a ~100 MB file, press Copy, confirm the "copying" progress and that the result pastes complete (F-007.AC8 uses a stubbed clipboard).
+4. Real phone (iOS Safari, Android Chrome) at 390/360/320 px: tap More actions, every item; Find with the on-screen keyboard; check 44 px targets, pinch-zoom to 200%, no horizontal page scroll.
+5. Embedding in the real portal once taro-kit implements F-012.R5/R6: load the tool in the portal iframe, toggle portal theme (tool follows without reload), resize, run FLOW-01, check the portal CSP/frame-ancestors allow it.
+6. Notices link inside the portal frame: privacy details > "Open-source notices" opens in a new tab via target=_blank; a portal iframe sandbox without allow-popups blocks it. Verify there; if blocked, decide between adding allow-popups in the portal or an in-frame notices view.
+7. Windows High Contrast / forced colors (real Edge): Text/Tree pressed, tabs, match case, tree selected row distinguishable (Chromium emulation passes).
+8. Real memory on 100 MB+ documents in Firefox/Safari; headed Chromium Performance trace for fast scrollbar drags (QA-025).
+9. Deploy: header smoke test after first deploy (QA-026).
