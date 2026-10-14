@@ -1334,9 +1334,13 @@
     {
       "at": "2026-10-14T04:23:54+00:00",
       "event": "context compaction (auto) at: build-my-app: phase 6 Release [in_progress] — 6 hand-off: waiting for user to complete checklist A–I · 6/8 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-10-14T06:07:24+00:00",
+      "event": "Portal theme hand-off (taro-kit F-012.R5/R6, commit 40b1ac5) checked locally against the real portal build: 20/20 Chromium+WebKit (qa/portal-embedding.md). Repo user.email set to adamnguyen.itdn@gmail.com; history email rewrite pending user approval."
     }
   ],
-  "updated": "2026-10-14T04:23:54+00:00",
+  "updated": "2026-10-14T06:07:24+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
