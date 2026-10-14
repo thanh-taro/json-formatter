@@ -128,7 +128,10 @@ function IssueItem({ issue, onActivate }: { issue: Issue; onActivate: () => void
         </span>
         <span class="tk-issue__hint">{hintFor(issue)}</span>
         <span class="tk-issue__location">{locationOf(issue)}</span>
-        <span class="tk-issue__code">{issue.code}</span>
+        {/* QA-020 (a11y m6): the raw code is visual detail, not part of the row's name. */}
+        <span class="tk-issue__code" aria-hidden="true">
+          {issue.code}
+        </span>
       </button>
     </li>
   );

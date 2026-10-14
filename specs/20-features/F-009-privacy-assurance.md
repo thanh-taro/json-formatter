@@ -31,7 +31,8 @@ claim true by construction (PRN-01).
 - **AC2** Given the privacy statement, when the user activates it, then COPY-privacy.details is shown and can be dismissed. (R2)
 
 ## UX notes
-CMP-StatusBar holds COPY-privacy.badge; details open as a small popover.
+CMP-StatusBar holds COPY-privacy.badge; details open as a small popover, which ends with a
+COPY-privacy.notices link to the open-source licence notices shipped with the tool.
 
 ## Edge cases
 - Narrow widths → the statement may shorten to an icon labelled COPY-privacy.badge_label.

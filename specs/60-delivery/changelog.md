@@ -36,3 +36,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
  - F-007, F-008 shipped: F-007.AC3 runs a real minify; F-008.AC6/AC7 exercise a full M-1 session embedded and standalone. Open: NFR-01 vs lazy MOD-Tree chunk on a first WebKit visit (expected-fail test, needs a decision).
 - F-006 shipped. All M-1 features shipped. Lazy chunks preloaded during page load to keep NFR-01 on first WebKit visits.
 - NFR-07 minimum width lowered to 320 px for WCAG reflow (QA a11y).
+- QA fixes group A: added COPY-privacy.notices (link to the open-source notices from the privacy details, F-009 UX notes; QA-021).

@@ -2,7 +2,8 @@
 // invalid with jump to the error / checking / empty), size and line count (F-005.R6), cursor
 // position, privacy statement and details (F-009.R1, F-009.R2); narrow variant: cursor hidden,
 // COPY-status.size_lines_short, privacy statement as its icon (COPY-privacy.badge_label).
-// Validity changes are announced through one polite status region (SCR-Formatter).
+// Validity changes are announced through one polite status region (SCR-Formatter). The privacy
+// details link to the open-source notices (F-009 UX notes, COPY-privacy.notices).
 import { formatCount, formatSize, t, tCount } from '../../copy';
 import type { AppController } from '../controller';
 import { validityText } from '../controller';
@@ -20,9 +21,12 @@ export function StatusBar({ app }: { app: AppController }) {
       <Validity app={app} />
       <span class="tk-statusbar__size">{tCount('status.size_lines', doc.value.lines, size)}</span>
       <span class="tk-statusbar__size-short">{tCount('status.size_lines_short', doc.value.lines, size)}</span>
-      <span class="tk-statusbar__cursor">
-        {t('status.cursor', { line: formatCount(cursor.value.line), column: formatCount(cursor.value.column) })}
-      </span>
+      {/* QA-005: the cursor position belongs to the text view (tree boards show none). */}
+      {app.state.view.value === 'text' && (
+        <span class="tk-statusbar__cursor">
+          {t('status.cursor', { line: formatCount(cursor.value.line), column: formatCount(cursor.value.column) })}
+        </span>
+      )}
       <span class="tk-visually-hidden" role="status">
         {app.state.announcement.value}
       </span>
@@ -87,6 +91,10 @@ function PrivacyStatement() {
           </button>
         </div>
         <p class="tk-privacy__body">{t('privacy.details')}</p>
+        {/* QA-021: the licence notices shipped with the tool (COPY-privacy.notices). */}
+        <a class="tk-privacy__link" href="/third-party-notices.txt" target="_blank" rel="noopener noreferrer">
+          {t('privacy.notices')}
+        </a>
       </div>
     </>
   );

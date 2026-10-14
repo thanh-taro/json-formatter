@@ -14,12 +14,15 @@ import { Toasts } from './components/Toasts';
 import { Toolbar } from './components/Toolbar';
 import { TreeArea } from './components/TreeArea';
 import { AppController } from './controller';
+import { installFocusReturn } from './focus';
 import { createAppState } from './state';
 
 export function Formatter() {
   const app = useMemo(() => new AppController(createAppState()), []);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => () => app.detach(), [app]);
+  // QA-013 / NFR-06: focus returns to the trigger (or the editor) after busy, dialogs, notices.
+  useEffect(() => (root.current ? installFocusReturn(root.current, app) : undefined), [app]);
   // A plain (synchronous) effect, not useSignalEffect: that one defers to the next animation
   // frame, so `data-busy` would still read "false" right after an action started and anything
   // waiting for the tool to be idle (the e2e `waitIdle`) could pass before the operation ran.

@@ -5,12 +5,27 @@
     /* --tk-statusbar-height: statusbar.css (taller for coarse pointers). */
     /* toolbar · notice bar · main area · issue panel (at most size.issuePanelMax) · status bar */
     grid-template-rows:
-      var(--tk-size-toolbar) auto minmax(0, 1fr) fit-content(var(--tk-size-issue-panel-max))
+      var(--tk-toolbar-height) auto minmax(0, 1fr) fit-content(var(--tk-size-issue-panel-max))
       var(--tk-statusbar-height, var(--tk-size-statusbar));
     height: 100%;
+    --tk-toolbar-height: var(--tk-size-toolbar);
+  }
+  /* Coarse pointers: 44 px targets in a taller bar (CMP-Toolbar "narrow · 390 coarse", QA-010). */
+  @media (pointer: coarse) {
+    .tk-formatter {
+      --tk-toolbar-height: calc(var(--tk-size-touch-target) + 2 * var(--tk-space-1));
+    }
+  }
+
+  /* Banner landmark around the toolbar (QA-020); the toolbar fills it. */
+  .tk-header {
+    display: flex;
+    min-inline-size: 0;
   }
 
   .tk-toolbar {
+    flex: 1;
+    min-inline-size: 0;
     display: flex;
     align-items: center;
     gap: var(--tk-space-2);
@@ -29,13 +44,20 @@
     padding-inline-end: var(--tk-space-2);
     border-inline-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
   }
+  /* Narrow (design SCR-Formatter *_narrow): no group dividers, the actions sit 4 px apart. */
+  .tk-toolbar--narrow {
+    gap: var(--tk-space-1);
+  }
+  .tk-toolbar--narrow .tk-toolbar__group {
+    padding-inline-end: 0;
+    border-inline-end: 0;
+  }
   .tk-toolbar__group--end {
     margin-inline-start: auto;
     border-inline-end: 0;
   }
 
-  .tk-button,
-  .tk-select select {
+  .tk-button {
     min-height: var(--tk-size-control);
     min-width: var(--tk-size-target-min);
     padding-inline: var(--tk-space-2);
@@ -47,9 +69,61 @@
     white-space: nowrap;
     cursor: pointer;
   }
-  .tk-select select {
-    border-color: var(--tk-color-line-strong);
+  .tk-button--icon {
+    min-width: var(--tk-size-control);
+  }
+  /* Coarse pointers: every toolbar, notice, dialog and empty-state button is 44 px (QA-010). */
+  @media (pointer: coarse) {
+    .tk-button {
+      min-block-size: var(--tk-size-touch-target);
+      min-inline-size: var(--tk-size-touch-target);
+    }
+  }
+
+  /* CMP-Toolbar indent selector (QA-003): a pill with COPY-label.indent, the value and a chevron;
+     the native select keeps platform pickers and keyboard behaviour. */
+  .tk-select {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    min-block-size: var(--tk-size-control);
+    padding-inline: var(--tk-space-2);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-sm);
     background: var(--tk-color-surface);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-medium);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .tk-select:has(select:focus-visible) {
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: 1px;
+  }
+  .tk-select__label {
+    color: var(--tk-color-muted);
+  }
+  .tk-select select {
+    align-self: stretch;
+    appearance: none;
+    min-block-size: calc(var(--tk-size-control) - 2 * var(--tk-border-width-hairline));
+    padding-block: 0;
+    padding-inline: 0 calc(var(--tk-size-icon-sm) + var(--tk-space-1));
+    border: 0;
+    background: transparent;
+    color: var(--tk-color-fg);
+    font: inherit;
+    cursor: pointer;
+  }
+  .tk-select select:focus-visible {
+    outline: none;
+  }
+  .tk-select__chevron {
+    position: absolute;
+    inset-inline-end: var(--tk-space-2);
+    color: var(--tk-color-muted);
+    pointer-events: none;
   }
   .tk-button:hover:not(:disabled) {
     background: var(--tk-color-surface2);
@@ -75,7 +149,7 @@
   }
   /* Coarse pointers: form fields at 16 px (no zoom on focus, CMP-Toolbar design). */
   @media (pointer: coarse) {
-    .tk-select select,
+    .tk-select,
     .tk-indent-width {
       min-block-size: var(--tk-size-touch-target);
       font-size: var(--tk-font-size-input);
@@ -85,6 +159,85 @@
   .tk-select select:disabled {
     color: var(--tk-color-muted);
     cursor: default;
+  }
+  .tk-select--disabled {
+    cursor: default;
+  }
+
+  /* CMP-Toolbar overflow menu (COPY-action.more, QA-001): a popover in the top layer, anchored
+     under its button at the inline end; never wider or taller than the viewport. */
+  .tk-menu {
+    position: fixed;
+    inset: auto;
+    inset-block-start: calc(var(--tk-menu-top, 0px) + var(--tk-space-1));
+    right: var(--tk-menu-end, 0px);
+    min-inline-size: calc(var(--tk-space-10) * 5);
+    max-inline-size: calc(100vw - 2 * var(--tk-space-1));
+    max-block-size: calc(100vh - var(--tk-menu-top, 0px) - 2 * var(--tk-space-1));
+    margin: 0;
+    padding: var(--tk-space-1);
+    overflow: auto;
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-body);
+  }
+  .tk-menu:popover-open {
+    display: flex;
+    flex-direction: column;
+  }
+  .tk-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    min-block-size: var(--tk-size-control);
+    padding-inline: var(--tk-space-2);
+    border: 0;
+    border-radius: var(--tk-radius-sm);
+    background: none;
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-medium);
+    text-align: start;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .tk-menu__item:hover:not(:disabled),
+  .tk-menu__item:focus-visible {
+    background: var(--tk-color-surface2);
+  }
+  .tk-menu__item:focus-visible {
+    outline-offset: calc(-1 * var(--tk-border-width-focus));
+  }
+  .tk-menu__item:disabled {
+    color: var(--tk-color-muted);
+    cursor: default;
+  }
+  .tk-menu__item--danger:not(:disabled) {
+    color: var(--tk-color-danger);
+  }
+  .tk-menu__separator {
+    block-size: var(--tk-border-width-hairline);
+    margin: var(--tk-space-1);
+    border: 0;
+    background: var(--tk-color-line);
+  }
+  .tk-menu__separator:first-child,
+  .tk-menu__separator + .tk-menu__separator {
+    display: none;
+  }
+  .tk-menu__field {
+    display: flex;
+    gap: var(--tk-space-2);
+  }
+  .tk-menu__field .tk-select {
+    flex: 1;
+  }
+  @media (pointer: coarse) {
+    .tk-menu__item {
+      min-block-size: var(--tk-size-touch-target);
+    }
   }
 
   .tk-main {

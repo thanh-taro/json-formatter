@@ -112,6 +112,7 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-privacy.badge** | Local only | Short form |
 | **COPY-privacy.badge_label** | Your data stays in this browser | Accessible name of the badge |
 | **COPY-privacy.details** | This tool runs entirely in your browser. Your JSON is never uploaded, logged, or stored, and the tool sends no analytics. Closing the page discards it. | |
+| **COPY-privacy.notices** | Open-source notices | Link in the privacy details to the open-source licence notices |
 
 ## Hints (one per issue code, RULE-04 / RULE-05)
 | ID | Text | Notes |

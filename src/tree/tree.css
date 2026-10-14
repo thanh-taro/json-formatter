@@ -334,3 +334,14 @@
     }
   }
 }
+
+/* Forced colors (QA-012): the selected row loses its background and accent edge, so it is
+   outlined with the system highlight colour. */
+@layer components {
+  @media (forced-colors: active) {
+    .tk-tree__row--selected {
+      outline: var(--tk-border-width-focus) solid Highlight;
+      outline-offset: calc(-1 * var(--tk-border-width-focus));
+    }
+  }
+}

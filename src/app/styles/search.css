@@ -1,6 +1,7 @@
 /* CMP-SearchPanel (F-010): docked at the top of CMP-Editor. Tokens only (ADR-0011). Wide: field ·
-   match case · count · previous · next · close in one row; narrow (< 600 px): field and close,
-   then match case, count, previous and next under the field. Coarse pointers: 44 px targets. */
+   match case · count · previous · next · close in one row; narrow (< 600 px, design
+   SCR-Formatter find-open narrow, QA-004): the field alone, then match case, count, previous, next
+   and close under it. Coarse pointers: 44 px targets. */
 @layer components {
   /* The editor area stacks the panel above the editor host. */
   .tk-editor {
@@ -40,10 +41,10 @@
   }
   @container tk-search (width < 600px) {
     .tk-search__bar {
-      grid-template-columns: auto auto 1fr auto auto;
+      grid-template-columns: auto auto 1fr auto auto auto;
       grid-template-areas:
-        'field field field field close'
-        'toggle count . prev next';
+        'field field field field field field'
+        'toggle count . prev next close';
       column-gap: var(--tk-space-1);
     }
     .tk-search__field {

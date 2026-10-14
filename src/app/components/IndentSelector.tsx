@@ -6,6 +6,7 @@ import { useState } from 'preact/hooks';
 import { MAX_CUSTOM_WIDTH, MIN_CUSTOM_WIDTH, type IndentStyle } from '../../core';
 import { t } from '../../copy';
 import type { AppController } from '../controller';
+import { Icon } from './Icon';
 
 /** Custom width offered first (CMP-Toolbar design: "Custom… (3 spaces)"). */
 const FIRST_CUSTOM = 3;
@@ -37,9 +38,12 @@ export function IndentSelector({ app, disabled }: { app: AppController; disabled
 
   return (
     <>
-      <label class="tk-select">
-        <span class="tk-visually-hidden">{t('label.indent')}</span>
+      {/* QA-003: the design's pill — visible COPY-label.indent, the value, a chevron. */}
+      <label class={disabled ? 'tk-select tk-select--disabled' : 'tk-select'}>
+        <span class="tk-select__label">{t('label.indent')}</span>
         <select
+          // named by COPY-label.indent alone (the wrapping label would add the value)
+          aria-label={t('label.indent')}
           value={value}
           disabled={disabled}
           data-indent={value}
@@ -50,6 +54,7 @@ export function IndentSelector({ app, disabled }: { app: AppController; disabled
           <option value="tab">{t('indent.tab')}</option>
           <option value="custom">{t('indent.custom', { n: width })}</option>
         </select>
+        <Icon name="chevron-down" class="tk-select__chevron" />
       </label>
       {custom && (
         <input

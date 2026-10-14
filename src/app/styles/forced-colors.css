@@ -1,0 +1,44 @@
+/* Forced colors (Windows High Contrast; QA-012, NFR-06, WCAG 1.4.1 / 1.4.11): backgrounds and
+   shadows are replaced by system colours, so pressed, selected and current states are drawn with
+   system colours and borders instead. Error and warning markers keep their own colours. */
+@layer components {
+  @media (forced-colors: active) {
+    /* View switch, match case: pressed = Highlight fill. */
+    .tk-button[aria-pressed='true'],
+    .tk-search__toggle[aria-pressed='true'] {
+      forced-color-adjust: none;
+      border-color: Highlight;
+      background: Highlight;
+      color: HighlightText;
+    }
+    .tk-button[aria-pressed='true']:disabled {
+      border-color: GrayText;
+      background: Canvas;
+      color: GrayText;
+    }
+    /* Issue tabs: the selected tab is underlined (its accent shadow is dropped). */
+    .tk-issues__tab {
+      border-block-end: var(--tk-border-width-focus) solid transparent;
+    }
+    .tk-issues__tab[aria-selected='true'] {
+      border-block-end: calc(var(--tk-border-width-focus) + var(--tk-border-width-hairline)) solid Highlight;
+    }
+    /* Beautify stays a framed button. */
+    .tk-button--primary {
+      border-color: ButtonText;
+    }
+    /* The validity dot is a shape, not only a colour. */
+    .tk-statusbar__dot {
+      forced-color-adjust: none;
+    }
+    .tk-statusbar__validity[data-validity='valid'] .tk-statusbar__dot {
+      background: CanvasText;
+    }
+    .tk-statusbar__validity:is([data-validity='checking'], [data-validity='empty']) .tk-statusbar__dot {
+      border-color: CanvasText;
+    }
+    .tk-statusbar__validity[data-validity='invalid'] .tk-statusbar__dot {
+      background: Mark;
+    }
+  }
+}
