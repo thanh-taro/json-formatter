@@ -82,12 +82,12 @@
     },
     "deploy": {
       "title": "7 Deploy",
-      "status": "in_progress",
-      "step": "7 deploy v1.1.0 live (ac565763), smoke 9/9, tagged + GitHub release; waiting for owner to confirm G7",
+      "status": "done",
+      "step": "7 deploy v1.1.0 live (ac565763); G7 passed; portal entry live (G); manual QA F remains with the owner",
       "gate": {
-        "status": "pending",
-        "at": null,
-        "note": null
+        "status": "passed",
+        "at": "2026-10-20T15:24:33+00:00",
+        "note": "Owner confirmed v1.1.0 live and the tool added to the TaroKit portal (2026-10-20)"
       }
     },
     "iterate": {
@@ -754,22 +754,6 @@
     }
   },
   "log": [
-    {
-      "at": "2026-10-13T06:15:28+00:00",
-      "event": "phase setup -> in_progress"
-    },
-    {
-      "at": "2026-10-13T06:15:57+00:00",
-      "event": "set profile"
-    },
-    {
-      "at": "2026-10-13T06:15:58+00:00",
-      "event": "set autonomy"
-    },
-    {
-      "at": "2026-10-13T06:15:58+00:00",
-      "event": "set environment"
-    },
     {
       "at": "2026-10-13T06:16:05+00:00",
       "event": "phase setup -> gate"
@@ -1553,9 +1537,25 @@
     {
       "at": "2026-10-20T15:22:50+00:00",
       "event": "Deployed v1.1.0 (90d1054) to production, Cloudflare ac565763; smoke 9/9; release v1.1.0 on GitHub"
+    },
+    {
+      "at": "2026-10-20T15:24:33+00:00",
+      "event": "gate deploy passed: Owner confirmed v1.1.0 live and the tool added to the TaroKit portal (2026-10-20)"
+    },
+    {
+      "at": "2026-10-20T15:24:33+00:00",
+      "event": "phase deploy -> done"
+    },
+    {
+      "at": "2026-10-20T15:24:33+00:00",
+      "event": "G7 passed: owner confirmed v1.1.0 live; tool visible in TaroKit portal"
+    },
+    {
+      "at": "2026-10-20T15:25:45+00:00",
+      "event": "Owner signed off manual QA (F) on v1.1.0, portal embedding included; M-1 release complete"
     }
   ],
-  "updated": "2026-10-20T15:22:50+00:00",
+  "updated": "2026-10-20T15:25:45+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
