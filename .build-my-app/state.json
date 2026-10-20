@@ -72,18 +72,18 @@
     },
     "release": {
       "title": "6 Release candidate",
-      "status": "in_progress",
+      "status": "done",
       "step": "6 hand-off (release): v1.0.0 tagged and released on GitHub (2026-10-20); B3 verified, C obsolete (no GitHub workflows, manual deploys); waiting for user F (manual QA) and G (unhide in portal)",
       "gate": {
-        "status": "pending",
-        "at": null,
-        "note": null
+        "status": "passed",
+        "at": "2026-10-20T15:17:35+00:00",
+        "note": "v1.1.0 candidate 90d1054: spec lint 0/0, typecheck, lint, unit 397, e2e chromium 227, licenses, size 177.8/250 KB; owner asked to deploy (2026-10-20)"
       }
     },
     "deploy": {
       "title": "7 Deploy",
-      "status": "pending",
-      "step": null,
+      "status": "in_progress",
+      "step": "7 deploy v1.1.0 live (ac565763), smoke 9/9, tagged + GitHub release; waiting for owner to confirm G7",
       "gate": {
         "status": "pending",
         "at": null,
@@ -754,10 +754,6 @@
     }
   },
   "log": [
-    {
-      "at": "2026-10-13T06:15:28+00:00",
-      "event": "initialized (autonomy=balanced)"
-    },
     {
       "at": "2026-10-13T06:15:28+00:00",
       "event": "phase setup -> in_progress"
@@ -1541,9 +1537,25 @@
     {
       "at": "2026-10-20T15:06:13+00:00",
       "event": "CR source link: GitHub mark (D-034, DEP-40/41) + 'Source code' text (D-035); local checks pass; not committed"
+    },
+    {
+      "at": "2026-10-20T15:17:35+00:00",
+      "event": "gate release passed: v1.1.0 candidate 90d1054: spec lint 0/0, typecheck, lint, unit 397, e2e chromium 227, licenses, size 177.8/250 KB; owner asked to deploy (2026-10-20)"
+    },
+    {
+      "at": "2026-10-20T15:17:35+00:00",
+      "event": "phase deploy -> in_progress"
+    },
+    {
+      "at": "2026-10-20T15:22:50+00:00",
+      "event": "deploy step: 7 deploy v1.1.0 live (ac565763), smoke 9/9, tagged + GitHub release; waiting for owner to confirm G7"
+    },
+    {
+      "at": "2026-10-20T15:22:50+00:00",
+      "event": "Deployed v1.1.0 (90d1054) to production, Cloudflare ac565763; smoke 9/9; release v1.1.0 on GitHub"
     }
   ],
-  "updated": "2026-10-20T15:06:13+00:00",
+  "updated": "2026-10-20T15:22:50+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
