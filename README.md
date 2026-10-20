@@ -68,6 +68,11 @@ Source: `.build-my-app/reports/qa/privacy-declaration.md`. *Needs review by the 
 ## Terms
 No terms of service are provided: this is a free personal tool with no accounts, payments or user data. It
 is offered as is, without warranty. *Needs review by the owner*: confirm this is enough for the jurisdiction
-you operate in, and decide on a licence for the source (`package.json` says `UNLICENSED`, all rights
-reserved). Third-party licences are in `/third-party-notices.txt`.
+you operate in. Third-party licences are in `/third-party-notices.txt`.
+
+## License
+Copyright (c) 2026 Thanh Nguyen Tri. The source is published under the
+[PolyForm Strict License 1.0.0](LICENSE): you may read it and use it for personal, noncommercial purposes.
+You may not use it commercially, redistribute it, or publish modified versions or new works based on it.
+For any other use, ask the author.
 

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "A private, lossless JSON formatter for developers, embedded in the taro-kit tools portal.",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE",
   "packageManager": "pnpm@11.25.0",
   "engines": {
     "node": ">=24"
