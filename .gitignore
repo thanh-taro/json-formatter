@@ -14,3 +14,6 @@ tests/fixtures/JSONTestSuite/
 # generated large fixtures
 tests/fixtures/generated/
 .wrangler/
+
+# Workflow reports: kept locally, not published
+.build-my-app/reports/
