@@ -17,3 +17,6 @@ tests/fixtures/generated/
 
 # Workflow reports: kept locally, not published
 .build-my-app/reports/
+
+# IDE settings
+.idea/
