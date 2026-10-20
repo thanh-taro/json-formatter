@@ -35,9 +35,9 @@ Deploying for other host origins: `HOST_ORIGINS="https://a.example https://b.exa
 (sets `frame-ancestors` and the compiled-in message allow-list).
 
 ## Release and deployment
-Hosting is Cloudflare Workers static assets at https://json-formatter.tarokit.app (ADR-0009), published by
-`.github/workflows/deploy.yml` (manual run or a `v*` tag; runs every CI check, builds with
-`HOST_ORIGINS=https://tarokit.app`, uploads `dist/` with `wrangler`, then runs the smoke test).
+Hosting is Cloudflare Workers static assets at https://json-formatter.tarokit.app (ADR-0009), deployed by hand
+from your machine only; there are no CI workflows and nothing deploys automatically. Run every check, build
+with `HOST_ORIGINS=https://tarokit.app`, upload `dist/` with `pnpm exec wrangler deploy`, then run the smoke test.
 Source maps are built hidden and never uploaded (`public/.assetsignore`). Account, DNS and secret setup is
 owner work: see `.build-my-app/reports/release-checklist.md`.
 

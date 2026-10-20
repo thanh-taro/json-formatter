@@ -54,8 +54,8 @@ ever ships, and it is not listed in the notices); **build** / **dev** / **ci** =
 | **DEP-30** | typescript-eslint | ^8.71 | MIT | dev | TypeScript lint rules | approved | ADR-0003 |
 | **DEP-31** | eslint-plugin-jsx-a11y | ^6.10 | MIT | dev | Accessibility lint for TSX (peer range lists eslint ≤ 9; works with 10, re-check on upgrade) | approved | ADR-0003 |
 | **DEP-32** | prettier | ^3.9 | MIT | dev | Formatting | approved | ADR-0003 |
-| **DEP-33** | wrangler | 4.149.0 (pinned; `^4` range, newest allowed by `minimumReleaseAge`) | MIT OR Apache-2.0 | ci | Deploy static assets (`wrangler deploy`, `deploy.yml`); needs `overrides: sharp: '-'` (miniflare's local-dev image dependency, LGPL-3.0 libvips, never loaded by a deploy) and `allowBuilds` esbuild/workerd = false in `pnpm-workspace.yaml` | approved, installed (devDependency) | ADR-0009 |
-| **DEP-34** | GitHub Actions: actions/checkout, actions/setup-node, pnpm/action-setup, actions/cache, actions/upload-artifact (v7.0.2), actions/download-artifact (v8.0.2) | pinned by commit SHA | MIT | ci | CI and publish workflows (`deploy.yml` hands `dist/` from the check job to the secret-holding deploy job) | approved | ADR-0009 |
+| **DEP-33** | wrangler | 4.149.0 (pinned; `^4` range, newest allowed by `minimumReleaseAge`) | MIT OR Apache-2.0 | ci | Deploy static assets (`wrangler deploy`, run by hand locally); needs `overrides: sharp: '-'` (miniflare's local-dev image dependency, LGPL-3.0 libvips, never loaded by a deploy) and `allowBuilds` esbuild/workerd = false in `pnpm-workspace.yaml` | approved, installed (devDependency) | ADR-0009 |
+| **DEP-34** | GitHub Actions: actions/checkout, actions/setup-node, pnpm/action-setup, actions/cache, actions/upload-artifact (v7.0.2), actions/download-artifact (v8.0.2) | pinned by commit SHA | MIT | ci | CI and publish workflows | removed (no GitHub workflows: checks and deploys run locally, by hand) | ADR-0009 |
 | **DEP-35** | pnpm | 11.x | MIT | dev | Package manager, license report | approved | ADR-0003 |
 
 ## Evaluated, not adopted

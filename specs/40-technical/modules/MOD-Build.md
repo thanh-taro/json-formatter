@@ -14,7 +14,7 @@ constant from the same setting (ADR-0008, ADR-0009), including the `/sw.js` rule
 detaches the page CSP with `! Content-Security-Policy` and sets its own CSP and
 `Cache-Control: max-age=86400`, and emits `/sw.js` at a stable, unhashed path (ADR-0012); enforce the size budgets of
 `architecture.md` on compressed output; run the license audit and `dist/` scan and emit
-`third-party-notices.txt` (ADR-0001); the deploy workflow and post-deploy smoke test
+`third-party-notices.txt` (ADR-0001); the manual deploy configuration (`wrangler.jsonc`) and post-deploy smoke test
 (headers present per path, zero requests after load apart from the D-021 exception,
 unlisted origin refused).
 
@@ -23,7 +23,7 @@ unlisted origin refused).
 
 ## Public surface
 - `pnpm build` (with `HOST_ORIGINS`), `pnpm check:size`, `pnpm check:licenses`,
-  `pnpm gen` (copy, tokens), CI workflows.
+  `pnpm gen` (copy, tokens). No CI workflows: checks and deploys run locally, by hand.
 - Offline kill switch (ADR-0012 recovery): `SW_KILL=1 pnpm build` ships a `/sw.js` that takes
   over at the browser's next update check (at most ~24 h, its `max-age`), deletes the tool's
   `json-formatter-*` caches and unregisters itself; pages of that build register no worker.
@@ -41,11 +41,11 @@ NFR-01 (CSP), NFR-05 (budget gate), NFR-09 (frame-ancestors).
   packages are read from the hidden source maps, `@license` banners and the Vite manifest; every
   one must be a runtime/asset registry row, fonts and images must trace to a registered package,
   unknown file types fail, and `third-party-notices.txt` must list exactly the shipped packages
-  and versions. CI runs it after the build.
+  and versions. Run it after the build, before every deploy.
 - `pnpm-workspace.yaml`: `minimumReleaseAge` (3 days), `trustPolicy: no-downgrade` with exact-
   version, reviewed `trustPolicyExclude` entries only, and `blockExoticSubdeps` /
   `strictDepBuilds` set explicitly (pnpm 11 defaults, pinned against a default change).
-- CI checks out with `persist-credentials: false`; the JSONTestSuite tarball must match its
+- The JSONTestSuite tarball must match its
   pinned SHA-256 before it is extracted.
 
 ## Trusted Types (not enforced, 2026-10-14)

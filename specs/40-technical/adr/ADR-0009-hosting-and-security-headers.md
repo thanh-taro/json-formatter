@@ -19,8 +19,8 @@ no email obfuscation, no cookies), and tools on subdomains of `tarokit.app` that
 ## Decision
 - **Host**: Cloudflare Workers static-assets project (assets only, no Worker script) at
   `https://json-formatter.tarokit.app`, in the portal's DNS zone (inherits its zone hygiene). Deployed by
-  `wrangler` from a GitHub Actions publish workflow that runs only when all checks pass;
-  host-side Git auto-deploy off. Free tier.
+  `wrangler` by hand from the owner's machine, after every local check passes; no CI publish
+  workflow and host-side Git auto-deploy off, so nothing deploys automatically. Free tier.
 - **Headers** (generated `_headers`; the page policy below applies to every path, including
   the module worker under `/assets/`, except `/sw.js` — see the service-worker exception):
   - `Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-<boot script>';
