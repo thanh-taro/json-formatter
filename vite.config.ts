@@ -32,8 +32,9 @@ export default defineConfig({
     assetsInlineLimit: 0,
   },
   worker: { format: 'es' },
-  preview: { port: 4173, strictPort: true },
-  server: { port: 5173, strictPort: true },
+  // Own ports, so this tool runs beside the other taro-kit tools (they use Vite's 5173/4173).
+  preview: { port: 4180, strictPort: true },
+  server: { port: 5180, strictPort: true },
   test: {
     include: ['tests/unit/**/*.test.ts', 'tests/property/**/*.test.ts', 'tests/conformance/**/*.test.ts'],
     environment: 'node',

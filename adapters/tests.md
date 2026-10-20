@@ -36,13 +36,13 @@ starts with its ID**; `python3 tools/spec_lint.py --coverage tests` lists criter
 ## End-to-end setup
 - Runs against the production build: `pnpm build`, then `pnpm test:e2e`
   (`--project=chromium|firefox|webkit`). `tests/e2e/server.mjs` starts:
-  - tool `http://localhost:4173` — `dist/` with `dist/_headers` applied with Cloudflare semantics
+  - tool `http://localhost:4400` — `dist/` with `dist/_headers` applied with Cloudflare semantics
     (rules merge, `! Name` detaches); `frame-ancestors` is replaced by the stub host origin;
-  - stub host `http://localhost:4174/host.html` — embeds the tool with the portal's frame
+  - stub host `http://localhost:4401/host.html` — embeds the tool with the portal's frame
     attributes (`sandbox`, `allow="clipboard-write"`, `referrerpolicy`), query `theme`, `w`, `h`,
     records messages in `window.__host.received`, `window.setTheme(value)` posts `taro:theme`;
-  - unlisted origin `http://localhost:4175` — same pages, not allow-listed (F-008.AC8);
-  - admin `http://localhost:4179` — `/log` (server-side request log for NFR-01), `/reset`.
+  - unlisted origin `http://localhost:4402` — same pages, not allow-listed (F-008.AC8);
+  - admin `http://localhost:4406` — `/log` (server-side request log for NFR-01), `/reset`.
 - `tests/e2e/fixtures.ts` `instrument(page)` records CSP violations (`window.__csp`) and the
   theme/background of the first animation frame (`window.__firstFrame`) in every frame.
 - Accessibility: `@axe-core/playwright` with tags `wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa`

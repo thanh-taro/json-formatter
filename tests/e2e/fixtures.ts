@@ -1,8 +1,8 @@
 // Shared e2e helpers: tool/host origins and CSP-violation recording.
 import type { Page } from '@playwright/test';
 
-// Same port scheme as tests/e2e/server.mjs (E2E_PORT_BASE, default 4173).
-const BASE = Number(process.env.E2E_PORT_BASE ?? 4173);
+// Same port scheme as tests/e2e/server.mjs (E2E_PORT_BASE, default 4400).
+const BASE = Number(process.env.E2E_PORT_BASE ?? 4400);
 export const TOOL = `http://localhost:${BASE}`;
 export const HOST = `http://localhost:${BASE + 1}`;
 export const UNLISTED = `http://localhost:${BASE + 2}`;

@@ -1,10 +1,10 @@
 // E2E fixture server (ADR-0010). Serves the production build (dist/) on the tool origin with
 // the generated _headers applied the way Cloudflare static assets applies them, plus a stub
 // portal host on a second origin and an unlisted origin for refusal tests.
-//   tool      http://localhost:4173   (dist/, headers from dist/_headers)
-//   host      http://localhost:4174   (tests/e2e/host/, allow-listed as frame ancestor)
-//   unlisted  http://localhost:4175   (tests/e2e/host/, not allow-listed)
-//   admin     http://localhost:4179   (/health, /log, /reset — server-side request log, NFR-01;
+//   tool      http://localhost:4400   (dist/, headers from dist/_headers)
+//   host      http://localhost:4401   (tests/e2e/host/, allow-listed as frame ancestor)
+//   unlisted  http://localhost:4402   (tests/e2e/host/, not allow-listed)
+//   admin     http://localhost:4406   (/health, /log, /reset — server-side request log, NFR-01;
 //                                      /offline?on=1|0 — the tool origin refuses connections;
 //                                      /publish?on=1|0 — a new version of the tool is served;
 //                                      /sw-expired?on=1|0 — /sw.js is served with no-cache)
@@ -20,8 +20,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const DIST = path.join(ROOT, 'dist');
 const HOST_DIR = path.join(ROOT, 'tests/e2e/host');
-// E2E_PORT_BASE (default 4173) lets parallel worktrees run the suite without colliding.
-const BASE = Number(process.env.E2E_PORT_BASE ?? 4173);
+// E2E_PORT_BASE (default 4400) lets parallel worktrees run the suite without colliding.
+const BASE = Number(process.env.E2E_PORT_BASE ?? 4400);
 export const PORTS = { tool: BASE, host: BASE + 1, unlisted: BASE + 2, admin: BASE + 6 };
 const HOST_ORIGIN = `http://localhost:${PORTS.host}`;
 

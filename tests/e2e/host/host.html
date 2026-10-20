@@ -29,7 +29,7 @@
       // Embeds the tool with the portal's frame attributes (architecture.md A3, ADR-0008) and
       // behaves like the portal after its theme change request: theme in the address, a
       // taro:theme message with the tool's exact origin, the current theme in reply to ready.
-      // Query: tool=<origin> (default http://localhost:4173), theme=light|dark|none, w, h,
+      // Query: tool=<origin> (default http://localhost:4400), theme=light|dark|none, w, h,
       // sibling=1 (adds a frame from the unlisted origin that can post into the tool frame),
       // clip=0 (no clipboard-write permission for the frame: copying is refused, F-007.AC4).
       const q = new URLSearchParams(location.search);

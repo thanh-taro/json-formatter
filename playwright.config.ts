@@ -5,8 +5,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const CI = !!process.env['CI'];
 
-// E2E_PORT_BASE (default 4173): see tests/e2e/server.mjs.
-const PORT_BASE = Number(process.env.E2E_PORT_BASE ?? 4173);
+// E2E_PORT_BASE (default 4400): see tests/e2e/server.mjs.
+const PORT_BASE = Number(process.env.E2E_PORT_BASE ?? 4400);
 
 export default defineConfig({
   testDir: './tests/e2e',

@@ -13,7 +13,7 @@ Requirements: Node 24 (`.nvmrc`), pnpm 11 (`corepack enable` picks the version f
 | Command | What it does |
 |---|---|
 | `pnpm install` | Install dependencies (lockfile committed; lifecycle scripts blocked) |
-| `pnpm dev` | Regenerate code, then start the dev server at http://localhost:5173 (no CSP in dev) |
+| `pnpm dev` | Regenerate code, then start the dev server at http://localhost:5180 (no CSP in dev) |
 | `pnpm gen` / `pnpm gen:check` | Regenerate tokens, copy, notices and `_headers` / fail if stale (`adapters/codegen.md`) |
 | `pnpm build` | Codegen, typecheck, production build into `dist/` |
 | `pnpm preview` | Serve `dist/` (without the production headers) |
