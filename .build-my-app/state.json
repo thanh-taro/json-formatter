@@ -73,7 +73,7 @@
     "release": {
       "title": "6 Release",
       "status": "in_progress",
-      "step": "6 hand-off (release): bug-fix build 1e63fa7 live (f89082db); waiting for user B3, C, F, G, H",
+      "step": "6 hand-off (release): v1.0.0 tagged and released on GitHub (2026-10-20); B3 verified, C obsolete (no GitHub workflows, manual deploys); waiting for user F (manual QA) and G (unhide in portal)",
       "gate": {
         "status": "pending",
         "at": null,
