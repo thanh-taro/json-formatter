@@ -3,11 +3,15 @@
 // position, privacy statement and details (F-009.R1, F-009.R2); narrow variant: cursor hidden,
 // COPY-status.size_lines_short, privacy statement as its icon (COPY-privacy.badge_label).
 // Validity changes are announced through one polite status region (SCR-Formatter). The privacy
-// details link to the open-source notices (F-009 UX notes, COPY-privacy.notices).
+// details link to the open-source notices (F-009 UX notes, COPY-privacy.notices). The source
+// link follows the privacy statement (F-009.R3, D-033).
 import { formatCount, formatSize, t, tCount } from '../../copy';
 import type { AppController } from '../controller';
 import { validityText } from '../controller';
 import { Icon } from './Icon';
+
+/** The source repository (F-009.R3). */
+export const SOURCE_URL = 'https://github.com/thanh-taro/json-formatter';
 
 const DETAILS_ID = 'tk-privacy-details';
 const LABEL_ID = 'tk-privacy-label';
@@ -31,6 +35,7 @@ export function StatusBar({ app }: { app: AppController }) {
         {app.state.announcement.value}
       </span>
       <PrivacyStatement />
+      <SourceLink />
     </footer>
   );
 }
@@ -54,6 +59,30 @@ function Validity({ app }: { app: AppController }) {
         </>
       )}
     </span>
+  );
+}
+
+/**
+ * Implements: F-009.R3 — link to the source repository: the GitHub mark (D-034), then
+ * COPY-privacy.source (D-035), which hides at narrow widths. Named and titled
+ * COPY-privacy.source_label, which contains the visible text. New tab without opener or
+ * referrer (platform-mapping); the document is untouched.
+ */
+function SourceLink() {
+  const label = t('privacy.source_label');
+  return (
+    <a
+      class="tk-statusbar__source"
+      href={SOURCE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      title={label}
+      data-testid="source-link"
+    >
+      <Icon name="github" />
+      <span class="tk-statusbar__source-text">{t('privacy.source')}</span>
+    </a>
   );
 }
 

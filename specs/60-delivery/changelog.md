@@ -53,3 +53,6 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 
 ## 2026-10-20
 - Deploys are manual only (owner request): GitHub workflows `ci.yml` and `deploy.yml` removed; ADR-0009 now says the owner publishes by hand from their machine after local checks; MOD-Build no longer lists CI workflows; DEP-34 (GitHub Actions) removed; DEP-33 wrangler runs locally only.
+- Change request (owner, D-033): F-009 R3/AC3/AC4 — an always-visible, icon-only link to the source repository in CMP-StatusBar (after the privacy statement), opening in a new tab without a referrer; COPY-privacy.source_label added; glossary terms "Source repository" and "Source link"; SCR-Formatter, CMP-StatusBar, platform-mapping, MOD-App, MOD-Copy updated; architecture A3 records the portal change request for popup sandbox tokens.
+- Change request (owner, D-034): the source link uses the GitHub mark (Octicons `mark-github`, DEP-40, MIT) instead of a generic code icon; its transitive object-assign registered as unbundled (DEP-41).
+- Change request (owner, D-035): the source link shows COPY-privacy.source ("Source code") after the GitHub mark; at narrow widths it shortens to the mark, like the privacy statement. CMP-StatusBar narrow variant updated.

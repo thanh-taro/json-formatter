@@ -17,7 +17,7 @@ The single screen: load, format, check, explore and export a JSON document.
    CMP-TreeView (tree view); CMP-DropOverlay covers it
    while a file is dragged over.
 4. CMP-IssuePanel — shown when there are issues; collapsible.
-5. CMP-StatusBar — validity, size/lines, cursor position, privacy statement.
+5. CMP-StatusBar — validity, size/lines, cursor position, privacy statement, source link.
 
 ## States
 | State | When | What the user sees |

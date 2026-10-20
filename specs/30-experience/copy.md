@@ -113,6 +113,8 @@ Tone: short, plain, specific; say what happened and what to do. Placeholders in 
 | **COPY-privacy.badge_label** | Your data stays in this browser | Accessible name of the badge |
 | **COPY-privacy.details** | This tool runs entirely in your browser. Your JSON is never uploaded, logged, or stored, and the tool sends no analytics. Closing the page discards it. | |
 | **COPY-privacy.notices** | Open-source notices | Link in the privacy details to the open-source licence notices |
+| **COPY-privacy.source** | Source code | Visible text of the source link, after the GitHub mark (F-009.R3) |
+| **COPY-privacy.source_label** | Source code on GitHub | Accessible name and tooltip of the source link; contains COPY-privacy.source (F-009.R3) |
 
 ## Hints (one per issue code, RULE-04 / RULE-05)
 | ID | Text | Notes |

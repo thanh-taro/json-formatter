@@ -63,6 +63,7 @@ unless noted; "manual" marks checks left for the real-Safari pass.
 | Spec wording | Platform mapping |
 |---|---|
 | Status changes announced | `role="status"` (polite live region) for validity; errors announced once per new error |
+| Source link (F-009.R3) | `<a href target="_blank" rel="noopener noreferrer">`; the page-wide `Referrer-Policy: no-referrer` (ADR-0009) also applies; the CSP has no directive that blocks user-started navigation | Embedded: needs the portal's popup sandbox tokens (architecture A3) |
 | Dialogs and popovers | Native `<dialog>` (very-large confirmation), `popover` attribute (privacy details, overflow menu) — focus management built in |
 | Toolbar, tree keyboard models | WAI-ARIA APG patterns: `role="toolbar"` with roving `tabindex`; `role="tree"`/`treeitem` with `aria-level`, `aria-setsize`, `aria-posinset`, `aria-expanded` |
 | Leave the editor by keyboard | Tab is not captured by default; documented Escape-then-Tab path (CMP-Editor) |

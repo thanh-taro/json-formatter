@@ -24,11 +24,13 @@ ever ships, and it is not listed in the notices); **build** / **dev** / **ci** =
 | **DEP-09** | @lezer/common, @lezer/lr, @lezer/highlight, @lezer/json | transitive (^1.x) | MIT | runtime | Incremental parser used by DEP-07/DEP-08 | approved | ADR-0004 |
 | **DEP-10** | style-mod, w3c-keyname, @marijn/find-cluster-break | transitive | MIT | runtime (find-cluster-break also in the worker) | Editor internals (constructable stylesheets, key names, grapheme clusters) | approved | ADR-0004 |
 | **DEP-39** | crelt, @codemirror/streamparser | transitive of DEP-05 / DEP-07 | MIT | unbundled | Installed with CodeMirror; no code path the tool uses imports them, so they are not in `dist/` | approved | ADR-0004 |
+| **DEP-41** | object-assign | transitive of DEP-40 | MIT | unbundled | Installed with @primer/octicons; the tool inlines one SVG file and imports none of the package's code, so it is not in `dist/` | approved | ADR-0001 |
 
 ## Assets (shipped)
 | ID | Name | Version range | License | Kind | Purpose | Status | Decided by |
 |---|---|---|---|---|---|---|---|
 | **DEP-11** | lucide-static | ^1.55 | ISC | asset | Icons, only used SVGs inlined at build (same set as the portal) | approved | ADR-0011 |
+| **DEP-40** | @primer/octicons | 19.40.0 (pinned) | MIT | asset | The GitHub mark (`mark-github`) for the source link (F-009.R3, D-034); only that SVG is inlined at build. Used to link to the GitHub repository as GitHub's logo guidelines allow | approved | ADR-0011 |
 | **DEP-12** | @fontsource-variable/manrope | ^5 | OFL-1.1 | asset | UI face, self-hosted Latin subset (portal style) | approved | ADR-0011 |
 | **DEP-13** | @fontsource-variable/jetbrains-mono | ^5 | OFL-1.1 | asset | Editor/tree mono face, self-hosted Latin subset | approved | ADR-0011 |
 | **DEP-14** | Portal design tokens ("Night Market", `tokens.json`) | copy pinned to a portal commit | Owner's own work | asset (source) | Colours, spacing, radii, motion shared with the portal | approved (owner's own work, reused with permission, D-026) | ADR-0011 |

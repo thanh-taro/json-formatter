@@ -32,4 +32,4 @@ notices shown once (large tier, undo trimmed), announcements (errors once per ne
 ## Implements
 F-001.R4, F-002.R2, F-002.R4, F-002.R6, F-003.R3, F-004.R5 (notice), F-005.R2, F-005.R5,
 F-005.R6, F-006.R1, F-006.R7, F-007.R1 (confirmation), F-007.R6, F-008.R3, F-009.R1,
-F-009.R2, F-010.R1 (CMP-SearchPanel); INV-03, INV-05; RULE-01, RULE-02; NFR-02, NFR-05, NFR-06, NFR-07; SCR-Formatter.
+F-009.R2, F-009.R3 (source link), F-010.R1 (CMP-SearchPanel); INV-03, INV-05; RULE-01, RULE-02; NFR-02, NFR-05, NFR-06, NFR-07; SCR-Formatter.

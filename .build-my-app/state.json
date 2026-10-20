@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "created": "2026-10-13T06:15:28+00:00",
   "autonomy": "balanced",
   "profile": {
@@ -71,7 +71,7 @@
       }
     },
     "release": {
-      "title": "6 Release",
+      "title": "6 Release candidate",
       "status": "in_progress",
       "step": "6 hand-off (release): v1.0.0 tagged and released on GitHub (2026-10-20); B3 verified, C obsolete (no GitHub workflows, manual deploys); waiting for user F (manual QA) and G (unhide in portal)",
       "gate": {
@@ -80,8 +80,18 @@
         "note": null
       }
     },
+    "deploy": {
+      "title": "7 Deploy",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
     "iterate": {
-      "title": "7 Iterate",
+      "title": "8 Iterate",
       "status": "pending",
       "step": null,
       "gate": {
@@ -582,6 +592,51 @@
       "answer": "Outcome notices (no_indent, multiple_files, error bars) clear when another tool action starts or the document changes; large and undo_trimmed stay until dismissed",
       "asked": "2026-10-14T15:27:03+00:00",
       "answered": "2026-10-14T15:27:08+00:00"
+    },
+    {
+      "id": "D-033",
+      "question": "Source repository link placement",
+      "options": [
+        "privacy popover",
+        "status bar icon"
+      ],
+      "recommendation": "privacy popover",
+      "kind": "product",
+      "phase": "release",
+      "status": "answered",
+      "answer": "Status bar, always visible: icon-only source link after the privacy statement",
+      "asked": "2026-10-20T14:05:36+00:00",
+      "answered": "2026-10-20T14:05:40+00:00"
+    },
+    {
+      "id": "D-034",
+      "question": "Source link icon: GitHub mark source",
+      "options": [
+        "Octicons",
+        "Simple Icons"
+      ],
+      "recommendation": "Octicons",
+      "kind": "legal",
+      "phase": "release",
+      "status": "answered",
+      "answer": "Octicons mark-github (@primer/octicons, MIT), DEP-40",
+      "asked": "2026-10-20T14:30:38+00:00",
+      "answered": "2026-10-20T14:30:38+00:00"
+    },
+    {
+      "id": "D-035",
+      "question": "Source link: visible text",
+      "options": [
+        "Text after icon, icon-only when narrow",
+        "Text at every width"
+      ],
+      "recommendation": "Text after icon, icon-only when narrow",
+      "kind": "design",
+      "phase": "release",
+      "status": "answered",
+      "answer": "Owner asked for 'Source code' right of the GitHub icon; narrow widths shorten to the icon like the privacy badge",
+      "asked": "2026-10-20T15:02:07+00:00",
+      "answered": "2026-10-20T15:02:07+00:00"
     }
   ],
   "loops": {
@@ -688,6 +743,14 @@
       "started": "2026-10-14T01:44:35+00:00",
       "outcome": "converged",
       "ended": "2026-10-14T03:14:46+00:00"
+    },
+    "spec-review-cr-source-link": {
+      "round": 2,
+      "max": 3,
+      "active": false,
+      "started": "2026-10-20T14:05:41+00:00",
+      "outcome": "converged round 2; lint 0/0",
+      "ended": "2026-10-20T14:14:41+00:00"
     }
   },
   "log": [
@@ -1426,9 +1489,61 @@
     {
       "at": "2026-10-14T15:43:13+00:00",
       "event": "release step: 6 hand-off (release): bug-fix build 1e63fa7 live (f89082db); waiting for user B3, C, F, G, H"
+    },
+    {
+      "at": "2026-10-20T14:05:36+00:00",
+      "event": "decision D-033 opened: Source repository link placement"
+    },
+    {
+      "at": "2026-10-20T14:05:40+00:00",
+      "event": "decision D-033 answered: Status bar, always visible: icon-only source link after the privacy statement"
+    },
+    {
+      "at": "2026-10-20T14:05:41+00:00",
+      "event": "loop spec-review-cr-source-link started (max 3)"
+    },
+    {
+      "at": "2026-10-20T14:05:41+00:00",
+      "event": "Change request: source repository link (F-009.R3, D-033); specs changed, review round 1"
+    },
+    {
+      "at": "2026-10-20T14:07:06+00:00",
+      "event": "loop spec-review-cr-source-link round 2"
+    },
+    {
+      "at": "2026-10-20T14:14:41+00:00",
+      "event": "loop spec-review-cr-source-link ended: converged round 2; lint 0/0"
+    },
+    {
+      "at": "2026-10-20T14:14:41+00:00",
+      "event": "CR source link (F-009.R3, D-033) built locally: unit 397, e2e chromium 227 pass, F-009 e2e chromium+webkit 18 pass; not committed, not deployed"
+    },
+    {
+      "at": "2026-10-20T14:30:38+00:00",
+      "event": "decision D-034 opened: Source link icon: GitHub mark source"
+    },
+    {
+      "at": "2026-10-20T14:30:38+00:00",
+      "event": "decision D-034 answered: Octicons mark-github (@primer/octicons, MIT), DEP-40"
+    },
+    {
+      "at": "2026-10-20T15:02:07+00:00",
+      "event": "decision D-035 opened: Source link: visible text"
+    },
+    {
+      "at": "2026-10-20T15:02:07+00:00",
+      "event": "decision D-035 answered: Owner asked for 'Source code' right of the GitHub icon; narrow widths shorten to the icon like the privacy badge"
+    },
+    {
+      "at": "2026-10-20T15:05:10+00:00",
+      "event": "CR source link: GitHub mark (D-034, DEP-40/41) + 'Source code' text (D-035); local checks pass; not committed"
+    },
+    {
+      "at": "2026-10-20T15:06:13+00:00",
+      "event": "CR source link: GitHub mark (D-034, DEP-40/41) + 'Source code' text (D-035); local checks pass; not committed"
     }
   ],
-  "updated": "2026-10-14T15:43:13+00:00",
+  "updated": "2026-10-20T15:06:13+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

@@ -32,7 +32,10 @@ portal's wherever they fit.
   roughly doubling the text part of the memory table below (covered by a spike fixture).
 - A3. The portal frames the tool with `sandbox="allow-scripts allow-same-origin allow-forms
   allow-downloads"`, `allow="clipboard-write"`, `referrerpolicy="strict-origin"`, and will pass
-  the theme per its change request (`taro:theme` / `taro:ready`, D-008).
+  the theme per its change request (`taro:theme` / `taro:ready`, D-008). Without
+  `allow-popups` the frame blocks new tabs, so the notices link and the source link (F-009.R3)
+  open only standalone. Change request to the portal: add `allow-popups
+  allow-popups-to-escape-sandbox` (the second token so the opened page is not sandboxed).
 - A4. No backend, no accounts, no storage of any kind in M-1 (PRN-01). The offline service
   worker (ADR-0012, F-011) stores only the tool's own code in Cache Storage.
 - A5. Desktop only (NFR-07); touch is not optimised but nothing prevents it.

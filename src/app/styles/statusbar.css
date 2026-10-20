@@ -52,6 +52,30 @@
     display: none;
   }
 
+  /* Source link (F-009.R3): GitHub mark, then COPY-privacy.source (D-035); type and target
+     size match the badge. */
+  .tk-statusbar__source {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--tk-space-2);
+    flex: none;
+    min-height: var(--tk-statusbar-target);
+    min-width: var(--tk-statusbar-target);
+    padding-inline: var(--tk-space-2);
+    border-radius: var(--tk-radius-sm);
+    color: var(--tk-color-muted);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-medium);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .tk-statusbar__source:hover {
+    background: var(--tk-color-surface2);
+    color: var(--tk-color-fg);
+  }
+
   /* Narrow (CMP-StatusBar "narrow", under 600 px): icon only, named COPY-privacy.badge_label. */
   @container tk-statusbar (width < 600px) {
     .tk-statusbar__privacy {
@@ -62,6 +86,13 @@
     }
     .tk-statusbar__privacy .tk-statusbar__privacy-icon-label {
       display: block;
+    }
+    /* The source link shortens to its mark too (D-035); its name stays COPY-privacy.source_label. */
+    .tk-statusbar__source {
+      padding-inline: 0;
+    }
+    .tk-statusbar__source-text {
+      display: none;
     }
   }
 

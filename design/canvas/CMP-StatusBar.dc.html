@@ -20,6 +20,10 @@ body{margin:0}
 .dot{width:8px;height:8px;border-radius:50%;flex:none}
 .badge{display:inline-flex;align-items:center;gap:8px;height:24px;min-width:24px;padding:0 8px;box-sizing:border-box;border:0;border-radius:7px;background:none;color:var(--success);font:500 12px 'JetBrains Mono',monospace}
 .badge svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5}
+.src{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:24px;min-width:24px;padding:0 8px;box-sizing:border-box;border-radius:7px;color:var(--muted);font:500 12px 'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap}
+.src:hover{background:var(--surface2);color:var(--fg)}
+.src svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.coarse .src{height:44px;min-width:44px;padding:0}
 .jump{display:inline-flex;align-items:center;gap:8px;height:24px;padding:0 8px;margin-left:-8px;border:0;border-radius:7px;background:var(--dangerBg);color:var(--danger);font:600 12px 'JetBrains Mono',monospace}
 .ibtn{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:7px;background:none;color:var(--muted)}
 .ibtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round}
@@ -42,6 +46,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2p
       <span data-copy="COPY-status.size_lines">412 B · 13 lines</span><span data-copy="COPY-status.cursor">Ln 3, Col 11</span>
       <div style="flex:1"></div>
       <button type="button" class="badge fv" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <a class="src" href="https://github.com/thanh-taro/json-formatter" target="_blank" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><svg aria-hidden="true" viewBox="0 0 16 16" style="fill:currentColor;stroke:none"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/></svg><span data-copy="COPY-privacy.source">Source code</span></a>
     </div>
   </div>
 
@@ -52,6 +57,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2p
       <span data-copy="COPY-status.size_lines">339 B · 14 lines</span><span data-copy="COPY-status.cursor">Ln 3, Col 11</span>
       <div style="flex:1"></div>
       <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <a class="src" href="https://github.com/thanh-taro/json-formatter" target="_blank" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><svg aria-hidden="true" viewBox="0 0 16 16" style="fill:currentColor;stroke:none"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/></svg><span data-copy="COPY-privacy.source">Source code</span></a>
     </div>
   </div>
 
@@ -62,6 +68,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2p
       <span data-copy="COPY-status.size_lines">414 B · 13 lines</span><span data-copy="COPY-status.cursor">Ln 8, Col 50</span>
       <div style="flex:1"></div>
       <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <a class="src" href="https://github.com/thanh-taro/json-formatter" target="_blank" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><svg aria-hidden="true" viewBox="0 0 16 16" style="fill:currentColor;stroke:none"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/></svg><span data-copy="COPY-privacy.source">Source code</span></a>
     </div>
   </div>
 
@@ -72,6 +79,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2p
       <span data-copy="COPY-status.size_lines">48.6 MB · 1,905,220 lines</span><span data-copy="COPY-status.cursor">Ln 812,046, Col 9</span>
       <div style="flex:1"></div>
       <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <a class="src" href="https://github.com/thanh-taro/json-formatter" target="_blank" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><svg aria-hidden="true" viewBox="0 0 16 16" style="fill:currentColor;stroke:none"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/></svg><span data-copy="COPY-privacy.source">Source code</span></a>
     </div>
   </div>
 
@@ -82,6 +90,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2p
       <span data-copy="COPY-status.size_lines">0 B · 1 line</span><span data-copy="COPY-status.cursor">Ln 1, Col 1</span>
       <div style="flex:1"></div>
       <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-describedby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <a class="src" href="https://github.com/thanh-taro/json-formatter" target="_blank" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><svg aria-hidden="true" viewBox="0 0 16 16" style="fill:currentColor;stroke:none"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/></svg><span data-copy="COPY-privacy.source">Source code</span></a>
     </div>
   </div>
 
@@ -101,6 +110,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2p
         <span style="padding-right:8px" data-copy="COPY-privacy.details">This tool runs entirely in your browser. Your JSON is never uploaded, logged, or stored, and the tool sends no analytics. Closing the page discards it.</span>
       </div>
       <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="true" aria-controls="sb-dlg-{{t.id}}" style="background:var(--surface2)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-copy="COPY-privacy.badge">Local only</span></button>
+      <a class="src" href="https://github.com/thanh-taro/json-formatter" target="_blank" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><svg aria-hidden="true" viewBox="0 0 16 16" style="fill:currentColor;stroke:none"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/></svg><span data-copy="COPY-privacy.source">Source code</span></a>
     </div>
   </div>
 
@@ -111,6 +121,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible,.fv{outline:2p
       <span data-copy="COPY-status.size_lines_short">339 B · 14 ln</span>
       <div style="flex:1"></div>
       <button type="button" class="badge" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="sb-pl-{{t.id}}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></button>
+      <a class="src" href="https://github.com/thanh-taro/json-formatter" target="_blank" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><svg aria-hidden="true" viewBox="0 0 16 16" style="fill:currentColor;stroke:none"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/></svg></a>
     </div>
   </div>
 

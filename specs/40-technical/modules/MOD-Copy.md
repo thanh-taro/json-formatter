@@ -22,5 +22,5 @@ other module contains user-facing literals (lint rule).
 - `hintFor(issue)`, `formatSize(bytes)`, `formatCount(n)`.
 
 ## Implements
-F-005.R3, F-005.R4 (hints), F-009.R1, F-009.R2 (statement text); NFR-06 (accessible names
+F-005.R3, F-005.R4 (hints), F-009.R1, F-009.R2, F-009.R3 (statement text, source link label); NFR-06 (accessible names
 come from COPY labels).

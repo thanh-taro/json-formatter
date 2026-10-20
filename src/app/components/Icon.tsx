@@ -7,6 +7,8 @@ import chevronsLeftRight from 'lucide-static/icons/chevrons-left-right.svg?raw';
 import chevronDown from 'lucide-static/icons/chevron-down.svg?raw';
 import chevronUp from 'lucide-static/icons/chevron-up.svg?raw';
 import circleAlert from 'lucide-static/icons/circle-alert.svg?raw';
+// The GitHub mark for the source link (DEP-40, MIT, D-034): filled, not stroked like Lucide.
+import githubMarkSvg from '@primer/octicons/build/svg/mark-github-16.svg?raw';
 import copy from 'lucide-static/icons/copy.svg?raw';
 import download from 'lucide-static/icons/download.svg?raw';
 import ellipsis from 'lucide-static/icons/ellipsis.svg?raw';
@@ -18,6 +20,11 @@ import alignJustify from 'lucide-static/icons/text-align-justify.svg?raw';
 import trash from 'lucide-static/icons/trash-2.svg?raw';
 import x from 'lucide-static/icons/x.svg?raw';
 
+// Octicons SVGs carry no licence banner (Lucide's do), so one is added here, inside the string,
+// where it survives minification and the dist/ scan finds it (ADR-0001 rule 6). Keep the
+// version equal to the pinned one in package.json.
+const githubMark = `<!-- @license @primer/octicons v19.40.0 - MIT -->${githubMarkSvg}`;
+
 const strip = (svg: string) => svg.replace(/<!--[\s\S]*?-->/g, '').trim();
 
 const ICONS = {
@@ -28,6 +35,7 @@ const ICONS = {
   'chevron-down': strip(chevronDown),
   'chevron-up': strip(chevronUp),
   alert: strip(circleAlert),
+  github: strip(githubMark).replace('<svg ', '<svg fill="currentColor" '),
   copy: strip(copy),
   download: strip(download),
   minify: strip(chevronsLeftRight),
