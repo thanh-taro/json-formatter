@@ -5,6 +5,18 @@ Spec-level changes are tracked separately in `specs/60-delivery/changelog.md`.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-20
+
+### Added
+- A "Source code" link with the GitHub mark in the status bar, after "Local only", opens the source repository
+  (https://github.com/thanh-taro/json-formatter) in a new tab without a referrer (F-009.R3). Narrow screens show
+  the mark only. Inside the taro-kit portal it opens once the portal's frame allows new tabs.
+
+### Changed
+- Deploys are manual only; the GitHub workflows were removed.
+- Local ports: dev server 5180, preview 4180, e2e test servers 4400-4406.
+- The open-source notices now include @primer/octicons (MIT), the source of the GitHub mark.
+
 ### Fixed
 - The toolbar no longer flashes on every action: while an operation runs, controls keep their normal look
   (they are ignored and marked `aria-disabled`); the progress bar after 0.5 s is the only busy signal (D-031).
