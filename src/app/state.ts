@@ -78,6 +78,24 @@ export interface Confirm {
   answer: (proceed: boolean) => void;
 }
 
+/**
+ * A polite status announcement, kept as data and rendered in the active language when shown
+ * (ADR-0014 §4; review F-012 MINOR-3). `seq` identifies the message: after a language switch the
+ * same message is re-rendered silently (`useQuietAfterSwitch`), a new one is announced.
+ */
+export interface Announcement {
+  seq: number;
+  text: () => string;
+}
+
+let announcementSeq = 0;
+/** A new announcement of `text()` (rendered with `t()` each time it is shown). */
+export function announcement(text: () => string): Announcement {
+  return { seq: ++announcementSeq, text };
+}
+/** Nothing to announce. */
+export const SILENT: Announcement = { seq: 0, text: () => '' };
+
 export function createAppState() {
   return {
     doc: signal<DocState>({ empty: true, bytes: 0, lines: 1, tier: 'normal', lineEnding: 'lf', sourceName: null }),
@@ -101,7 +119,7 @@ export function createAppState() {
     indent: signal<IndentStyle>({ kind: 'spaces', width: 2 }),
     validation: signal<Validation>({ state: 'empty', result: null, version: 0 }),
     /** Text of the polite status region: validity changes and each new error, once (SCR-Formatter). */
-    announcement: signal(t('status.empty')),
+    announcement: signal<Announcement>(announcement(() => t('status.empty'))),
   };
 }
 

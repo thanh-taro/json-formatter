@@ -175,32 +175,45 @@ const lastCopied = (s: Scope) => s.evaluate(() => window.__clip?.writes.at(-1) ?
  * `window.__release()` (once; later loads pass), so its progress bar stays up (NFR-02).
  */
 async function holdLoads(page: Page) {
-  await page.addInitScript(() => {
-    const Native = window.Worker;
-    const held: (() => void)[] = [];
-    let holding = true;
-    (window as unknown as { __release: () => void }).__release = () => {
-      holding = false;
-      for (const f of held.splice(0)) f();
-    };
-    class Held extends Native {
-      override addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean) {
-        if (type !== 'message') return super.addEventListener(type, listener, options);
-        const fn = typeof listener === 'function' ? listener : (e: Event) => listener.handleEvent(e);
-        return super.addEventListener(
-          'message',
-          (e: Event) => {
-            const type = ((e as MessageEvent).data as { type?: string }).type;
-            // progress passes (the watchdog must keep seeing the worker alive)
-            if (holding && (type === 'chunk' || type === 'loaded')) held.push(() => fn(e));
-            else fn(e);
-          },
-          options,
-        );
+  await holdMessages(page, ['chunk', 'loaded'], true);
+}
+/**
+ * Worker messages of `types` are held back while holding (from the start when `now`, else from
+ * `window.__holdNow()`) until `window.__release()`.
+ */
+async function holdMessages(page: Page, types: string[], now: boolean) {
+  await page.addInitScript(
+    ({ types, now }) => {
+      const Native = window.Worker;
+      const held: (() => void)[] = [];
+      let holding = now;
+      (window as unknown as { __holdNow: () => void }).__holdNow = () => {
+        holding = true;
+      };
+      (window as unknown as { __release: () => void }).__release = () => {
+        holding = false;
+        for (const f of held.splice(0)) f();
+      };
+      class Held extends Native {
+        override addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean) {
+          if (type !== 'message') return super.addEventListener(type, listener, options);
+          const fn = typeof listener === 'function' ? listener : (e: Event) => listener.handleEvent(e);
+          return super.addEventListener(
+            'message',
+            (e: Event) => {
+              const type = ((e as MessageEvent).data as { type?: string }).type;
+              // progress passes (the watchdog must keep seeing the worker alive)
+              if (holding && types.includes(type ?? '')) held.push(() => fn(e));
+              else fn(e);
+            },
+            options,
+          );
+        }
       }
-    }
-    window.Worker = Held;
-  });
+      window.Worker = Held;
+    },
+    { types, now },
+  );
 }
 const release = (s: Scope) => s.evaluate(() => (window as unknown as { __release: () => void }).__release());
 
@@ -303,15 +316,19 @@ test('F-012.AC3 a language message switches live, keeping document, selection, v
   await row(frame, 'b').click();
   await expect(frame.locator('.tk-tree__path')).toHaveText('$.a.b');
   const rowCount = await rows(frame).count();
-  const announced = await frame.locator('.tk-statusbar [role="status"]').textContent();
+  const status = frame.locator('.tk-statusbar [role="status"]');
+  const announced = await status.textContent();
+  expect(announced).toBe(VI['status.valid']);
 
   await page.evaluate(() => window.setLang!('en-US'));
 
   await expect(frame.locator('html')).toHaveAttribute('lang', 'en-US');
   await expect(toolbar(frame, 'en-US')).toBeVisible();
   await expect(tree(frame, 'en-US')).toBeVisible();
-  // nothing is announced: the polite status region keeps its text (F-012 UX notes)
-  expect(await frame.locator('.tk-statusbar [role="status"]').textContent()).toBe(announced);
+  // nothing is announced: the polite status region is re-rendered in en-US with aria-live="off"
+  // (F-012 UX notes, ADR-0014 §4; review F-012 MINOR-3)
+  await expect(status).toHaveText(EN['status.valid']);
+  await expect(status).toHaveAttribute('aria-live', 'off');
   await expect(viewButton(frame, 'en-US', 'view.tree')).toHaveAttribute('aria-pressed', 'true');
   await expect(row(frame, 'b')).toHaveAttribute('aria-expanded', 'true');
   await expect(row(frame, 'b')).toHaveAttribute('aria-selected', 'true');
@@ -322,6 +339,10 @@ test('F-012.AC3 a language message switches live, keeping document, selection, v
   await viewButton(frame, 'en-US', 'view.text').click();
   await expect(frame.getByRole('searchbox', { name: EN['search.placeholder'] })).toHaveValue('"b"');
   await expect(frame.locator('.tk-search__count')).toHaveText(tx('en-US', 'search.count', { current: 1, total: 1 }));
+  // the find announcement too: in en-US, not announced again
+  const findStatus = frame.locator('.tk-search [role="status"]');
+  await expect(findStatus).toHaveText(tx('en-US', 'search.count', { current: 1, total: 1 }));
+  await expect(findStatus).toHaveAttribute('aria-live', 'off');
   await expect(frame.locator('.cm-content')).toHaveAttribute('aria-label', EN['label.editor']);
   expect(await docText(frame)).toBe(DOC + ' ');
   await expect(frame.locator('.tk-statusbar__cursor')).toHaveText(/^Ln \d+, Col \d+$/);
@@ -358,6 +379,110 @@ test('F-012.AC3 F-012 edge cases: the same language again changes nothing; theme
   await page.evaluate(() => window.setLang!('vi'));
   await expect(frame.locator('html')).toHaveAttribute('lang', 'vi-VN');
   await expect(frame.locator('html')).toHaveAttribute('data-theme', 'light');
+});
+
+test('F-012.AC3 the tree checking label switches language without being announced again; a new check is announced', async ({
+  page,
+}) => {
+  // review F-012 MINOR-1: validation results are held so the tree stays in its checking state
+  await holdMessages(page, ['validation'], false);
+  const frame = await embed(page, 'theme=dark&lang=en-US', 'en-US');
+  await replaceWith(frame, '{"a": 1, "b": 2}');
+  await viewButton(frame, 'en-US', 'view.tree').click();
+  await expect(row(frame, 'b')).toBeVisible();
+  // an edit while validation is held: back in the tree, the previous tree shows dimmed with the
+  // checking label
+  const edit = async (lang: Lang) => {
+    await frame.evaluate(() => (window as unknown as { __holdNow: () => void }).__holdNow());
+    await viewButton(frame, lang, 'view.text').click();
+    await content(frame).press('ControlOrMeta+End');
+    await content(frame).pressSequentially(' ');
+    await viewButton(frame, lang, 'view.tree').click();
+  };
+  await edit('en-US');
+  const checking = frame.locator('.tk-tree__checking');
+  const label = checking.getByRole('status');
+  await expect(label).toHaveText(EN['tree.checking']);
+  expect(await label.getAttribute('aria-live')).toBeNull();
+
+  await page.evaluate(() => window.setLang!('vi-VN'));
+  await expect(label).toHaveText(VI['tree.checking']);
+  await expect(label).toHaveAttribute('aria-live', 'off');
+
+  await release(frame);
+  await expect(checking).toBeHidden();
+  // the next check is news again: its label is live
+  await edit('vi-VN');
+  await expect(label).toHaveText(VI['tree.checking']);
+  expect(await label.getAttribute('aria-live')).toBeNull();
+  await release(frame);
+  await expect(checking).toBeHidden();
+});
+
+test('F-012.AC3 a switch keeps an open overflow menu open and focus where it was', async ({ page }) => {
+  // review F-012 MINOR-2: the toolbar refits for the new labels only once focus leaves it
+  const frame = await embed(page, 'theme=dark&lang=en-US', 'en-US');
+  await page.evaluate(() => window.resizeTool!(320, 640));
+  await paste(frame, '{"a": 1}');
+  await idle(frame);
+  const moreEn = tb(frame, 'en-US', 'action.more');
+  await expect(moreEn).toBeVisible();
+  const menu = frame.locator('.tk-menu');
+  await moreEn.click();
+  await expect(menu).toBeVisible();
+  const focused = () =>
+    frame.evaluate(() => {
+      const e = document.activeElement as HTMLElement & { __mark?: boolean };
+      return { inMenu: !!e.closest('.tk-menu'), marked: !!e.__mark, more: e.getAttribute('aria-haspopup') !== null };
+    });
+  await expect.poll(async () => (await focused()).inMenu).toBe(true);
+  await frame.evaluate(() => ((document.activeElement as HTMLElement & { __mark?: boolean }).__mark = true));
+
+  await page.evaluate(() => window.setLang!('vi-VN'));
+  await expect(toolbar(frame, 'vi-VN')).toBeVisible();
+  await expect(menu).toBeVisible();
+  expect(await focused()).toMatchObject({ inMenu: true, marked: true });
+  // the menu still works in the new language; Escape returns to More actions
+  await expect(menu.getByRole('button', { name: VI['action.open'], exact: true })).toBeVisible();
+  await frame.page().keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  const moreVi = tb(frame, 'vi-VN', 'action.more');
+  await expect(moreVi).toBeFocused();
+
+  // focus on More actions (menu closed): it stays there across a switch
+  await frame.evaluate(() => ((document.activeElement as HTMLElement & { __mark?: boolean }).__mark = true));
+  await page.evaluate(() => window.setLang!('en-US'));
+  await expect(toolbar(frame, 'en-US')).toBeVisible();
+  expect((await focused()).marked).toBe(true);
+  await expect(tb(frame, 'en-US', 'action.more')).toBeFocused();
+  // once focus leaves the toolbar, it fits again from the full layout, without overflowing
+  await content(frame).focus();
+  await expect
+    .poll(() => frame.locator('.tk-toolbar').evaluate((el) => el.scrollWidth <= el.clientWidth + 1))
+    .toBe(true);
+});
+
+test('F-012.AC3 the editor engine phrases follow the switch: Selection deleted and Control character', async ({
+  page,
+}) => {
+  // review F-012 MINOR-4: COPY-editor.selection_deleted, COPY-editor.control_character
+  const frame = await embed(page, 'theme=dark&lang=en-US', 'en-US');
+  await paste(frame, '["a\u0007b"]');
+  const special = frame.locator('.cm-specialChar').first();
+  await expect(special).toHaveAttribute('title', new RegExp(`^${EN['editor.control_character']} `));
+  await page.evaluate(() => window.setLang!('vi-VN'));
+  await expect(special).toHaveAttribute('title', new RegExp(`^${VI['editor.control_character']} `));
+  await expect(special).toHaveAttribute('aria-label', new RegExp(`^${VI['editor.control_character']} `));
+  // a deleted selection is announced in the active language
+  await content(frame).focus();
+  await content(frame).press('ControlOrMeta+a');
+  await content(frame).press('Backspace');
+  await expect(frame.locator('.cm-announced')).toHaveText(VI['editor.selection_deleted']);
+  await page.evaluate(() => window.setLang!('en-US'));
+  await paste(frame, '[1]');
+  await content(frame).press('ControlOrMeta+a');
+  await content(frame).press('Delete');
+  await expect(frame.locator('.cm-announced')).toHaveText(EN['editor.selection_deleted']);
 });
 
 test('F-012.AC4 language messages from another origin, another frame or with an unsupported value are ignored', async ({
@@ -678,6 +803,27 @@ async function fits(page: Page, state: string) {
   expect.soft(r, state).toEqual([]);
 }
 
+/** Rows of the status bar (its items' distinct block offsets). */
+const statusRows = (s: Scope) =>
+  s.locator('.tk-statusbar').evaluate((bar) => {
+    const tops = new Set<number>();
+    for (const c of bar.children) {
+      const r = c.getBoundingClientRect();
+      const st = getComputedStyle(c);
+      // in-flow, visible items only (not the hidden status region or the popover details)
+      if (r.width > 2 && r.height > 2 && st.position !== 'fixed' && st.position !== 'absolute')
+        tops.add(Math.round(r.top));
+    }
+    return tops.size;
+  });
+/** `overlay` ends above the status bar (it never covers it, even wrapped). */
+async function clearOfStatusBar(s: Scope, overlay: ReturnType<Scope['locator']>) {
+  const bar = await s.locator('.tk-statusbar').boundingBox();
+  const box = await overlay.boundingBox();
+  expect(bar && box).toBeTruthy();
+  expect(box!.y + box!.height).toBeLessThanOrEqual(bar!.y + 0.5);
+}
+
 test('F-012.AC11 vi-VN at 320 px: every SCR-Formatter state fits without horizontal scrolling or clipped labels', async ({
   page,
 }) => {
@@ -704,6 +850,9 @@ test('F-012.AC11 vi-VN at 320 px: every SCR-Formatter state fits without horizon
   await page.getByTestId('privacy-badge').click();
   await expect(page.locator('.tk-privacy')).toBeVisible();
   await fits(page, 'privacy details');
+  // review F-012 MAJOR-1: the status bar wraps onto two rows here; the details stay above it
+  expect(await statusRows(page)).toBe(2);
+  await clearOfStatusBar(page, page.locator('.tk-privacy'));
   await page.keyboard.press('Escape');
   // find
   await content(page).press('ControlOrMeta+f');
@@ -717,6 +866,7 @@ test('F-012.AC11 vi-VN at 320 px: every SCR-Formatter state fits without horizon
   await tb(page, 'vi-VN', 'action.copy').click();
   await expect(page.locator('.tk-toast')).toHaveText(VI['toast.copied']);
   await fits(page, 'toast');
+  await clearOfStatusBar(page, page.locator('.tk-toasts'));
   // tree
   await viewButton(page, 'vi-VN', 'view.tree').click();
   await expect(tree(page, 'vi-VN')).toBeVisible();

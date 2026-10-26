@@ -94,13 +94,23 @@ export function Toolbar({ app }: { app: AppController }) {
   });
 
   // F-012.R7 / AC11: labels change length with the language; fit again from the full toolbar.
+  // Review F-012 MINOR-2: refitting may remove the More actions button, so while the menu is open
+  // or focus is in the toolbar the refit waits until focus leaves it (the step-down above still
+  // keeps the bar from overflowing meanwhile; focus and the open menu stay, F-012 UX notes).
   const lang = language.value;
   const fittedLang = useRef(lang);
+  const refitPending = useRef(false);
   useLayoutEffect(() => {
     if (fittedLang.current === lang) return;
     fittedLang.current = lang;
-    setStep(0);
+    if (menuOpen || bar.current?.contains(document.activeElement)) refitPending.current = true;
+    else setStep(0);
   }, [lang]);
+  const onFocusOut = (e: FocusEvent) => {
+    if (!refitPending.current || bar.current?.contains(e.relatedTarget as Node | null)) return;
+    refitPending.current = false;
+    setStep(0);
+  };
 
   useEffect(() => {
     const el = bar.current;
@@ -323,6 +333,7 @@ export function Toolbar({ app }: { app: AppController }) {
         data-layout={step}
         onKeyDown={onKeyDown}
         onFocusIn={onFocusIn}
+        onFocusOut={onFocusOut}
       >
         {load.length > 0 && <div class="tk-toolbar__group">{load}</div>}
         {findBtn && <div class="tk-toolbar__group">{findBtn}</div>}

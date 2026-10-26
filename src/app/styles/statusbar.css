@@ -99,7 +99,8 @@
   /* Details: native popover in the top layer, anchored above the badge at the inline end. */
   .tk-privacy {
     position: fixed;
-    inset: auto var(--tk-space-1) calc(var(--tk-statusbar-height) + var(--tk-space-1)) auto;
+    /* Clear of the status bar even when it wraps (--tk-statusbar-block, StatusBar.tsx; F-012.AC11). */
+    inset: auto var(--tk-space-1) calc(var(--tk-statusbar-block, var(--tk-statusbar-height)) + var(--tk-space-1)) auto;
     width: min(var(--tk-size-min-width), 100vw - 2 * var(--tk-space-1));
     height: auto;
     margin: 0;

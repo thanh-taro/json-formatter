@@ -5,10 +5,12 @@
 // Validity changes are announced through one polite status region (SCR-Formatter). The privacy
 // details link to the open-source notices (F-009 UX notes, COPY-privacy.notices). The source
 // link follows the privacy statement (F-009.R3, D-033).
+import { useLayoutEffect, useRef } from 'preact/hooks';
 import { formatCount, formatSize, t, tCount } from '../../copy';
 import type { AppController } from '../controller';
 import { validityText } from '../controller';
 import { Icon } from './Icon';
+import { useQuietAfterSwitch } from './quiet';
 
 /** The source repository (F-009.R3). */
 export const SOURCE_URL = 'https://github.com/thanh-taro/json-formatter';
@@ -20,8 +22,27 @@ const TITLE_ID = 'tk-privacy-title';
 export function StatusBar({ app }: { app: AppController }) {
   const { doc, cursor } = app.state;
   const size = formatSize(doc.value.bytes);
+  const footer = useRef<HTMLElement>(null);
+  const said = app.state.announcement.value;
+  // F-012 UX notes (review F-012 MINOR-3): rendered in the active language, silent after a switch.
+  const quiet = useQuietAfterSwitch(said.seq);
+  // CMP-StatusBar narrow (F-012.AC11): the bar may wrap onto two rows; its measured height is
+  // published as --tk-statusbar-block so toasts and the privacy details stay clear of it.
+  useLayoutEffect(() => {
+    const el = footer.current;
+    const host = el?.closest<HTMLElement>('.tk-formatter');
+    if (!el || !host) return;
+    const publish = () => host.style.setProperty('--tk-statusbar-block', `${el.offsetHeight}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      host.style.removeProperty('--tk-statusbar-block');
+    };
+  }, []);
   return (
-    <footer class="tk-statusbar">
+    <footer ref={footer} class="tk-statusbar">
       <Validity app={app} />
       <span class="tk-statusbar__size">{tCount('status.size_lines', doc.value.lines, size)}</span>
       <span class="tk-statusbar__size-short">{tCount('status.size_lines_short', doc.value.lines, size)}</span>
@@ -31,8 +52,8 @@ export function StatusBar({ app }: { app: AppController }) {
           {t('status.cursor', { line: formatCount(cursor.value.line), column: formatCount(cursor.value.column) })}
         </span>
       )}
-      <span class="tk-visually-hidden" role="status">
-        {app.state.announcement.value}
+      <span class="tk-visually-hidden" role="status" aria-live={quiet ? 'off' : undefined}>
+        {said.text()}
       </span>
       <PrivacyStatement />
       <SourceLink />

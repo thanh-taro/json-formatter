@@ -723,6 +723,8 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
   }
 
   function setStale(on: boolean): void {
+    // F-012 UX notes: a new check is announced again (relabel() silenced the previous one).
+    if (on && !stale) checkLabel.removeAttribute('aria-live');
     stale = on;
     root.setAttribute('aria-busy', String(on));
     viewport.classList.toggle('tk-tree__viewport--stale', on);
@@ -938,6 +940,11 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
       viewport.setAttribute('aria-label', t('label.tree'));
       if (!fallback.hidden) fbLabel.textContent = t(fbLabelId);
       for (const [e, text] of messageTexts) e.textContent = text();
+      // F-012 UX notes (review F-012 MINOR-1): a relabelled status is not announced again — the
+      // checking label is silenced until the next check, the building label (a new element per
+      // build) until it is replaced.
+      checkLabel.setAttribute('aria-live', 'off');
+      for (const e of message.querySelectorAll('[role="status"]')) e.setAttribute('aria-live', 'off');
       // Rows: the same row model, written again (counts and group labels in the new language).
       for (const p of pool) p.sig = '';
       render();

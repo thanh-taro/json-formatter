@@ -1,8 +1,9 @@
 // MOD-Host — the host settings contract as pure functions (no DOM), ADR-0008 §1 and §3.
 // Implements: RULE-16, F-008.R1, F-008.R2, F-008.R4 (message side), F-008.R5, INV-02, NFR-09;
 // RULE-19, F-012.R1–F-012.R4 (language, ADR-0014 §1–2).
-// The languages come straight from the generated catalog module, so the offline worker (which
-// imports this file through offline-policy.ts) does not pull in MOD-Copy's runtime.
+// The languages come from MOD-Copy's generated catalog (MOD-Host depends on MOD-Copy). The
+// offline worker does not import this file: offline-policy.ts keeps its own copy of the
+// language check (`isSupportedLanguage`, kept equal to `matchLanguage` by a unit test).
 import { LANGUAGES, type Language } from '../copy/messages.gen';
 
 export type Theme = 'light' | 'dark';

@@ -9,6 +9,7 @@ import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../../copy';
 import { countText, type FindController } from '../find';
 import { Icon } from './Icon';
+import { useQuietAfterSwitch } from './quiet';
 
 /** The platform find shortcut is Cmd+F on Apple platforms, Ctrl+F elsewhere (platform-mapping). */
 const MAC = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
@@ -18,6 +19,8 @@ export function SearchPanel({ find }: { find: FindController }) {
   const panel = useRef<HTMLDivElement>(null);
   const open = find.open.value;
   const focusRequest = find.focusRequest.value;
+  const said = find.announcement.value;
+  const quiet = useQuietAfterSwitch(said.seq);
   // F-010.R1 (QA-015/QA-016): the field takes focus in the same task as the shortcut, before the
   // browser handles the next key. A passive effect runs only after a paint (a frame or more at
   // 100 MB), so a key typed right after the shortcut went into the document, not the field.
@@ -85,8 +88,9 @@ export function SearchPanel({ find }: { find: FindController }) {
         </button>
         <span class={none ? 'tk-search__count tk-search__count--none' : 'tk-search__count'}>{countText(status)}</span>
         {/* Polite live region: the final count and navigation, not every counting slice (NFR-06). */}
-        <span class="tk-visually-hidden" role="status">
-          {find.announcement.value}
+        {/* F-012 UX notes: rendered in the active language; silent after a switch (MINOR-3). */}
+        <span class="tk-visually-hidden" role="status" aria-live={quiet ? 'off' : undefined}>
+          {said.text()}
         </span>
         <button
           type="button"

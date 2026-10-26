@@ -30,7 +30,7 @@ import { JobFailure, WorkerClient, type Job, type JobResult } from '../worker/cl
 import type { FailReason } from '../worker/protocol';
 import { needsVeryLargeConfirm } from './confirm';
 import { FindController } from './find';
-import type { AppState, Bar, Busy, Toast, Validation } from './state';
+import { announcement, type AppState, type Bar, type Busy, type Toast, type Validation } from './state';
 
 /** Progress is shown once an operation has run this long (NFR-02). */
 const PROGRESS_DELAY_MS = 500;
@@ -279,13 +279,15 @@ export class AppController {
       if (sameError) return;
       this.announcedError = error.code;
       this.announcedKind = 'invalid';
-      this.state.announcement.value = [t('status.invalid'), locationOf(error), hintFor(error)].join('. ');
+      this.state.announcement.value = announcement(() =>
+        [t('status.invalid'), locationOf(error), hintFor(error)].join('. '),
+      );
       return;
     }
     this.announcedError = '';
     if (v.state === this.announcedKind) return;
     this.announcedKind = v.state;
-    this.state.announcement.value = validityText(v);
+    this.state.announcement.value = announcement(() => validityText(v));
   }
 
   /**

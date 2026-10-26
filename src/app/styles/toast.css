@@ -4,7 +4,10 @@
   .tk-toasts {
     position: fixed;
     inset-inline-end: var(--tk-space-3);
-    inset-block-end: calc(var(--tk-statusbar-height, var(--tk-size-statusbar)) + var(--tk-space-3));
+    /* --tk-statusbar-block: the status bar's measured height, two rows when it wraps (F-012.AC11). */
+    inset-block-end: calc(
+      var(--tk-statusbar-block, var(--tk-statusbar-height, var(--tk-size-statusbar))) + var(--tk-space-3)
+    );
     z-index: 2;
     display: flex;
     flex-direction: column;

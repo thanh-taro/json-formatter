@@ -3,6 +3,7 @@
 import { signal } from '@preact/signals';
 import { formatCount, t } from '../copy';
 import type { EditorHandle, FindSession, FindStatus } from '../editor';
+import { announcement, SILENT, type Announcement } from './state';
 
 /** The count text for a status (COPY-search.count / .counting / .none); empty while unknown. */
 export function countText(status: FindStatus | null): string {
@@ -26,7 +27,7 @@ export class FindController {
    * Text of the polite live region (NFR-06): changes only when a count becomes final and on
    * navigation afterwards, not on every counting slice (review F-010 m3).
    */
-  readonly announcement = signal('');
+  readonly announcement = signal<Announcement>(SILENT);
   private session: FindSession | null = null;
 
   /**
@@ -55,7 +56,7 @@ export class FindController {
     this.session?.close();
     this.session = null;
     this.status.value = null;
-    this.announcement.value = '';
+    this.announcement.value = SILENT;
     this.open.value = false;
     this.editor()?.focus();
   }
@@ -87,7 +88,7 @@ export class FindController {
     const term = this.term.value;
     if (!ed || !term) {
       this.status.value = null;
-      this.announcement.value = '';
+      this.announcement.value = SILENT;
       return;
     }
     // A new term or match case never shows the previous term's count: nothing until the new
@@ -98,7 +99,7 @@ export class FindController {
     session.onCount((s) => {
       if (this.session !== session) return;
       this.status.value = s;
-      if (s.done) this.announcement.value = countText(s);
+      if (s.done) this.announcement.value = announcement(() => countText(s));
     });
   }
 

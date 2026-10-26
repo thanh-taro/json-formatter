@@ -229,7 +229,15 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   const busyConf = new Compartment();
   /** The accessible name in the active language (F-012.R2: reconfigured by `relabel()`). */
   const labelConf = new Compartment();
-  const labelExtension = () => EditorView.contentAttributes.of({ 'aria-label': t('label.editor') });
+  // Review F-012 MINOR-4: the engine's own phrases (its "Selection deleted" announcement and the
+  // control-character placeholders' names) come from MOD-Copy too, in the same compartment.
+  const labelExtension = () => [
+    EditorView.contentAttributes.of({ 'aria-label': t('label.editor') }),
+    EditorState.phrases.of({
+      'Selection deleted': t('editor.selection_deleted'),
+      'Control character': t('editor.control_character'),
+    }),
+  ];
 
   let version = 0;
   let lineEnding: LineEnding = 'lf';
@@ -603,7 +611,17 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
       return lastTool;
     },
     relabel() {
+      const before = view.state.phrase('Control character');
       view.dispatch({ effects: labelConf.reconfigure(labelExtension()) });
+      // Control-character placeholders already drawn keep their element (the engine compares them
+      // by character only): their name is rewritten in place (F-012.R2).
+      const after = view.state.phrase('Control character');
+      if (before === after) return;
+      for (const e of view.contentDOM.querySelectorAll('.cm-specialChar'))
+        for (const attr of ['title', 'aria-label']) {
+          const v = e.getAttribute(attr);
+          if (v?.startsWith(`${before} `)) e.setAttribute(attr, after + v.slice(before.length));
+        }
     },
     // Implements: D-005 busy policy — read-only while a tool operation runs; scrolling stays.
     setBusy(busy) {
