@@ -5,6 +5,8 @@ Spec-level changes are tracked separately in `specs/60-delivery/changelog.md`.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-26
+
 ### Added
 - Vietnamese: the tool follows the taro-kit portal's language (`?lang=en-US|vi-VN` and live `taro:language`
   messages), else the browser's preferred languages, else English (F-012). Numbers and sizes are written the
@@ -15,6 +17,8 @@ Spec-level changes are tracked separately in `specs/60-delivery/changelog.md`.
 ### Changed
 - At narrow widths the status bar, notice bars and the tree header wrap onto another row instead of
   overflowing (the tree header overflowed at 320 px in English too).
+- Browser tests run on Chromium and WebKit only; Firefox is checked by hand before each release. There are no
+  GitHub workflows: checks and deploys run by hand (ADR-0015).
 
 ## [1.1.0] - 2026-10-20
 

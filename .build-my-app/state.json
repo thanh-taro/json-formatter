@@ -93,7 +93,7 @@
     "iterate": {
       "title": "8 Iterate",
       "status": "in_progress",
-      "step": "CR language: F-012 merged on main; next: Firefox e2e + SR pass, then release (owner call)",
+      "step": "v1.2.0-rc.1 frozen; awaiting owner approval (G6) and go-ahead to deploy",
       "gate": {
         "status": "pending",
         "at": null,
@@ -802,18 +802,6 @@
     }
   },
   "log": [
-    {
-      "at": "2026-10-13T06:22:38+00:00",
-      "event": "product-spec step: 1.2 writing specs"
-    },
-    {
-      "at": "2026-10-13T06:27:14+00:00",
-      "event": "product-spec step: 1.3 spec review loop round 1"
-    },
-    {
-      "at": "2026-10-13T06:27:14+00:00",
-      "event": "M-1 specs drafted: F-001..F-009, 13 rules, 5 invariants, 9 NFRs, SCR-Formatter, 6 CMP, 3 flows, copy deck; lint clean"
-    },
     {
       "at": "2026-10-13T06:27:18+00:00",
       "event": "loop spec-review started (max 3)"
@@ -1601,9 +1589,21 @@
     {
       "at": "2026-10-26T14:41:08+00:00",
       "event": "F-012 merged to main (86f44f5); 422 unit, 482 e2e (Chromium+WebKit) green"
+    },
+    {
+      "at": "2026-10-26T15:19:10+00:00",
+      "event": "iterate step: Release v1.2.0-rc.1 (F-012): version, production build, verification"
+    },
+    {
+      "at": "2026-10-26T15:27:32+00:00",
+      "event": "iterate step: v1.2.0-rc.1 frozen; awaiting owner approval (G6) and go-ahead to deploy"
+    },
+    {
+      "at": "2026-10-26T15:27:32+00:00",
+      "event": "v1.2.0-rc.1: unit 422, e2e Chromium+WebKit 482/0, size 182.3/250 KB"
     }
   ],
-  "updated": "2026-10-26T14:41:08+00:00",
+  "updated": "2026-10-26T15:27:32+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
