@@ -93,7 +93,7 @@
     "iterate": {
       "title": "8 Iterate",
       "status": "in_progress",
-      "step": "CR language: build F-012 (feature pipeline)",
+      "step": "CR language: F-012 merged on main; next: Firefox e2e + SR pass, then release (owner call)",
       "gate": {
         "status": "pending",
         "at": null,
@@ -791,37 +791,17 @@
       "started": "2026-10-26T13:09:02+00:00",
       "outcome": "converged in 2 rounds (r2-m1 fixed)",
       "ended": "2026-10-26T13:14:30+00:00"
+    },
+    "code-review-F-012": {
+      "round": 1,
+      "max": 3,
+      "active": false,
+      "started": "2026-10-26T14:22:59+00:00",
+      "outcome": "converged in 2 rounds; merge-ready",
+      "ended": "2026-10-26T14:41:08+00:00"
     }
   },
   "log": [
-    {
-      "at": "2026-10-13T06:22:33+00:00",
-      "event": "decision D-003 opened: Supported input size"
-    },
-    {
-      "at": "2026-10-13T06:22:33+00:00",
-      "event": "decision D-004 opened: Can portal iframe attrs be changed"
-    },
-    {
-      "at": "2026-10-13T06:22:38+00:00",
-      "event": "decision D-001 answered: Approved; basic read-only tree in M-1"
-    },
-    {
-      "at": "2026-10-13T06:22:38+00:00",
-      "event": "decision D-002 answered: Single editor, format in place with undo"
-    },
-    {
-      "at": "2026-10-13T06:22:38+00:00",
-      "event": "decision D-003 answered: As large as possible (100MB+): smooth at 10MB, fully working at 100MB, best-effort above; spikes set the real ceiling"
-    },
-    {
-      "at": "2026-10-13T06:22:38+00:00",
-      "event": "decision D-004 answered: Yes, user controls the portal"
-    },
-    {
-      "at": "2026-10-13T06:22:38+00:00",
-      "event": "Vision brief approved. Tree in M-1; single in-place editor; 100MB+ target; portal grants clipboard-write/allow-downloads"
-    },
     {
       "at": "2026-10-13T06:22:38+00:00",
       "event": "product-spec step: 1.2 writing specs"
@@ -1593,9 +1573,37 @@
     {
       "at": "2026-10-26T13:36:25+00:00",
       "event": "iterate step: CR language: build F-012 (feature pipeline)"
+    },
+    {
+      "at": "2026-10-26T14:22:59+00:00",
+      "event": "loop code-review-F-012 started (max 3)"
+    },
+    {
+      "at": "2026-10-26T14:23:00+00:00",
+      "event": "iterate step: CR language: code review round 1 fixes (builder)"
+    },
+    {
+      "at": "2026-10-26T14:23:00+00:00",
+      "event": "F-012 built (0976ed9); code review r1: 1 major, 5 minor — fixing"
+    },
+    {
+      "at": "2026-10-26T14:23:17+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 8 Iterate [in_progress] — CR language: code review round 1 fixes (builder) · 8/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-10-26T14:41:08+00:00",
+      "event": "loop code-review-F-012 ended: converged in 2 rounds; merge-ready"
+    },
+    {
+      "at": "2026-10-26T14:41:08+00:00",
+      "event": "iterate step: CR language: F-012 merged on main; next: Firefox e2e + SR pass, then release (owner call)"
+    },
+    {
+      "at": "2026-10-26T14:41:08+00:00",
+      "event": "F-012 merged to main (86f44f5); 422 unit, 482 e2e (Chromium+WebKit) green"
     }
   ],
-  "updated": "2026-10-26T13:36:25+00:00",
+  "updated": "2026-10-26T14:41:08+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

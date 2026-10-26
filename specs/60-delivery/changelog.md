@@ -78,3 +78,7 @@ Spec changes to items in `building` or `shipped` status are recorded here.
   gain a narrow/wrap variant (the tree header already overflowed at 320 px in English).
 - F-012 code review: added COPY-editor.selection_deleted and COPY-editor.control_character (the
   editor's built-in phrases, previously English in every language); MOD-Host depends on MOD-Copy.
+- F-012 built and merged locally (0976ed9, 86f44f5): code review converged in 2 rounds. Unit 422,
+  e2e Chromium + WebKit 482 passed / 0 failed; every F-012 AC covered; critical path 182.3 / 250 KB,
+  fonts 81.3 / 90 KB. Open before release: Firefox e2e (sandbox could not launch it) and a manual
+  screen-reader pass of a live switch. F-012 stays `building` until released.
