@@ -82,12 +82,12 @@
     },
     "deploy": {
       "title": "7 Deploy",
-      "status": "in_progress",
+      "status": "done",
       "step": "v1.2.0 live; awaiting owner confirmation (G7) and manual Firefox/VoiceOver checks",
       "gate": {
         "status": "passed",
-        "at": "2026-10-20T15:24:33+00:00",
-        "note": "Owner confirmed v1.1.0 live and the tool added to the TaroKit portal (2026-10-20)"
+        "at": "2026-10-26T17:00:31+00:00",
+        "note": "v1.2.0 live; owner verified portal switch, Firefox, VoiceOver (2026-10-27)"
       }
     },
     "iterate": {
@@ -818,10 +818,6 @@
     }
   },
   "log": [
-    {
-      "at": "2026-10-13T06:33:40+00:00",
-      "event": "loop spec-review round 2"
-    },
     {
       "at": "2026-10-13T06:33:40+00:00",
       "event": "product-spec step: 1.3 spec review round 2 (re-review changes)"
@@ -1617,9 +1613,13 @@
     {
       "at": "2026-10-26T15:40:25+00:00",
       "event": "deploy step: v1.2.0 live; awaiting owner confirmation (G7) and manual Firefox/VoiceOver checks"
+    },
+    {
+      "at": "2026-10-26T17:00:31+00:00",
+      "event": "gate deploy passed: v1.2.0 live; owner verified portal switch, Firefox, VoiceOver (2026-10-27)"
     }
   ],
-  "updated": "2026-10-26T15:40:25+00:00",
+  "updated": "2026-10-26T17:00:31+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
