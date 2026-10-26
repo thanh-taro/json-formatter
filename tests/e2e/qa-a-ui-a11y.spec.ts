@@ -104,7 +104,6 @@ test.describe('QA-001 CMP-Toolbar narrow', () => {
       browser,
       browserName,
     }) => {
-      test.skip(browserName === 'firefox', 'Firefox has no mobile emulation');
       const context = await coarse(browser, browserName, width);
       const page = await context.newPage();
       await instrument(page);
@@ -194,7 +193,6 @@ test('QA-010 NFR-06 CMP-Toolbar CMP-Notice CMP-Editor coarse pointer: every targ
   browser,
   browserName,
 }) => {
-  test.skip(browserName === 'firefox', 'Firefox has no mobile emulation');
   const context = await coarse(browser, browserName, 390);
   const page = await context.newPage();
   await instrument(page);

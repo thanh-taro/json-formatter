@@ -1,8 +1,7 @@
 // F-007 Copy and download the document — end to end on the production build (ADR-0010).
 // Clipboard: Chromium writes the real clipboard (permission granted to the page's origin, as a
-// browser does on a user gesture) and reads it back; WebKit and Firefox get a recording stub,
-// because Playwright WebKit on macOS writes the user's real pasteboard (SP-iframe) and Firefox
-// never refuses. The refusal is real in Chromium (stub host without `allow="clipboard-write"`)
+// browser does on a user gesture) and reads it back; WebKit gets a recording stub, because
+// Playwright WebKit on macOS writes the user's real pasteboard (SP-iframe). The refusal is real in Chromium (stub host without `allow="clipboard-write"`)
 // and forced through the stub elsewhere (platform-mapping: "tests force the failure").
 // F-007.AC6 (F-007.R5) is deprecated (D-023): no engine reports a download blocked by the frame
 // sandbox (SP-iframe), nothing is required of the tool, so it has no test.
@@ -197,9 +196,7 @@ test.describe('F-007 copy', () => {
 
   test('F-007.AC7 from the tree view a refused copy shows the text view with the whole document selected and COPY-error.clipboard', async ({
     page,
-    browserName,
   }) => {
-    test.skip(browserName === 'firefox', 'forced refusal covered in Chromium and WebKit');
     await stubClipboard(page, 'deny');
     await start(page);
     const text = '[\n  {"id": 1},\n  {"id": 2}\n]';

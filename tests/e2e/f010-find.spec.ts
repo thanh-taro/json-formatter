@@ -332,7 +332,6 @@ test('F-010.R1 NFR-06 CMP-SearchPanel coarse pointer: every control is at least 
   browser,
   browserName,
 }) => {
-  test.skip(browserName === 'firefox', 'Firefox has no mobile emulation');
   const context = await browser.newContext({
     viewport: { width: 390, height: 760 },
     hasTouch: true,

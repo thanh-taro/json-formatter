@@ -22,7 +22,7 @@ starts with its ID**; `python3 tools/spec_lint.py --coverage tests` lists criter
 | `tests/unit/` | Vitest (Node) | MOD-Core, MOD-Copy, MOD-Host message checks, MOD-Tree row model, generated code |
 | `tests/property/` | Vitest + fast-check | INV-01 round trips, robustness, chunk-boundary independence |
 | `tests/conformance/` | Vitest | NFR-08 against JSONTestSuite (skipped when the corpus is absent) |
-| `tests/e2e/` | Playwright | flows and features in Chromium, Firefox and WebKit, axe audits |
+| `tests/e2e/` | Playwright | flows and features in Chromium and WebKit, axe audits |
 | `tests/support/` | — | shared helpers (corpus loader, Node API typings) |
 | `tests/fixtures/` | — | fetched or generated fixtures, gitignored |
 
@@ -35,7 +35,7 @@ starts with its ID**; `python3 tools/spec_lint.py --coverage tests` lists criter
 
 ## End-to-end setup
 - Runs against the production build: `pnpm build`, then `pnpm test:e2e`
-  (`--project=chromium|firefox|webkit`). `tests/e2e/server.mjs` starts:
+  (`--project=chromium|webkit`). `tests/e2e/server.mjs` starts:
   - tool `http://localhost:4400` — `dist/` with `dist/_headers` applied with Cloudflare semantics
     (rules merge, `! Name` detaches); `frame-ancestors` is replaced by the stub host origin;
   - stub host `http://localhost:4401/host.html` — embeds the tool with the portal's frame
@@ -47,7 +47,10 @@ starts with its ID**; `python3 tools/spec_lint.py --coverage tests` lists criter
   theme/background of the first animation frame (`window.__firstFrame`) in every frame.
 - Accessibility: `@axe-core/playwright` with tags `wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa`
   on every screen state in both themes; zero violations expected.
-- CI runs the Chromium project on every push; Firefox and WebKit run locally and before release.
+- There is no CI (ADR-0015): every suite runs locally, and the full e2e suite on Chromium and
+  WebKit runs before every release. Firefox (Gecko) is not automated — Playwright's Firefox does
+  not launch on the owner's machine from Claude Code — and is checked by hand on the release
+  candidate (NFR-07).
 
 ## Performance
 - `pnpm check:size` — compressed critical-path gate on every build (NFR-05).

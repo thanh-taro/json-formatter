@@ -92,7 +92,7 @@ own files for the offline cache (NFR-01 as amended by D-021; only WebKit does th
 | MOD-IO | main | File pick/drop, clipboard (with fallback), download | F-001.R2/R3, F-007 |
 | MOD-App | main | Shell components, app state, operation orchestration | SCR-Formatter, F-009; NFR-02, NFR-06 |
 | MOD-Copy | main | Generated strings per language, active language, hints, number and size formatting | copy.md; F-012 |
-| MOD-Build | build/CI | Codegen, `_headers`, size and license gates, deploy | NFR-01, NFR-05, NFR-09 |
+| MOD-Build | build | Codegen, `_headers`, size and license gates, deploy | NFR-01, NFR-05, NFR-09 |
 
 Dependency rule: MOD-Core imports nothing; MOD-Worker imports only MOD-Core and
 `@codemirror/state` (for `ChangeSet` decoding only; the mirror is not a CodeMirror `Text`); nothing in the worker imports DOM code (lint-enforced import boundaries).

@@ -21,14 +21,15 @@ Requirements: Node 24 (`.nvmrc`), pnpm 11 (`corepack enable` picks the version f
 | `pnpm lint` / `pnpm format` | ESLint + Prettier check / write |
 | `pnpm test` | Vitest: unit, property and conformance tests |
 | `pnpm fixtures:jsontestsuite` | Fetch the JSONTestSuite corpus into `tests/fixtures/` (gitignored) |
-| `pnpm test:e2e` | Playwright on Chromium, Firefox and WebKit against `dist/` (run `pnpm build` first) |
+| `pnpm test:e2e` | Playwright on Chromium and WebKit against `dist/` (run `pnpm build` first) |
 | `pnpm test:e2e:smoke` | Playwright on Chromium only |
 | `pnpm check:size` | Compressed critical-path budget (NFR-05) |
 | `pnpm check:licenses` | License audit against the ADR-0001 allow-lists |
 | `pnpm lhci` | Lighthouse CI with NFR-05 throttling (needs Chrome or `CHROME_PATH`) |
 | `python3 tools/spec_lint.py` | Spec lint; add `--coverage tests` for criteria without tests |
 
-First run of the browser tests: `pnpm exec playwright install chromium firefox webkit`.
+First run of the browser tests: `pnpm exec playwright install chromium webkit`.
+Firefox is not in the automated suite (ADR-0015); it is checked by hand before a release.
 Test naming and the e2e setup are described in `adapters/tests.md`.
 
 Deploying for other host origins: `HOST_ORIGINS="https://a.example https://b.example" pnpm build`

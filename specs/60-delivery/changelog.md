@@ -82,3 +82,8 @@ Spec changes to items in `building` or `shipped` status are recorded here.
   e2e Chromium + WebKit 482 passed / 0 failed; every F-012 AC covered; critical path 182.3 / 250 KB,
   fonts 81.3 / 90 KB. Open before release: Firefox e2e (sandbox could not launch it) and a manual
   screen-reader pass of a live switch. F-012 stays `building` until released.
+- Owner decision (all three taro-kit tools): no code-host workflows (no `ci.yml`/`deploy.yml`;
+  deploys by the owner or Claude by hand) and Firefox removed from the automated e2e suite —
+  Playwright's Firefox never launches here. ADR-0015 (amends ADR-0010); NFR-07 verification is
+  Chromium + WebKit e2e plus a manual Firefox check per release candidate; DEP-25/26 updated;
+  adapters (tests, codegen), README and Firefox-only test skips updated.

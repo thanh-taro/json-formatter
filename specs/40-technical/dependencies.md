@@ -35,7 +35,7 @@ ever ships, and it is not listed in the notices); **build** / **dev** / **ci** =
 | **DEP-13** | @fontsource-variable/jetbrains-mono | ^5 | OFL-1.1 | asset | Editor/tree mono face, self-hosted Latin + Vietnamese subsets | approved | ADR-0011, ADR-0014 |
 | **DEP-14** | Portal design tokens ("Night Market", `tokens.json`) | copy pinned to a portal commit | Owner's own work | asset (source) | Colours, spacing, radii, motion shared with the portal | approved (owner's own work, reused with permission, D-026) | ADR-0011 |
 
-## Build, dev, test, CI (never shipped)
+## Build, dev, test (never shipped)
 | ID | Name | Version range | License | Kind | Purpose | Status | Decided by |
 |---|---|---|---|---|---|---|---|
 | **DEP-15** | typescript | ~6.0 (pinned until lint tooling supports 7) | Apache-2.0 | dev | Type checking | approved | ADR-0003 |
@@ -48,8 +48,8 @@ ever ships, and it is not listed in the notices); **build** / **dev** / **ci** =
 | **DEP-22** | @vitest/browser-playwright | ^5.0 | MIT | dev | Worker/integration tests in real browsers | removed (not needed: the worker protocol is tested in Node against the worker engine and in real browsers through the Playwright e2e suite; not installed) | ADR-0010 |
 | **DEP-23** | fast-check | ^4.10 | MIT | dev | Property-based tests (INV-01, robustness) | approved | ADR-0010 |
 | **DEP-24** | JSONTestSuite (nst/JSONTestSuite test files) | pinned commit, vendored | MIT | dev (fixtures) | Conformance corpus for NFR-08 | approved | ADR-0010 |
-| **DEP-25** | @playwright/test | ~1.63.0 (1.64 too new on 2026-10-13; bump later) | Apache-2.0 | dev | E2E on three engines, perf and memory measurements | approved | ADR-0010 |
-| **DEP-26** | Playwright browser binaries (Chromium, Firefox, WebKit) | via DEP-25 | Chromium BSD; Firefox MPL-2.0; WebKit LGPL-2.1 (test-only exception) | dev | E2E engines | approved | ADR-0001, ADR-0010 |
+| **DEP-25** | @playwright/test | ~1.63.0 (1.64 too new on 2026-10-13; bump later) | Apache-2.0 | dev | E2E on Chromium and WebKit, perf and memory measurements | approved | ADR-0010, ADR-0015 |
+| **DEP-26** | Playwright browser binaries (Chromium, WebKit) | via DEP-25 | Chromium BSD; WebKit LGPL-2.1 (test-only exception) | dev | E2E engines (Firefox dropped, ADR-0015) | approved | ADR-0001, ADR-0010, ADR-0015 |
 | **DEP-27** | @axe-core/playwright (pulls axe-core) | ^4.13 | MPL-2.0 (dev-only exception) | dev | Automated accessibility audit | approved | ADR-0001, ADR-0010 |
 | **DEP-28** | @lhci/cli | ^0.15 | Apache-2.0 | dev | Startup budgets for NFR-05 | approved | ADR-0010 |
 | **DEP-29** | eslint | ^10 | MIT | dev | Linting incl. network-API ban and module boundaries | approved | ADR-0003 |
