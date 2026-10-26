@@ -2,7 +2,8 @@
 // the list of files the page already loaded, so the worker can store them from the HTTP cache.
 // Registration failures are silent: the tool then simply works online only.
 // Implements: F-011.R1, F-011.R2 (no requests of its own: the seed list names loaded files only),
-// F-011.R3 (nothing here ever reloads the page).
+// F-011.R3 (nothing here ever reloads the page); F-012.R7 / F-012.AC13 (the seed list is posted
+// only after the startup font loads have settled, so the Vietnamese subsets are in it, ADR-0014 §8).
 
 /** Name of the build-time `<meta>` listing the build's JS/CSS chunks (vite plugin `tk-offline`). */
 export const CHUNKS_META = 'tk-chunks';
@@ -37,12 +38,14 @@ export function seedList(
   return [...out].slice(0, MAX_SEED_URLS);
 }
 
-async function register(): Promise<void> {
+async function register(fontsReady: Promise<unknown>): Promise<void> {
   const sw = navigator.serviceWorker;
   // `updateViaCache: "all"`: the browser's update check of /sw.js may be served by the HTTP
   // cache (max-age=86400), so Chromium and Firefox make no request after load (SP-iframe).
   await sw.register('/sw.js', { updateViaCache: 'all' });
   const ready = await sw.ready;
+  // A rejected font load counts as settled (MOD-Host public surface).
+  await fontsReady.catch(() => undefined);
   await document.fonts?.ready;
   const meta = document.querySelector<HTMLMetaElement>(`meta[name="${CHUNKS_META}"]`);
   const urls = seedList(
@@ -58,10 +61,11 @@ let started = false;
 
 /**
  * Starts offline support once, after the page has loaded (call after the first render).
- * No-op without service-worker support, in development, in a kill-switch build
+ * `fontsReady` (from MOD-App) settles when the startup font loads have; the seed list is posted
+ * only after that. No-op without service-worker support, in development, in a kill-switch build
  * (`SW_KILL=1`, MOD-Build), or when registration is refused (storage partitioning, sandboxing).
  */
-export function startOffline(): void {
+export function startOffline({ fontsReady = Promise.resolve() }: { fontsReady?: Promise<unknown> } = {}): void {
   if (started || !__TK_OFFLINE__) return;
   started = true;
   try {
@@ -69,7 +73,7 @@ export function startOffline(): void {
   } catch {
     return;
   }
-  const run = () => void register().catch(() => undefined);
+  const run = () => void register(fontsReady).catch(() => undefined);
   if (document.readyState === 'complete') run();
   else window.addEventListener('load', run, { once: true });
 }

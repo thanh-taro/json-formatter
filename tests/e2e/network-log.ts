@@ -19,10 +19,13 @@ const serverLog = async (request: APIRequestContext) =>
 /** The server clock now: requests logged later happened after this point. */
 export const logNow = async (request: APIRequestContext) => (await serverLog(request)).now;
 
+/** The page as the worker seeds it: its query only `theme` and/or `lang` (ADR-0014 §8). */
+const PAGE_SEED = /^\/(\?(theme=(dark|light)|lang=[A-Za-z_-]+)(&(theme=(dark|light)|lang=[A-Za-z_-]+))?)?$/;
+
 export const workerCacheFetch = (e: LogEntry) =>
   e.method === 'GET' &&
   ((e.path === '/sw.js' && e.sw === 'script') ||
-    (e.dest === 'empty' && (/^\/(\?theme=(dark|light))?$/.test(e.path) || /^\/assets\/[\w.-]+$/.test(e.path))));
+    (e.dest === 'empty' && (PAGE_SEED.test(e.path) || /^\/assets\/[\w.-]+$/.test(e.path))));
 
 /** Asserts the tool made no request after `mark` other than the D-021 offline-cache exception. */
 export async function expectNoRequestsAfter(request: APIRequestContext, mark: number): Promise<void> {

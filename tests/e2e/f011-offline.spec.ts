@@ -33,10 +33,13 @@ const serverLog = async (request: APIRequestContext) => (await admin(request, '/
  * files for the offline cache — the worker seeding (a `fetch`, destination "empty", which the
  * page itself cannot make under `connect-src 'none'`) and the worker-script update check.
  */
+/** The page as the worker seeds it: its query only `theme` and/or `lang` (ADR-0014 §8). */
+const PAGE_SEED = /^\/(\?(theme=(dark|light)|lang=[A-Za-z_-]+)(&(theme=(dark|light)|lang=[A-Za-z_-]+))?)?$/;
+
 const allowedWorkerFetch = (e: Entry) =>
   e.method === 'GET' &&
   ((e.path === '/sw.js' && e.sw === 'script') ||
-    (e.dest === 'empty' && (/^\/(\?theme=(dark|light))?$/.test(e.path) || /^\/assets\/[\w.-]+$/.test(e.path))));
+    (e.dest === 'empty' && (PAGE_SEED.test(e.path) || /^\/assets\/[\w.-]+$/.test(e.path))));
 
 const app = (s: Scope) => s.locator('[data-screen="SCR-Formatter"]');
 const validity = (s: Scope) => s.locator('.tk-statusbar__validity');

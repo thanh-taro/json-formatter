@@ -26,6 +26,8 @@
   .tk-tree__header {
     display: flex;
     flex: none;
+    /* F-012.R7 / AC11 (NFR-07): at narrow widths the actions wrap onto more rows, never cut. */
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--tk-space-2);
     min-block-size: var(--tk-size-panel-header);
@@ -47,6 +49,8 @@
   }
   .tk-tree__actions {
     display: inline-flex;
+    flex-wrap: wrap;
+    min-inline-size: 0;
     align-items: center;
     gap: var(--tk-space-1);
   }

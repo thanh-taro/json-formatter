@@ -10,7 +10,8 @@
 // rewritten every frame while scrolling.
 //
 // Implements: F-006.R1–F-006.R10 (with MOD-App), RULE-06, RULE-11, RULE-12, INV-05, NFR-02,
-// NFR-04, NFR-06; CMP-TreeView.
+// NFR-04, NFR-06; CMP-TreeView; F-012.R2 (`relabel()` in the active language, ADR-0014 §4) and
+// F-012.AC14 (value kinds marked as English).
 import chevronRight from 'lucide-static/icons/chevron-right.svg?raw';
 import circleAlert from 'lucide-static/icons/circle-alert.svg?raw';
 import copyIcon from 'lucide-static/icons/copy.svg?raw';
@@ -66,6 +67,12 @@ export interface TreeHandle {
   showInvalid(location: string): void;
   hide(): void;
   collapseAll(): void;
+  /**
+   * Implements: F-012.R2 (ADR-0014 §4) — rewrites the static labels and re-renders the visible
+   * rows and any message in the active language from the existing row model; expansion,
+   * selection and scroll are kept.
+   */
+  relabel(): void;
   destroy(): void;
 }
 
@@ -142,6 +149,13 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
   const header = el('div', 'tk-tree__header');
   const pathOut = el('span', 'tk-tree__path');
   const actions = el('span', 'tk-tree__actions');
+  /** Static labels and their COPY IDs, rewritten by `relabel()` (F-012.R2). */
+  const labels: [HTMLElement, MessageId][] = [];
+  const label = <E extends HTMLElement>(e: E, id: MessageId): E => {
+    e.textContent = t(id as 'action.cancel');
+    labels.push([e, id]);
+    return e;
+  };
   const action = (
     id: 'action.copy_path' | 'action.copy_value' | 'action.reveal',
     iconName: keyof typeof ICONS,
@@ -150,7 +164,7 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
     const b = el('button', 'tk-tree__action');
     b.type = 'button';
     b.disabled = true;
-    b.append(icon(iconName), el('span', 'tk-tree__action-label', t(id)));
+    b.append(icon(iconName), label(el('span', 'tk-tree__action-label'), id));
     b.addEventListener('click', run);
     actions.append(b);
     return b;
@@ -159,7 +173,7 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
   const bValue = action('action.copy_value', 'copy', () => copyValue());
   const bReveal = action('action.reveal', 'text', () => reveal());
   const sep = el('span', 'tk-tree__sep');
-  const bCollapse = el('button', 'tk-tree__collapse', t('action.collapse_all'));
+  const bCollapse = label(el('button', 'tk-tree__collapse'), 'action.collapse_all');
   bCollapse.type = 'button';
   bCollapse.addEventListener('click', () => collapseAll());
   header.append(pathOut, actions, sep, bCollapse);
@@ -167,11 +181,11 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
   // ---- checking bar (F-006.R10): COPY-tree.checking, progress and cancel after 0.5 s ----
   const checking = el('div', 'tk-tree__checking');
   checking.hidden = true;
-  const checkLabel = el('span', 'tk-tree__checking-label', t('tree.checking'));
+  const checkLabel = label(el('span', 'tk-tree__checking-label'), 'tree.checking');
   checkLabel.id = `tk-tree-checking-${uid}`;
   checkLabel.setAttribute('role', 'status');
   const checkTrack = progressTrack(checkLabel.id);
-  const checkCancel = el('button', 'tk-button tk-button--outline tk-tree__cancel', t('action.cancel'));
+  const checkCancel = label(el('button', 'tk-button tk-button--outline tk-tree__cancel'), 'action.cancel');
   checkCancel.type = 'button';
   checkCancel.addEventListener('click', () => deps.showText());
   checking.append(checkLabel, checkTrack.track, el('span', 'tk-tree__spacer-flex'), checkCancel);
@@ -180,6 +194,8 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
   const fallback = el('div', 'tk-tree__fallback');
   fallback.hidden = true;
   const fbLabel = el('label', 'tk-tree__fallback-label');
+  /** COPY ID of the manual-copy field's label while it is shown. */
+  let fbLabelId: 'action.copy_path' | 'action.copy_value' = 'action.copy_path';
   const fbInput = el('input', 'tk-tree__fallback-input');
   fbInput.type = 'text';
   fbInput.readOnly = true;
@@ -299,6 +315,8 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
       const twisty = icon('twisty', 'tk-tree__twisty');
       const key = el('span', 'tk-tree__key');
       const kind = el('span', 'tk-tree__kind');
+      // F-012.AC14, NFR-06: the value kinds stay English in every language and are marked so.
+      kind.setAttribute('lang', 'en');
       const value = el('span', 'tk-tree__value');
       row.append(twisty, key, kind, value);
       const pr: PoolRow = { el: row, twisty, key, kind, value, i: -1, sig: '' };
@@ -496,6 +514,7 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
 
   /** Implements: F-006.R9 — the text in a read-only field, selected for a manual copy. */
   function showFallback(id: 'action.copy_path' | 'action.copy_value', text: string): void {
+    fbLabelId = id;
     fbLabel.textContent = t(id);
     fbInput.value = text;
     fallback.hidden = false;
@@ -679,10 +698,22 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
 
   // ---- states ----
 
+  /** Texts of the message shown, rewritten in place by `relabel()` (focus stays, F-012 UX notes). */
+  let messageTexts: [HTMLElement, () => string][] = [];
+  /** Sets `e`'s text from `text()` now and again on every `relabel()` while the message shows. */
+  function messageText<E extends HTMLElement>(e: E, text: () => string): E {
+    e.textContent = text();
+    messageTexts.push([e, text]);
+    return e;
+  }
   function showMessage(build: (box: HTMLElement) => void): void {
+    messageTexts = [];
+    invalidLocation = null;
     message.replaceChildren();
     build(message);
   }
+  /** The location shown with COPY-action.go_to_error while invalid (updated in place). */
+  let invalidLocation: HTMLSpanElement | null = null;
 
   function stopBuilding(): void {
     clearTimeout(buildTimer);
@@ -736,8 +767,9 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
           label.textContent = t('progress.tree', { percent: track.set(f) });
         };
         set(buildFraction);
+        messageTexts.push([label, () => t('progress.tree', { percent: track.set(buildFraction) })]);
         buildMessage = { label, set };
-        const cancel = el('button', 'tk-button tk-button--outline', t('action.cancel'));
+        const cancel = messageText(el('button', 'tk-button tk-button--outline'), () => t('action.cancel'));
         cancel.type = 'button';
         cancel.addEventListener('click', () => {
           stopBuilding();
@@ -767,8 +799,11 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
       if (reason === 'too-large') {
         setMode('too-large');
         showMessage((box) => {
-          box.append(icon('text', 'tk-tree__message-icon'), el('p', 'tk-tree__message-text', t('tree.too_large')));
-          const text = el('button', 'tk-button tk-button--outline', t('view.text'));
+          box.append(
+            icon('text', 'tk-tree__message-icon'),
+            messageText(el('p', 'tk-tree__message-text'), () => t('tree.too_large')),
+          );
+          const text = messageText(el('button', 'tk-button tk-button--outline'), () => t('view.text'));
           text.type = 'button';
           text.addEventListener('click', () => deps.showText());
           box.append(text);
@@ -865,6 +900,12 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
       if (stale) checkTrack.set(f);
     },
     showInvalid(location) {
+      // Already shown (e.g. again after a language switch): only the location text changes, in
+      // place, so focus on COPY-action.go_to_error stays (F-012 UX notes).
+      if (mode === 'invalid' && invalidLocation) {
+        invalidLocation.textContent = location;
+        return;
+      }
       stopBuilding();
       if (model) kept = snapshotOf(model, cursor, selected, virtualTop());
       model = null;
@@ -873,10 +914,15 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
       setMode('invalid');
       showMessage((box) => {
         box.append(icon('alert', 'tk-tree__message-icon tk-tree__message-icon--danger'));
-        box.append(el('p', 'tk-tree__message-text', t('tree.invalid')));
+        box.append(messageText(el('p', 'tk-tree__message-text'), () => t('tree.invalid')));
         const go = el('button', 'tk-button tk-button--outline tk-tree__go');
         go.type = 'button';
-        go.append(el('span', '', t('action.go_to_error')), el('span', 'tk-tree__go-location', location));
+        const where = el('span', 'tk-tree__go-location', location);
+        go.append(
+          messageText(el('span', ''), () => t('action.go_to_error')),
+          where,
+        );
+        invalidLocation = where;
         go.addEventListener('click', () => deps.goToError());
         box.append(go);
       });
@@ -887,6 +933,15 @@ export function mountTree(container: HTMLElement, deps: TreeDeps): TreeHandle {
       hideFallback();
     },
     collapseAll,
+    relabel() {
+      for (const [e, id] of labels) e.textContent = t(id as 'action.cancel');
+      viewport.setAttribute('aria-label', t('label.tree'));
+      if (!fallback.hidden) fbLabel.textContent = t(fbLabelId);
+      for (const [e, text] of messageTexts) e.textContent = text();
+      // Rows: the same row model, written again (counts and group labels in the new language).
+      for (const p of pool) p.sig = '';
+      render();
+    },
     destroy() {
       stopBuilding();
       clearTimeout(staleTimer);

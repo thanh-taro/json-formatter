@@ -2,7 +2,7 @@
 // progress and cancel, the notice bar, the confirmation dialog and the drop overlay.
 import { signal } from '@preact/signals';
 import type { IndentStyle, LineEnding, Tier, ValidationResult } from '../core';
-import { t, type MessageId } from '../copy';
+import { formatSize, t, type MessageId } from '../copy';
 
 export interface DocState {
   empty: boolean;
@@ -28,17 +28,27 @@ export interface Busy {
   cancel: () => void;
 }
 
-/** A CMP-Notice bar (info or error); at most one at a time, newest wins. */
+/**
+ * A CMP-Notice bar (info or error); at most one at a time, newest wins. Kept as a COPY ID plus
+ * raw parameters and rendered when shown (`barText`), so a language switch re-translates it
+ * (F-012.R2 / F-012.AC15, ADR-0014 §4).
+ */
 export interface Bar {
   /** Increases with every bar shown, so the same message shown again is a new bar. */
   seq: number;
   kind: 'info' | 'error';
   /** COPY ID of the message (also exposed as `data-notice-id`). */
   id: Extract<MessageId, `notice.${string}` | `error.${string}`>;
-  /** The message text, from `t(id, …)`. */
-  text: string;
+  /** The document size in bytes, for COPY-notice.large's `{size}`. */
+  bytes?: number;
   /** File errors offer COPY-action.open to try another file (CMP-Notice). */
   offerOpen?: boolean;
+}
+
+/** The text of a bar in the active language (F-012.AC15: `{size}` formatted when shown). */
+export function barText(bar: Pick<Bar, 'id' | 'bytes'>): string {
+  if (bar.id === 'notice.large') return t('notice.large', { size: formatSize(bar.bytes ?? 0) });
+  return t(bar.id);
 }
 
 /**
@@ -53,13 +63,16 @@ export interface Validation {
   version: number;
 }
 
-/** A CMP-Notice toast (e.g. COPY-toast.copied): auto-dismissed, at most 2 stacked. */
+/**
+ * A CMP-Notice toast (e.g. COPY-toast.copied): auto-dismissed, at most 2 stacked. Kept as its
+ * COPY ID and rendered when shown (F-012.R2, ADR-0014 §4).
+ */
 export interface Toast {
   seq: number;
   id: Extract<MessageId, `toast.${string}`>;
-  text: string;
 }
 
+/** The very-large confirmation: the size in bytes, formatted when shown (F-012.AC15). */
 export interface Confirm {
   bytes: number;
   answer: (proceed: boolean) => void;

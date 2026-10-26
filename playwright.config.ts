@@ -19,6 +19,9 @@ export default defineConfig({
   reporter: CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://localhost:${PORT_BASE}`,
+    // F-012 (RULE-19): the UI follows the browser's language when no `lang` is passed; the suite
+    // asserts English UI text, so the browser language is fixed to en-US.
+    locale: 'en-US',
     trace: 'retain-on-failure',
   },
   webServer: {

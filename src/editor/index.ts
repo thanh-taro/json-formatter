@@ -162,6 +162,11 @@ export interface EditorHandle {
    * previous session. The session recounts whenever the document changes.
    */
   find(term: string, options: { matchCase: boolean }): FindSession;
+  /**
+   * Implements: F-012.R2 (ADR-0014 §4) — re-applies the accessible name (COPY-label.editor) in
+   * the active language; the document, selection and history are untouched.
+   */
+  relabel(): void;
   destroy(): void;
 }
 
@@ -222,6 +227,9 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
   const history = new UndoHistory();
   const tierConf = new Compartment();
   const busyConf = new Compartment();
+  /** The accessible name in the active language (F-012.R2: reconfigured by `relabel()`). */
+  const labelConf = new Compartment();
+  const labelExtension = () => EditorView.contentAttributes.of({ 'aria-label': t('label.editor') });
 
   let version = 0;
   let lineEnding: LineEnding = 'lf';
@@ -350,7 +358,8 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
         insertionHandlers,
         editorTheme,
         // tabindex makes the scroll region's focusable content explicit (axe scrollable-region-focusable).
-        EditorView.contentAttributes.of({ 'aria-label': t('label.editor'), tabindex: '0' }),
+        EditorView.contentAttributes.of({ tabindex: '0' }),
+        labelConf.of(labelExtension()),
         tierConf.of(tierExtension('normal', false)),
         busyConf.of([]),
         issueMarks,
@@ -592,6 +601,9 @@ export function createEditor(host: HTMLElement, options: EditorOptions): EditorH
     },
     get lastTool() {
       return lastTool;
+    },
+    relabel() {
+      view.dispatch({ effects: labelConf.reconfigure(labelExtension()) });
     },
     // Implements: D-005 busy policy — read-only while a tool operation runs; scrolling stays.
     setBusy(busy) {

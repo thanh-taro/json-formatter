@@ -3,11 +3,12 @@ import { describe, expect, it } from 'vitest';
 import copyMd from '../../specs/30-experience/copy.md?raw';
 import { formatCount, hintFor, MESSAGES, t, tCount, type MessageId } from '../../src/copy';
 
-const rows = [...copyMd.matchAll(/^\|\s*\*\*COPY-([a-z0-9_]+\.[a-z0-9_]+)\*\*\s*\|([^|]*)\|([^|]*)\|/gm)];
+// | ID | en-US | vi-VN | Notes | (F-012, ADR-0014); MESSAGES is the en-US column.
+const rows = [...copyMd.matchAll(/^\|\s*\*\*COPY-([a-z0-9_]+\.[a-z0-9_]+)\*\*\s*\|([^|]*)\|([^|]*)\|([^|]*)\|/gm)];
 
 describe('MOD-Copy', () => {
   it('smoke: every non-deprecated COPY ID is generated with its text', () => {
-    const live = rows.filter((r) => !/deprecated/i.test(r[3] ?? ''));
+    const live = rows.filter((r) => !/deprecated/i.test(r[4] ?? ''));
     expect(live.length).toBeGreaterThan(0);
     for (const [, id, text] of live) {
       expect(MESSAGES[id as MessageId], id).toBe(text?.trim());

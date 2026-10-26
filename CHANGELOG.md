@@ -5,6 +5,17 @@ Spec-level changes are tracked separately in `specs/60-delivery/changelog.md`.
 
 ## [Unreleased]
 
+### Added
+- Vietnamese: the tool follows the taro-kit portal's language (`?lang=en-US|vi-VN` and live `taro:language`
+  messages), else the browser's preferred languages, else English (F-012). Numbers and sizes are written the
+  Vietnamese way (`1.234`, `1,5 MB`); the tree's value kinds and JSON tokens stay in English. Switching keeps the
+  document, undo history, selection, view, tree expansion, find and indent style.
+- The Vietnamese subsets of Manrope and JetBrains Mono are loaded at startup and cached for offline use.
+
+### Changed
+- At narrow widths the status bar, notice bars and the tree header wrap onto another row instead of
+  overflowing (the tree header overflowed at 320 px in English too).
+
 ## [1.1.0] - 2026-10-20
 
 ### Added

@@ -17,7 +17,7 @@
     "assert": {
       "assertions": {
         "resource-summary:script:size": ["error", { "maxNumericValue": 250000 }],
-        "resource-summary:total:size": ["warn", { "maxNumericValue": 420000 }],
+        "resource-summary:total:size": ["warn", { "maxNumericValue": 430000 }],
         "interactive": ["error", { "maxNumericValue": 1500 }],
         "categories:accessibility": ["error", { "minScore": 1 }]
       }

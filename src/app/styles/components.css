@@ -93,6 +93,8 @@
   /* CMP-Notice bar: under the toolbar, pushes the document down. */
   .tk-notice {
     display: flex;
+    /* F-012.R7 / AC11 (NFR-07): longer texts (vi-VN) wrap onto another row at 320 px, never cut. */
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--tk-space-2);
     min-block-size: var(--tk-size-toolbar);

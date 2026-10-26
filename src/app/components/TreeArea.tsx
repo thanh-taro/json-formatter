@@ -4,6 +4,7 @@
 // COPY-tree.invalid with a jump to the error.
 import { signal, useSignalEffect } from '@preact/signals';
 import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { language } from '../../copy';
 import type { TreeHandle } from '../../tree';
 import { locationOf, type AppController } from '../controller';
 
@@ -49,6 +50,17 @@ export function TreeArea({ app }: { app: AppController }) {
     const h = handle.value;
     const f = app.state.checkProgress.value;
     h?.progress(f);
+  });
+
+  // Implements: F-012.R2 (ADR-0014 §4) — a language switch relabels the tree in place (expansion,
+  // selection and scroll kept); nothing is announced.
+  const relabelled = useMemo(() => ({ lang: language.peek() }), []);
+  useSignalEffect(() => {
+    const lang = language.value;
+    const h = handle.value;
+    if (!h || lang === relabelled.lang) return;
+    relabelled.lang = lang;
+    h.relabel();
   });
 
   return <div ref={host} class="tk-tree-host" hidden={view !== 'tree'} />;

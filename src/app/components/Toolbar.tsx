@@ -9,7 +9,7 @@
 // Text | Tree, Copy and More actions stay in the bar; nothing is ever clipped.
 // Implements: style.md rule 2 — Beautify is the only filled control (QA-002).
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { t } from '../../copy';
+import { language, t } from '../../copy';
 import type { AppController } from '../controller';
 import { Icon, type IconName } from './Icon';
 import { IndentSelector } from './IndentSelector';
@@ -92,6 +92,15 @@ export function Toolbar({ app }: { app: AppController }) {
     const el = bar.current;
     if (el && el.scrollWidth > el.clientWidth + 1 && step < LAYOUTS.length - 1) setStep(step + 1);
   });
+
+  // F-012.R7 / AC11: labels change length with the language; fit again from the full toolbar.
+  const lang = language.value;
+  const fittedLang = useRef(lang);
+  useLayoutEffect(() => {
+    if (fittedLang.current === lang) return;
+    fittedLang.current = lang;
+    setStep(0);
+  }, [lang]);
 
   useEffect(() => {
     const el = bar.current;

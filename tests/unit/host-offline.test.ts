@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CACHE_NAME,
   cacheKey,
+  isSupportedLanguage,
   MAX_SEED_URLS,
   pageChunks,
   pageStorable,
@@ -15,6 +16,7 @@ import {
   staleCaches,
 } from '../../src/host/offline-policy';
 import { seedList } from '../../src/host/offline';
+import { matchLanguage } from '../../src/host/contract';
 // @ts-expect-error -- plain ESM build script without type declarations
 import { chunkList, swKill } from '../../scripts/lib/offline.mjs';
 // @ts-expect-error -- plain ESM build script without type declarations
@@ -124,6 +126,64 @@ describe('seeding', () => {
       `${O}/third-party-notices.txt`,
       `${O}/assets/a.js?x=1`,
     ]);
+  });
+});
+
+describe('the page address kept for seeding (ADR-0014 §8)', () => {
+  const page = (q: string) => seed([`/${q}`]).page?.href;
+  it('F-012.AC13 a query of only theme and/or lang (each once, valid value) is kept exactly as loaded', () => {
+    for (const q of [
+      '',
+      '?theme=dark',
+      '?theme=light',
+      '?lang=vi-VN',
+      '?lang=en-US',
+      '?lang=vi',
+      '?lang=vi-vn',
+      '?lang=en-GB',
+      '?theme=dark&lang=vi-VN',
+      '?lang=vi-VN&theme=light',
+    ]) {
+      expect(page(q), q).toBe(`${O}/${q}`);
+    }
+  });
+
+  it('F-012.AC13 RULE-19 the worker matches languages exactly as the page does', () => {
+    for (const v of [
+      'en-US',
+      'vi-VN',
+      'vi',
+      'VI-vn',
+      'en-GB',
+      'en',
+      'vi_VN',
+      'fr-FR',
+      'fr',
+      'e',
+      'env',
+      'vie',
+      'x-vi',
+    ]) {
+      expect(isSupportedLanguage(v), v).toBe(matchLanguage(v) !== null);
+    }
+  });
+
+  it('F-012.AC13 PRN-01 any other query is dropped (content never reaches a URL)', () => {
+    for (const q of [
+      '?lang=fr-FR',
+      '?lang=',
+      '?lang=vi-VN&lang=en-US',
+      '?theme=dark&theme=light',
+      '?theme=sepia&lang=vi-VN',
+      '?lang=vi-VN&doc=secret',
+      '?lang=vi%2DVN',
+      '?lang=vi-VN&',
+      '?doc=secret',
+      '?lang',
+      '?LANG=vi-VN',
+    ]) {
+      expect(page(q), q).toBe(`${O}/`);
+    }
   });
 });
 

@@ -1,7 +1,8 @@
 // MOD-Host — offline cache policy as pure functions (no DOM, no worker globals), ADR-0012.
 // Imported only by the service worker entry (`sw.ts`), so the bundler inlines it into /sw.js.
 // Implements: F-011.R1, F-011.R2, F-011.R3, NFR-01 (D-021 exception only), PRN-01 (only the
-// tool's own files are ever stored: the allow-list is enforced inside the worker).
+// tool's own files are ever stored: the allow-list is enforced inside the worker); ADR-0014 §8.
+// Self-contained: /sw.js must stay a classic script that imports nothing shared with the page.
 
 /** Prefix of every Cache Storage name the tool owns. */
 export const CACHE_PREFIX = 'json-formatter-';
@@ -37,7 +38,7 @@ const ownHttp = (u: URL, origin: string) => (u.protocol === 'https:' || u.protoc
  * The cache key of an allowed tool URL, or null when the URL must never be stored (other
  * schemes such as blob: or data:, other origins, any path off the allow-list). The page has one
  * key whatever its address: it is matched ignoring the query (`ignoreSearch`), because the
- * portal opens the tool with `?theme=` (MOD-Host note, portal ADR-0011).
+ * portal opens the tool with `?theme=` and `?lang=` (MOD-Host note, portal ADR-0011, ADR-0014).
  */
 export function cacheKey(url: URL, origin: string): string | null {
   if (!ownHttp(url, origin)) return null;
@@ -74,13 +75,40 @@ export interface SeedPlan {
   readonly page: SeedTarget | null;
 }
 
-/** The only query the page address may carry when fetched for seeding (portal ADR-0011). */
-const PAGE_QUERY = /^(\?theme=(light|dark))?$/;
+/**
+ * The primary languages of RULE-19's supported languages (en-US, vi-VN); a `lang` value matches
+ * one when it equals it ignoring case or shares its primary language. Mirrors `matchLanguage` in
+ * contract.ts (kept in step by tests/unit/host-offline.test.ts).
+ */
+const PAGE_LANGUAGES = ['en', 'vi'];
+export const isSupportedLanguage = (value: string): boolean =>
+  PAGE_LANGUAGES.includes(value.toLowerCase().split(/[-_]/)[0] ?? '');
+
+/**
+ * Implements: ADR-0014 §8, F-012.AC13 — the only query the page address may carry when fetched
+ * for seeding: one made only of `theme` and/or `lang` (portal ADR-0011, ADR-0012), each at most
+ * once with a valid value (a theme, a RULE-19 supported language written in plain letters),
+ * kept exactly as loaded so the seed is served from the HTTP cache.
+ */
+export function keepsPageQuery(search: string): boolean {
+  if (search === '') return true;
+  if (!search.startsWith('?')) return false;
+  const seen = new Set<string>();
+  for (const part of search.slice(1).split('&')) {
+    const m = /^(theme|lang)=([A-Za-z_-]+)$/.exec(part);
+    if (!m) return false;
+    const [, name, value] = m as unknown as [string, string, string];
+    if (seen.has(name)) return false;
+    seen.add(name);
+    if (name === 'theme' ? value !== 'light' && value !== 'dark' : !isSupportedLanguage(value)) return false;
+  }
+  return true;
+}
 
 /**
  * Validates a `{ type: "seed", urls }` message from the page into the tool's own files to
  * store. Everything off the allow-list is dropped — blob:, data:, filesystem:, other origins,
- * other paths, assets with a query; the page address keeps only the `theme` query (any other
+ * other paths, assets with a query; the page address keeps only a `theme`/`lang` query (any other
  * query is fetched without it). At most MAX_SEED_URLS entries, no duplicates by key.
  */
 export function seedPlan(data: unknown, origin: string): SeedPlan {
@@ -104,7 +132,7 @@ export function seedPlan(data: unknown, origin: string): SeedPlan {
     if (!key) continue;
     if (isPagePath(u.pathname)) {
       if (page) continue;
-      if (!PAGE_QUERY.test(u.search)) u.search = '';
+      if (!keepsPageQuery(u.search)) u.search = '';
       page = { href: u.href, key };
       continue;
     }

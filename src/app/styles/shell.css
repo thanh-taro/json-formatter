@@ -6,7 +6,7 @@
     /* toolbar · notice bar · main area · issue panel (at most size.issuePanelMax) · status bar */
     grid-template-rows:
       var(--tk-toolbar-height) auto minmax(0, 1fr) fit-content(var(--tk-size-issue-panel-max))
-      var(--tk-statusbar-height, var(--tk-size-statusbar));
+      minmax(var(--tk-statusbar-height, var(--tk-size-statusbar)), auto);
     height: 100%;
     --tk-toolbar-height: var(--tk-size-toolbar);
   }
@@ -258,6 +258,9 @@
 
   .tk-statusbar {
     display: flex;
+    /* F-012.R7 / AC11: longer texts (vi-VN) wrap onto a second row at narrow widths, never cut. */
+    flex-wrap: wrap;
+    row-gap: 0;
     align-items: center;
     gap: var(--tk-space-3);
     padding-inline: var(--tk-space-3);

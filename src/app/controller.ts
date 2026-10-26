@@ -1,7 +1,8 @@
 // MOD-App operation controller: every operation end to end with one busy / progress / cancel /
 // undo contract (MOD-App "run(operation)"), the RULE-02 tiers and confirmation, notices shown
 // once, and the worker ↔ editor wiring (architecture.md "Load" data flow).
-import { formatCount, formatSize, hintFor, t, tCount } from '../copy';
+import { effect } from '@preact/signals';
+import { formatCount, hintFor, language, t, tCount } from '../copy';
 import {
   beautifiedBytes,
   indentStyle,
@@ -123,6 +124,7 @@ export class AppController {
   private barSeq = 0;
   private trimmedNoticeShown = false;
   private removeDrop: (() => void) | null = null;
+  private removeRelabel: (() => void) | null = null;
   /** Reasons the editor is read-only (a busy operation, a re-seed); D-005. */
   private locks = 0;
   private seeding: Promise<void> | null = null;
@@ -151,6 +153,16 @@ export class AppController {
       onFindKey: () => this.find.show(),
     });
     this.editor = editor;
+    // Implements: F-012.R2 (ADR-0014 §4) — on a language switch the editor's accessible name is
+    // relabelled in place; document, selection and history stay. The tree relabels itself
+    // through TreeArea.
+    let current = language.peek();
+    this.removeRelabel = effect(() => {
+      const lang = language.value;
+      if (lang === current) return;
+      current = lang;
+      editor.relabel();
+    });
     this.requestValidation();
     this.removeDrop = installDropTarget(window, {
       isInEditor: (e) => e.composedPath().includes(host),
@@ -161,6 +173,7 @@ export class AppController {
   }
 
   detach(): void {
+    this.removeRelabel?.();
     this.removeDrop?.();
     this.find.dispose();
     this.editor?.destroy();
@@ -307,8 +320,7 @@ export class AppController {
       sourceName: ed.sourceName,
     };
     // Implements: RULE-02 / F-001.AC4 — told once on entering the large tiers.
-    if (isLargeTier(tier) && !isLargeTier(this.tier))
-      this.showBar({ kind: 'info', id: 'notice.large', text: t('notice.large', { size: formatSize(bytes) }) });
+    if (isLargeTier(tier) && !isLargeTier(this.tier)) this.showBar({ kind: 'info', id: 'notice.large', bytes });
     this.tier = tier;
   }
 
@@ -316,7 +328,7 @@ export class AppController {
   private toldTrimmed(): void {
     if (this.trimmedNoticeShown) return;
     this.trimmedNoticeShown = true;
-    this.showBar({ kind: 'info', id: 'notice.undo_trimmed', text: t('notice.undo_trimmed') });
+    this.showBar({ kind: 'info', id: 'notice.undo_trimmed' });
   }
 
   showBar(bar: Omit<Bar, 'seq'>): void {
@@ -347,7 +359,7 @@ export class AppController {
   private showFailure(reason: FailReason, fileError: boolean): void {
     if (reason === 'cancelled') return;
     const bar = (id: 'error.encoding' | 'error.too_large' | 'error.unreadable' | 'error.failed') =>
-      this.showBar({ kind: 'error', id, text: t(id), offerOpen: fileError && id !== 'error.failed' });
+      this.showBar({ kind: 'error', id, offerOpen: fileError && id !== 'error.failed' });
     // Implements: RULE-13 (encoding), F-001.R9 (allocation failure or a failed length check),
     // F-001 edge cases (unreadable file; any other internal failure → COPY-error.failed, INV-03).
     if (reason === 'encoding') bar('error.encoding');
@@ -505,10 +517,10 @@ export class AppController {
     if (this.blocked()) return; // also while the confirmation is open (security review MINOR-4)
     this.clearOutcome();
     if (d.kind === 'not-a-file') {
-      this.showBar({ kind: 'error', id: 'error.not_a_file', text: t('error.not_a_file'), offerOpen: true });
+      this.showBar({ kind: 'error', id: 'error.not_a_file', offerOpen: true });
       return;
     }
-    if (d.multiple) this.showBar({ kind: 'info', id: 'notice.multiple_files', text: t('notice.multiple_files') });
+    if (d.multiple) this.showBar({ kind: 'info', id: 'notice.multiple_files' });
     void this.loadFile(d.file);
   }
 
@@ -546,7 +558,7 @@ export class AppController {
       busy.onCancel(() => planJob.cancel());
       const r = await planJob.result;
       if (r.type === 'notIndented') {
-        this.showBar({ kind: 'info', id: 'notice.no_indent', text: t('notice.no_indent') });
+        this.showBar({ kind: 'info', id: 'notice.no_indent' });
         return;
       }
       if (r.type !== 'reindentPlan') throw new JobFailure('internal', `unexpected ${r.type}`);
@@ -745,7 +757,7 @@ export class AppController {
         // Review M2 / round 3: only a Blob that itself could not be made is dropped (with
         // everything older); the document is unchanged and the user is told older history is gone.
         step.drop();
-        this.showBar({ kind: 'info', id: 'notice.undo_trimmed', text: t('notice.undo_trimmed') });
+        this.showBar({ kind: 'info', id: 'notice.undo_trimmed' });
       } else {
         // Cancelled, or the restore failed (e.g. a worker restart): the entry stays undoable.
         step.abort();
@@ -802,7 +814,7 @@ export class AppController {
       }
       if (outcome === 'blocked') job.cancel(); // refused before the export ended: stop it
     }).then(() => {
-      if (outcome === 'copied') this.showToast({ id: 'toast.copied', text: t('toast.copied') });
+      if (outcome === 'copied') this.showToast({ id: 'toast.copied' });
       else if (outcome === 'blocked') this.copyRefused();
     });
   }
@@ -811,7 +823,7 @@ export class AppController {
   private copyRefused(): void {
     this.showTextView();
     this.editor?.selectAll();
-    this.showBar({ kind: 'error', id: 'error.clipboard', text: t('error.clipboard') });
+    this.showBar({ kind: 'error', id: 'error.clipboard' });
   }
 
   /**
@@ -867,8 +879,8 @@ export class AppController {
   }
 
   private copied(outcome: CopyOutcome): void {
-    if (outcome === 'copied') this.showToast({ id: 'toast.copied', text: t('toast.copied') });
-    else this.showBar({ kind: 'error', id: 'error.clipboard', text: t('error.clipboard') });
+    if (outcome === 'copied') this.showToast({ id: 'toast.copied' });
+    else this.showBar({ kind: 'error', id: 'error.clipboard' });
   }
 
   /**

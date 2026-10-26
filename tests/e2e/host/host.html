@@ -31,11 +31,14 @@
       // taro:theme message with the tool's exact origin, the current theme in reply to ready.
       // Query: tool=<origin> (default http://localhost:4400), theme=light|dark|none, w, h,
       // sibling=1 (adds a frame from the unlisted origin that can post into the tool frame),
-      // clip=0 (no clipboard-write permission for the frame: copying is refused, F-007.AC4).
+      // clip=0 (no clipboard-write permission for the frame: copying is refused, F-007.AC4),
+      // lang=<value> (passed through as-is in the tool's address and, like the portal, sent as a
+      // taro:language message in reply to ready; F-012, RULE-16).
       const q = new URLSearchParams(location.search);
       const BASE = Number('__E2E_PORT_BASE__'); // injected by tests/e2e/server.mjs
       const TOOL = q.get('tool') || `http://localhost:${BASE}`;
       let theme = q.get('theme') || 'dark';
+      let lang = q.get('lang');
       window.__host = { received: [], loads: 0 };
       const f = document.createElement('iframe');
       f.name = 'tool';
@@ -47,17 +50,26 @@
       if (q.get('h')) f.style.height = q.get('h') + 'px';
       // Fires for a frame the browser refused to display too (F-008.AC8 waits on it).
       f.addEventListener('load', () => window.__host.loads++);
-      f.src = TOOL + '/' + (theme === 'none' ? '' : '?theme=' + encodeURIComponent(theme));
+      let src = TOOL + '/' + (theme === 'none' ? '' : '?theme=' + encodeURIComponent(theme));
+      if (lang !== null) src += (src.includes('?') ? '&' : '?') + 'lang=' + encodeURIComponent(lang);
+      f.src = src;
       window.addEventListener('message', (e) => {
         const fromTool = e.source === f.contentWindow;
         window.__host.received.push({ origin: e.origin, data: e.data, fromTool });
         if (fromTool && e.data && e.data.type === 'taro:ready' && theme !== 'none') {
           f.contentWindow.postMessage({ type: 'taro:theme', value: theme }, TOOL);
         }
+        if (fromTool && e.data && e.data.type === 'taro:ready' && lang !== null) {
+          f.contentWindow.postMessage({ type: 'taro:language', value: lang }, TOOL);
+        }
       });
       window.setTheme = (value) => {
         theme = value;
         f.contentWindow.postMessage({ type: 'taro:theme', value }, TOOL);
+      };
+      window.setLang = (value) => {
+        lang = value;
+        f.contentWindow.postMessage({ type: 'taro:language', value }, TOOL);
       };
       window.postRaw = (data) => f.contentWindow.postMessage(data, TOOL);
       window.resizeTool = (w, h) => {
