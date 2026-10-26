@@ -87,3 +87,4 @@ Spec changes to items in `building` or `shipped` status are recorded here.
   Playwright's Firefox never launches here. ADR-0015 (amends ADR-0010); NFR-07 verification is
   Chromium + WebKit e2e plus a manual Firefox check per release candidate; DEP-25/26 updated;
   adapters (tests, codegen), README and Firefox-only test skips updated.
+- Released in v1.2.0 (2026-10-26, Cloudflare version f45fbbca): F-012 shipped (English and Vietnamese).

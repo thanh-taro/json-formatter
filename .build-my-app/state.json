@@ -76,14 +76,14 @@
       "step": "6 hand-off (release): v1.0.0 tagged and released on GitHub (2026-10-20); B3 verified, C obsolete (no GitHub workflows, manual deploys); waiting for user F (manual QA) and G (unhide in portal)",
       "gate": {
         "status": "passed",
-        "at": "2026-10-20T15:17:35+00:00",
-        "note": "v1.1.0 candidate 90d1054: spec lint 0/0, typecheck, lint, unit 397, e2e chromium 227, licenses, size 177.8/250 KB; owner asked to deploy (2026-10-20)"
+        "at": "2026-10-26T15:28:25+00:00",
+        "note": "v1.2.0-rc.1 approved (D-038)"
       }
     },
     "deploy": {
       "title": "7 Deploy",
-      "status": "done",
-      "step": "7 deploy v1.1.0 live (ac565763); G7 passed; portal entry live (G); manual QA F remains with the owner",
+      "status": "in_progress",
+      "step": "v1.2.0 live; awaiting owner confirmation (G7) and manual Firefox/VoiceOver checks",
       "gate": {
         "status": "passed",
         "at": "2026-10-20T15:24:33+00:00",
@@ -669,6 +669,22 @@
       "answer": "Làm đẹp / Nén / Thụt lề lại (owner, 2026-10-26)",
       "asked": "2026-10-26T13:36:16+00:00",
       "answered": "2026-10-26T13:36:24+00:00"
+    },
+    {
+      "id": "D-038",
+      "question": "Approve v1.2.0-rc.1 and deploy now",
+      "options": [
+        "Deploy now",
+        "Later",
+        "Manual checks first"
+      ],
+      "recommendation": "Deploy now",
+      "kind": "release",
+      "phase": "iterate",
+      "status": "answered",
+      "answer": "Approve and deploy (owner, 2026-10-26)",
+      "asked": "2026-10-26T15:28:15+00:00",
+      "answered": "2026-10-26T15:28:24+00:00"
     }
   ],
   "loops": {
@@ -802,34 +818,6 @@
     }
   },
   "log": [
-    {
-      "at": "2026-10-13T06:27:18+00:00",
-      "event": "loop spec-review started (max 3)"
-    },
-    {
-      "at": "2026-10-13T06:31:49+00:00",
-      "event": "decision D-005 opened: Busy-state behavior during long operations"
-    },
-    {
-      "at": "2026-10-13T06:31:49+00:00",
-      "event": "decision D-005 answered: scroll + cancel only"
-    },
-    {
-      "at": "2026-10-13T06:31:49+00:00",
-      "event": "decision D-006 opened: Line endings on beautify"
-    },
-    {
-      "at": "2026-10-13T06:31:49+00:00",
-      "event": "decision D-006 answered: preserve input line ending and final newline"
-    },
-    {
-      "at": "2026-10-13T06:31:49+00:00",
-      "event": "decision D-007 opened: Undo depth for huge documents"
-    },
-    {
-      "at": "2026-10-13T06:31:49+00:00",
-      "event": "decision D-007 answered: 100 steps normal; last 3 tool ops for >10MB"
-    },
     {
       "at": "2026-10-13T06:33:40+00:00",
       "event": "loop spec-review round 2"
@@ -1601,9 +1589,37 @@
     {
       "at": "2026-10-26T15:27:32+00:00",
       "event": "v1.2.0-rc.1: unit 422, e2e Chromium+WebKit 482/0, size 182.3/250 KB"
+    },
+    {
+      "at": "2026-10-26T15:28:15+00:00",
+      "event": "decision D-038 opened: Approve v1.2.0-rc.1 and deploy now"
+    },
+    {
+      "at": "2026-10-26T15:28:24+00:00",
+      "event": "decision D-038 answered: Approve and deploy (owner, 2026-10-26)"
+    },
+    {
+      "at": "2026-10-26T15:28:25+00:00",
+      "event": "gate release passed: v1.2.0-rc.1 approved (D-038)"
+    },
+    {
+      "at": "2026-10-26T15:28:25+00:00",
+      "event": "phase deploy -> in_progress"
+    },
+    {
+      "at": "2026-10-26T15:28:56+00:00",
+      "event": "deploy step: v1.2.0: production deploy (wrangler deploy)"
+    },
+    {
+      "at": "2026-10-26T15:40:25+00:00",
+      "event": "v1.2.0 deployed (Cloudflare f45fbbca); smoke 9/9; live vi-VN/en-US verified"
+    },
+    {
+      "at": "2026-10-26T15:40:25+00:00",
+      "event": "deploy step: v1.2.0 live; awaiting owner confirmation (G7) and manual Firefox/VoiceOver checks"
     }
   ],
-  "updated": "2026-10-26T15:27:32+00:00",
+  "updated": "2026-10-26T15:40:25+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
