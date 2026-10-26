@@ -40,8 +40,8 @@ decorations; the stock search package is not used.
 ## Public surface
 - `createEditor(container, options)` → `EditorHandle` with: `version`, `onChange(cb)`,
   `onCursor(cb)`, `setTier(tier)`, `setBusy(bool)`, `markIssue(issue | null)`,
-  `goTo(offset)`, `select(span)`, `selectAll()`, `relabel()` (accessible name in the active
-  language via a compartment; document, selection and history untouched; ADR-0014), `beginReplace(kind)` → `PendingDocument`
+  `goTo(offset)`, `select(span)`, `selectAll()`, `relabel()` (accessible name and the editor's built-in
+  phrases — COPY-editor.selection_deleted, COPY-editor.control_character — in the active language via a compartment; document, selection and history untouched; ADR-0014), `beginReplace(kind)` → `PendingDocument`
   { `append(chunk)`, `commit(facts)` (checks the length the worker built), `discard()` },
   `beginPaste(from, to, lineEnding)` (large paste or external text drop, ADR-0006 §2),
   `clear()`, `undo()`, `redo()` (both return either "applied" or a reload request carrying the

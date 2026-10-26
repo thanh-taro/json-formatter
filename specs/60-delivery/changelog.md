@@ -73,3 +73,8 @@ Spec changes to items in `building` or `shipped` status are recorded here.
   the startup font loads; notices keep raw values; value kinds marked English). Owner approved
   scope (D-036) and the vi-VN toolbar verbs Làm đẹp / Nén / Thụt lề lại (D-037); F-012 ready,
   ADR-0014 accepted.
+- F-012 build: AC15 example corrected to a large-tier document (15,000,000 bytes → `15,0 MB`;
+  COPY-notice.large only shows above 10 MB, RULE-02). CMP-TreeView, CMP-StatusBar and CMP-Notice
+  gain a narrow/wrap variant (the tree header already overflowed at 320 px in English).
+- F-012 code review: added COPY-editor.selection_deleted and COPY-editor.control_character (the
+  editor's built-in phrases, previously English in every language); MOD-Host depends on MOD-Copy.

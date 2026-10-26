@@ -21,6 +21,7 @@ the status bar, auto-dismisses).
 | info bar | e.g. COPY-notice.large, COPY-notice.undo_trimmed, COPY-notice.no_indent, COPY-notice.multiple_files; dismissible |
 | error bar | file errors offer COPY-action.open to try another file; e.g. COPY-error.encoding, COPY-error.too_large, COPY-error.not_a_file, COPY-error.clipboard; dismissible |
 | toast | e.g. COPY-toast.copied; disappears after 2 s; never the only signal for errors |
+| narrow | bar text and actions wrap onto more rows instead of overflowing; labels are never truncated (F-012.AC11) |
 
 ## Behavior
 At most one bar at a time (newest wins; progress has priority); toasts stack up to 2.

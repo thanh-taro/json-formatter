@@ -2,7 +2,7 @@
 id: MOD-Host
 title: Host integration — theme, language, allowed origins, ready signal, offline worker
 status: draft
-depends_on: []
+depends_on: [MOD-Copy]
 ---
 
 ## Responsibility

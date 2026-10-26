@@ -21,6 +21,7 @@ text; collapse all) · rows (expander, key/index, kind, value or child count).
 | checking | COPY-tree.checking with progress and COPY-action.cancel; previous tree dimmed |
 | unavailable | COPY-tree.too_large (very large tier) with a switch to COPY-view.text |
 | selected row | row highlighted; header shows its path and enables the three actions |
+| narrow | when the header does not fit (e.g. 320 px, or longer vi-VN labels), its actions wrap onto another row; labels are never truncated (F-012.AC11, NFR-07) |
 
 ## Behavior
 Expand/collapse by click or keyboard. Selecting a row (click, tap, arrow keys) makes it the

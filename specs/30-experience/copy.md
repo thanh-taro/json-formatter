@@ -102,6 +102,12 @@ object → đối tượng).
 | **COPY-tree.group** | [{from} … {to}] | [{from} … {to}] | group row label |
 | **COPY-tree.invalid** | The tree needs valid JSON. Fix the error first. | Chế độ cây cần JSON hợp lệ. Hãy sửa lỗi trước. | Action: jump to error |
 
+## Editor built-ins
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-editor.selection_deleted** | Selection deleted | Đã xoá vùng chọn | Announced when a selection is deleted (editor's built-in phrase) |
+| **COPY-editor.control_character** | Control character | Ký tự điều khiển | Tooltip of a shown control character, followed by its technical name (editor's built-in phrase) |
+
 ## Find
 | ID | en-US | vi-VN | Notes |
 |---|---|---|---|

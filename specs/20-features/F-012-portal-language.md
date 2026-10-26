@@ -6,7 +6,7 @@ milestone: M-1
 priority: P1
 personas: [PER-02, PER-01]
 entities: []
-rules: [RULE-10, RULE-16, RULE-19]
+rules: [RULE-02, RULE-10, RULE-16, RULE-19]
 screens: [SCR-Formatter]
 components: [CMP-Toolbar, CMP-Editor, CMP-StatusBar, CMP-IssuePanel, CMP-Notice, CMP-ConfirmDialog, CMP-DropOverlay, CMP-SearchPanel, CMP-TreeView]
 nfr: [NFR-01, NFR-05, NFR-06, NFR-07, NFR-09]
@@ -64,7 +64,7 @@ opened standalone.
 - **AC12** Given copy.md, when the strings are generated, then every COPY ID that is not deprecated has a text for every supported language, with the same placeholders. (R1)
 - **AC13** Given the tool was first opened in en-US, when it is reopened offline in vi-VN, then it loads and Vietnamese UI text renders in its own typefaces, and in every language the network log shows no font request after the initial load, whatever the user types (NFR-01). (R7)
 - **AC14** Given the tool is in vi-VN with the tree view open, when the value kinds are shown, then they read `object`, `array`, `string`, `number`, `boolean`, `null` and each is marked as English. (R1)
-- **AC15** Given the tool is in en-US showing COPY-notice.large for a 1,500,000-byte document, when the host switches to vi-VN, then the notice shows the vi-VN text with `1,5 MB`; and an open large-content dialog or progress bar switches its text the same way, with the pending choice or operation unchanged. (R2, R6)
+- **AC15** Given the tool is in en-US showing COPY-notice.large for a 15,000,000-byte document (large tier, RULE-02), when the host switches to vi-VN, then the notice shows the vi-VN text with `15,0 MB`; and an open large-content dialog or progress bar switches its text the same way, with the pending choice or operation unchanged. (R2, R6)
 
 ## UX notes
 No language control in the tool; the host owns it (RULE-16). The tree's value kinds stay in English
