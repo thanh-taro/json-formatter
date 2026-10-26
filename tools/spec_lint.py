@@ -157,7 +157,8 @@ def check_copy_notes(r: Report) -> None:
         return
     for n, line in enumerate(path.read_text().splitlines(), 1):
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) == 3 and cells[0].startswith("**COPY-") and re.search(r'"[^"]+"', cells[2]):
+        # Notes is the last column (one text column per language before it).
+        if len(cells) >= 3 and cells[0].startswith("**COPY-") and re.search(r'"[^"]+"', cells[-1]):
             r.warn(f"{path.relative_to(ROOT)}:{n}", "quoted text in the Notes column — give it its own COPY ID")
 
 

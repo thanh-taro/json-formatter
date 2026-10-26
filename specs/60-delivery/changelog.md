@@ -57,3 +57,19 @@ Spec changes to items in `building` or `shipped` status are recorded here.
 - Change request (owner, D-034): the source link uses the GitHub mark (Octicons `mark-github`, DEP-40, MIT) instead of a generic code icon; its transitive object-assign registered as unbundled (DEP-41).
 - Change request (owner, D-035): the source link shows COPY-privacy.source ("Source code") after the GitHub mark; at narrow widths it shortens to the mark, like the privacy statement. CMP-StatusBar narrow variant updated.
 - Released in v1.1.0 (2026-10-20, Cloudflare version ac565763): F-009 R3 source link (D-033..D-035) shipped; F-009 back to `shipped`.
+
+## 2026-10-26
+- Change request (owner): the tool follows the portal's language. The host passes
+  `?lang=en-US|vi-VN` and re-sends `{ type: "taro:language", value }` on every switch (portal
+  tool contract, portal ADR-0012); RULE-16 extended; new RULE-19 (matching, precedence, fallback
+  to the browser's languages, then en-US). New F-012; copy.md gains a vi-VN column (JSON
+  terms, value kinds, the product name and download file names stay as written). Counts and
+  sizes use the active language's number format; the en-US singular rule applies only in en-US.
+  ADR-0014; MOD-Host, MOD-Copy, MOD-Editor, MOD-Tree, MOD-App, architecture (font
+  budget 80 → 90 KB), platform mapping, SCR-Formatter, glossary ("Language"), roadmap updated;
+  DEP-12/DEP-13 add their Vietnamese subsets (same packages, same license). F-008 scope points
+  to F-012. spec_lint's Notes check reads the last column.
+- Spec review converged in 2 rounds (offline seeding keeps `theme`/`lang` query and waits for
+  the startup font loads; notices keep raw values; value kinds marked English). Owner approved
+  scope (D-036) and the vi-VN toolbar verbs Làm đẹp / Nén / Thụt lề lại (D-037); F-012 ready,
+  ADR-0014 accepted.

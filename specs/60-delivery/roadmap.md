@@ -4,6 +4,8 @@
 Load (paste/drop/open), lossless beautify & minify, re-indent, validation with precise errors
 and hints, read-only tree with copy path/value, copy & download, host integration, privacy
 statement, find in text, offline use. Features: F-001 … F-011.
+Added after v1.1.0: use the portal's language — en-US and vi-VN from the host's address or
+messages, else the browser's (F-012, RULE-19).
 
 ### M-2 — Explore & fix
 Tree search and expand-to-level; lenient parsing with one-click auto-fix (comments, trailing

@@ -2,7 +2,7 @@
 id: SCR-Formatter
 title: Formatter
 status: ready
-features: [F-001, F-002, F-003, F-004, F-005, F-006, F-007, F-008, F-009, F-010, F-011]
+features: [F-001, F-002, F-003, F-004, F-005, F-006, F-007, F-008, F-009, F-010, F-011, F-012]
 components: [CMP-Toolbar, CMP-Editor, CMP-TreeView, CMP-StatusBar, CMP-IssuePanel, CMP-DropOverlay, CMP-SearchPanel, CMP-Notice, CMP-ConfirmDialog]
 ---
 
@@ -40,3 +40,8 @@ Reading order: toolbar → main area → issue panel → status bar. Every actio
 path and an accessible name (COPY-* labels). Validity changes are announced politely; errors
 are announced once per new error, not on every keystroke. File drop has a non-drag
 alternative (open action).
+
+## Language
+No language control; the page language and every string follow RULE-19 (F-012). Every state
+must fit at 320 px in every language (NFR-07). The tree's value kinds are marked as English
+inside a vi-VN page (NFR-06).

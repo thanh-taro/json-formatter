@@ -40,7 +40,8 @@ decorations; the stock search package is not used.
 ## Public surface
 - `createEditor(container, options)` → `EditorHandle` with: `version`, `onChange(cb)`,
   `onCursor(cb)`, `setTier(tier)`, `setBusy(bool)`, `markIssue(issue | null)`,
-  `goTo(offset)`, `select(span)`, `selectAll()`, `beginReplace(kind)` → `PendingDocument`
+  `goTo(offset)`, `select(span)`, `selectAll()`, `relabel()` (accessible name in the active
+  language via a compartment; document, selection and history untouched; ADR-0014), `beginReplace(kind)` → `PendingDocument`
   { `append(chunk)`, `commit(facts)` (checks the length the worker built), `discard()` },
   `beginPaste(from, to, lineEnding)` (large paste or external text drop, ADR-0006 §2),
   `clear()`, `undo()`, `redo()` (both return either "applied" or a reload request carrying the
@@ -58,6 +59,6 @@ decorations; the stock search package is not used.
 ## Implements
 F-001.R1, F-001.R6, F-001.R7, F-001.R4 (large paste path), F-002.R4 (focus error),
 F-002.R5, F-003.R4, F-004.R4, F-005.R3 (marker), F-005.R5, F-006.R6 (select span),
-F-007.R3 (select all), F-010.R2, F-010.R3, F-010.R4, F-010.R5, F-010.R6; INV-03, INV-04;
+F-007.R3 (select all), F-010.R2, F-010.R3, F-010.R4, F-010.R5, F-010.R6; F-012.R2 (relabel); INV-03, INV-04;
 RULE-02 (visual reduction), RULE-15, RULE-18;
 NFR-02, NFR-04, NFR-06 (editor accessibility: label COPY-label.editor, Tab escape).

@@ -20,7 +20,8 @@ Feel like a native part of the portal when embedded, and work fully on its own (
 ## Scope
 - In: theme (light/dark) following the host or the system; filling the space the host gives;
   running standalone; accepting messages only from the trusted host.
-- Out: sharing user content with the host (PRN-01); the host's own navigation and chrome.
+- Out: sharing user content with the host (PRN-01); the host's own navigation and chrome; the
+  language the host passes (F-012).
 
 ## Requirements
 - **R1** When embedded, the tool uses the initial theme the host passes in its address from

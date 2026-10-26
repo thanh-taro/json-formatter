@@ -31,10 +31,11 @@ Lazy-loaded chunk: not part of the startup critical path.
 
 ## Public surface
 - `mountTree(container, deps)` → `TreeHandle` with `show(version)`, `hide()`,
-  `markStale(version)`, `collapseAll()`, `onReveal(cb)`.
+  `markStale(version)`, `collapseAll()`, `onReveal(cb)`, `relabel()` (re-renders its
+  labels in the active language, keeping expansion and scroll; ADR-0014).
 - Pure `RowModel` (range tree: expansion state → row *i*, row count, group arithmetic) —
   unit-tested without DOM.
 
 ## Implements
 F-006.R1–F-006.R10 (view switch together with MOD-App); RULE-06, RULE-11, RULE-12;
-INV-05; NFR-02, NFR-04, NFR-06 (tree role, keyboard).
+INV-05; NFR-02, NFR-04, NFR-06 (tree role, keyboard); F-012.R2 (relabel in place).

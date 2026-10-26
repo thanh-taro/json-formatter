@@ -92,8 +92,8 @@
     },
     "iterate": {
       "title": "8 Iterate",
-      "status": "pending",
-      "step": null,
+      "status": "in_progress",
+      "step": "CR language: build F-012 (feature pipeline)",
       "gate": {
         "status": "pending",
         "at": null,
@@ -637,6 +637,38 @@
       "answer": "Owner asked for 'Source code' right of the GitHub icon; narrow widths shorten to the icon like the privacy badge",
       "asked": "2026-10-20T15:02:07+00:00",
       "answered": "2026-10-20T15:02:07+00:00"
+    },
+    {
+      "id": "D-036",
+      "question": "F-012 scope: full vi-VN UI with English kept for product name, value kinds, JSON tokens, file names; numbers per language",
+      "options": [
+        "Approve",
+        "Numbers English",
+        "Minimal"
+      ],
+      "recommendation": "Approve",
+      "kind": "product",
+      "phase": "iterate",
+      "status": "answered",
+      "answer": "Approve (owner, 2026-10-26)",
+      "asked": "2026-10-26T13:36:16+00:00",
+      "answered": "2026-10-26T13:36:24+00:00"
+    },
+    {
+      "id": "D-037",
+      "question": "vi-VN toolbar verbs",
+      "options": [
+        "Làm đẹp/Nén",
+        "English verbs",
+        "Định dạng/Thu nhỏ"
+      ],
+      "recommendation": "Làm đẹp/Nén",
+      "kind": "product",
+      "phase": "iterate",
+      "status": "answered",
+      "answer": "Làm đẹp / Nén / Thụt lề lại (owner, 2026-10-26)",
+      "asked": "2026-10-26T13:36:16+00:00",
+      "answered": "2026-10-26T13:36:24+00:00"
     }
   ],
   "loops": {
@@ -751,53 +783,17 @@
       "started": "2026-10-20T14:05:41+00:00",
       "outcome": "converged round 2; lint 0/0",
       "ended": "2026-10-20T14:14:41+00:00"
+    },
+    "spec-review-F-012": {
+      "round": 2,
+      "max": 3,
+      "active": false,
+      "started": "2026-10-26T13:09:02+00:00",
+      "outcome": "converged in 2 rounds (r2-m1 fixed)",
+      "ended": "2026-10-26T13:14:30+00:00"
     }
   },
   "log": [
-    {
-      "at": "2026-10-13T06:16:05+00:00",
-      "event": "phase setup -> gate"
-    },
-    {
-      "at": "2026-10-13T06:18:53+00:00",
-      "event": "gate setup passed: Greenfield web tool; personal/experienced/no budget; balanced autonomy"
-    },
-    {
-      "at": "2026-10-13T06:18:53+00:00",
-      "event": "phase product-spec -> in_progress"
-    },
-    {
-      "at": "2026-10-13T06:18:58+00:00",
-      "event": "product-spec step: 1.1 brainstorm: market research + strategist challenge"
-    },
-    {
-      "at": "2026-10-13T06:18:58+00:00",
-      "event": "User input: iframe embed in React portal; M-1 wants format (beautify/minify/tabs<->spaces/indent), validate+precise errors, tree view. Transform/diff not selected for v1."
-    },
-    {
-      "at": "2026-10-13T06:19:58+00:00",
-      "event": "set spike_candidates"
-    },
-    {
-      "at": "2026-10-13T06:19:58+00:00",
-      "event": "Strategist done: lossless token-based formatting, client-only CSP, own tokenizer errors; suggests tree in M-2; 4 spike candidates recorded"
-    },
-    {
-      "at": "2026-10-13T06:20:47+00:00",
-      "event": "product-spec step: 1.1 vision brief drafted; awaiting user approval + product decisions"
-    },
-    {
-      "at": "2026-10-13T06:20:47+00:00",
-      "event": "Market research + vision brief written to .build-my-app/reports/"
-    },
-    {
-      "at": "2026-10-13T06:22:33+00:00",
-      "event": "decision D-001 opened: Approve vision brief; tree view placement"
-    },
-    {
-      "at": "2026-10-13T06:22:33+00:00",
-      "event": "decision D-002 opened: Input/output layout"
-    },
     {
       "at": "2026-10-13T06:22:33+00:00",
       "event": "decision D-003 opened: Supported input size"
@@ -1553,9 +1549,53 @@
     {
       "at": "2026-10-20T15:25:45+00:00",
       "event": "Owner signed off manual QA (F) on v1.1.0, portal embedding included; M-1 release complete"
+    },
+    {
+      "at": "2026-10-26T13:05:30+00:00",
+      "event": "phase iterate -> in_progress"
+    },
+    {
+      "at": "2026-10-26T13:05:30+00:00",
+      "event": "Change request (owner): follow the portal's language (?lang=, taro:language), reference text-case-converter F-011"
+    },
+    {
+      "at": "2026-10-26T13:09:02+00:00",
+      "event": "iterate step: CR language: spec review loop (F-012, RULE-19, ADR-0014, copy vi-VN)"
+    },
+    {
+      "at": "2026-10-26T13:09:02+00:00",
+      "event": "loop spec-review-F-012 started (max 3)"
+    },
+    {
+      "at": "2026-10-26T13:13:34+00:00",
+      "event": "loop spec-review-F-012 round 2"
+    },
+    {
+      "at": "2026-10-26T13:14:30+00:00",
+      "event": "loop spec-review-F-012 ended: converged in 2 rounds (r2-m1 fixed)"
+    },
+    {
+      "at": "2026-10-26T13:36:16+00:00",
+      "event": "decision D-036 opened: F-012 scope: full vi-VN UI with English kept for product name, value kinds, JSON tokens, file names; numbers per language"
+    },
+    {
+      "at": "2026-10-26T13:36:16+00:00",
+      "event": "decision D-037 opened: vi-VN toolbar verbs"
+    },
+    {
+      "at": "2026-10-26T13:36:24+00:00",
+      "event": "decision D-036 answered: Approve (owner, 2026-10-26)"
+    },
+    {
+      "at": "2026-10-26T13:36:24+00:00",
+      "event": "decision D-037 answered: Làm đẹp / Nén / Thụt lề lại (owner, 2026-10-26)"
+    },
+    {
+      "at": "2026-10-26T13:36:25+00:00",
+      "event": "iterate step: CR language: build F-012 (feature pipeline)"
     }
   ],
-  "updated": "2026-10-20T15:25:45+00:00",
+  "updated": "2026-10-26T13:36:25+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

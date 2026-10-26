@@ -13,3 +13,4 @@
 | F-009 | Show the privacy guarantee | M-1 | P1 | shipped |
 | F-010 | Find text in the document | M-1 | P1 | shipped |
 | F-011 | Work offline | M-1 | P2 | shipped |
+| F-012 | Use the portal's language | M-1 | P1 | ready |

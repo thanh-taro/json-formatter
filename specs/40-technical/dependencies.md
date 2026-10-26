@@ -31,8 +31,8 @@ ever ships, and it is not listed in the notices); **build** / **dev** / **ci** =
 |---|---|---|---|---|---|---|---|
 | **DEP-11** | lucide-static | ^1.55 | ISC | asset | Icons, only used SVGs inlined at build (same set as the portal) | approved | ADR-0011 |
 | **DEP-40** | @primer/octicons | 19.40.0 (pinned) | MIT | asset | The GitHub mark (`mark-github`) for the source link (F-009.R3, D-034); only that SVG is inlined at build. Used to link to the GitHub repository as GitHub's logo guidelines allow | approved | ADR-0011 |
-| **DEP-12** | @fontsource-variable/manrope | ^5 | OFL-1.1 | asset | UI face, self-hosted Latin subset (portal style) | approved | ADR-0011 |
-| **DEP-13** | @fontsource-variable/jetbrains-mono | ^5 | OFL-1.1 | asset | Editor/tree mono face, self-hosted Latin subset | approved | ADR-0011 |
+| **DEP-12** | @fontsource-variable/manrope | ^5 | OFL-1.1 | asset | UI face, self-hosted Latin + Vietnamese subsets (portal style) | approved | ADR-0011, ADR-0014 |
+| **DEP-13** | @fontsource-variable/jetbrains-mono | ^5 | OFL-1.1 | asset | Editor/tree mono face, self-hosted Latin + Vietnamese subsets | approved | ADR-0011, ADR-0014 |
 | **DEP-14** | Portal design tokens ("Night Market", `tokens.json`) | copy pinned to a portal commit | Owner's own work | asset (source) | Colours, spacing, radii, motion shared with the portal | approved (owner's own work, reused with permission, D-026) | ADR-0011 |
 
 ## Build, dev, test, CI (never shipped)

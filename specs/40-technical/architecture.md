@@ -88,10 +88,10 @@ own files for the offline cache (NFR-01 as amended by D-021; only WebKit does th
 | MOD-Worker | worker | Compact mirror, job scheduling, cancellation, file decode, export Blobs | F-001.R5/R8/R9, F-005.R7; INV-03, INV-05; NFR-02, NFR-04 |
 | MOD-Editor | main | Editor engine (shadow root), tiers, chunked commit, undo history, markers, find engine | F-001.R1/R6/R7, F-005.R5, F-010; INV-04; RULE-15, RULE-18 |
 | MOD-Tree | main (lazy chunk) | Range-tree row model, RULE-12 groups, virtual list, copy/reveal | F-006 |
-| MOD-Host | main + inline boot + `sw.js` | Theme, origin-checked messages, ready signal, offline service worker | F-008, F-011; RULE-16; NFR-01, NFR-09 |
+| MOD-Host | main + inline boot + `sw.js` | Theme, language, origin-checked messages, ready signal, offline service worker | F-008, F-011, F-012; RULE-16, RULE-19; NFR-01, NFR-09 |
 | MOD-IO | main | File pick/drop, clipboard (with fallback), download | F-001.R2/R3, F-007 |
 | MOD-App | main | Shell components, app state, operation orchestration | SCR-Formatter, F-009; NFR-02, NFR-06 |
-| MOD-Copy | main | Generated strings, hints, size formatting | copy.md |
+| MOD-Copy | main | Generated strings per language, active language, hints, number and size formatting | copy.md; F-012 |
 | MOD-Build | build/CI | Codegen, `_headers`, size and license gates, deploy | NFR-01, NFR-05, NFR-09 |
 
 Dependency rule: MOD-Core imports nothing; MOD-Worker imports only MOD-Core and
@@ -291,8 +291,8 @@ this lands at ≈ 0.8–0.9 s, leaving ~0.6 s headroom.
 | **Critical path total (HTML + CSS + JS)** | **≤ 250 KB** | ~160–175 KB |
 | Worker chunk (MOD-Core + MOD-Worker + `@codemirror/state`), loaded in parallel | ≤ 60 KB | ~40 KB |
 | Tree chunk (lazy) | ≤ 30 KB | ~15 KB |
-| Fonts (2 variable WOFF2 Latin subsets, swap, not blocking) | ≤ 80 KB | ~60–80 KB |
-| **Total initial transfer** | **≤ 420 KB** | |
+| Fonts (2 variable WOFF2 Latin + 2 Vietnamese subsets, swap, not blocking; ADR-0014) | ≤ 90 KB | ~81 KB |
+| **Total initial transfer** | **≤ 430 KB** | |
 
 Enforced by the build size gate (PR) and Lighthouse CI with matched throttling (ADR-0010).
 Cached: hashed assets are immutable; only the HTML revalidates (one 304 round trip).

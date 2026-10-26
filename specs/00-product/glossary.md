@@ -16,6 +16,7 @@
 | Byte-order mark | An invisible marker some editors put at the start of a text file. |
 | Source name | The file name a document was opened from. |
 | Host | The portal page that embeds the tool. |
+| Language | The language the tool's own text is shown in: en-US or vi-VN, set by the host or the browser (RULE-19). Never applies to the document. |
 | Source repository | The public repository that holds the tool's source code. |
 | Source link | The status-bar link to the source repository. |
 | Lossless | Only insignificant whitespace changes; every value, key and number spelling stays as written. |

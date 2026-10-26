@@ -28,6 +28,9 @@ unless noted; "manual" marks checks left for the real-Safari pass.
 |---|---|---|
 | Initial theme in the tool's address (RULE-16) | `URLSearchParams(location.search).get("theme")` read by an inline, CSP-hashed classic script in `<head>` that sets `<html data-theme>` | Before first paint (F-008.AC1) |
 | Later settings messages | `window.addEventListener("message")`; accept only `event.origin ∈ allow-list` and `event.source === window.parent`; payload `{ type: "taro:theme", value }` | Unknown values ignored. A sibling frame can reach the tool via `parent.frames`; both checks reject it |
+| Language in the address (RULE-19, F-012.R1) | Same boot script reads `get("lang")`, falls back to `navigator.languages`, sets `<html lang>`; the app resolves the same way at start | Before first paint; strings are rendered only by the app |
+| Language messages (F-012.R2/R4) | Same listener and checks as theme; payload `{ type: "taro:language", value }` | Unsupported values ignored; repeats are no-ops |
+| Number formatting (F-012.R6) | `Intl.NumberFormat(activeLanguage)` | `vi-VN` → `1.234`, `1,5 MB` |
 | Ready signal | `window.parent.postMessage({ type: "taro:ready" }, origin)` with origin from `document.referrer` if allow-listed, else each allowed origin | Never `"*"`; never content |
 | Allowed host origins / who may embed (NFR-09) | Response header `Content-Security-Policy: frame-ancestors https://tarokit.app` (empty list → `'none'`) | Header only (ignored in meta); no `X-Frame-Options` |
 | Device light/dark preference (F-008.R2) | `matchMedia("(prefers-color-scheme: dark)")` + `change` listener; CSS `prefers-color-scheme` block; `color-scheme` property | |
